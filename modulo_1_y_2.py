@@ -298,88 +298,88 @@ elif opcion == "2️⃣ Comparar dos mediciones":
          config_info = {}
 
        if st.button("Comparar configuraciones"): 
-    resultados = []
-    config_labels = {1: "Configuración 1", 2: "Configuración 2"}
-    datos_personales = None
-    config_info = {}
-
-    for i, config_files in enumerate([uploaded_files_conf1, uploaded_files_conf2], start=1):
-        for test, file in config_files.items():
-            df = pd.read_csv(file)
-            datos_personales = df.iloc[0].to_frame().T
-            config = f"Config {i}"
-            if config not in config_info:
-                config_info[config] = {k: datos_personales.iloc[0][k] for k in ['Voltaje', 'Frecuencia', 'Corriente'] if k in datos_personales.columns}
-            datos = df.iloc[1:][['Acel_X', 'Acel_Y', 'Acel_Z', 'GiroX', 'GiroY', 'GiroZ']].apply(pd.to_numeric, errors='coerce')
-            for eje in datos.columns:
-                df_proc = analizar_temblor_por_ventanas(datos[eje], eje, fs=50)
-                if not df_proc.empty:
-                    prom = df_proc.mean(numeric_only=True)
-                    freq = prom['Frecuencia Dominante (Hz)']
-                    amp_g = prom['Amplitud Temblor (g)']
-                    amp_cm = (amp_g * 981) / ((2 * np.pi * freq) ** 2) if freq > 0 else 0.0
-                    resultados.append({
-                        'Condicion': f"{config_labels[i]} - {test}",
-                        'Eje': eje,
-                        'Frecuencia Dominante (Hz)': round(freq, 2),
-                        'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
-                        'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
-                        'Amplitud Temblor (cm)': round(amp_cm, 2)
-                    })
-
-    df_final = pd.DataFrame(resultados)
-    st.dataframe(df_final)
-
-    resumen = df_final.groupby('Condicion')[['RMS (m/s2)', 'Varianza (m2/s4)', 'Amplitud Temblor (cm)']].mean()
-    mejor = resumen['RMS (m/s2)'].idxmin()
-    st.success(f"La mejor configuración en base a menor RMS promedio es: {mejor}")
-
-    # Generar PDF
-    def generar_pdf_comparacion(df_resultados, nombre, config_info, mejor_config, archivo_pdf="comparacion_temblor.pdf"):
-        from fpdf import FPDF
-        import matplotlib.pyplot as plt
-
-        plt.figure(figsize=(10, 5))
-        for metrica in ['RMS (m/s2)', 'Amplitud Temblor (cm)']:
-            df_resultados.groupby('Condicion')[metrica].mean().plot(kind='bar', label=metrica)
-        plt.title("Comparación de Métricas entre Configuraciones")
-        plt.ylabel("Valor Promedio")
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig("grafico_temp.png")
-        plt.close()
-
-        pdf = FPDF()
-        pdf.add_page()
-
-        pdf.set_font("Arial", "B", 14)
-        pdf.cell(0, 10, f"Comparación de Configuraciones - {nombre}", ln=True)
-
-        pdf.set_font("Arial", "", 12)
-        if config_info:
-            for conf, info in config_info.items():
-                if info:
-                    pdf.cell(0, 10, f"{conf}: " + ", ".join(f"{k}: {v}" for k, v in info.items()), ln=True)
-
-        pdf.cell(0, 10, f"\nMejor configuración según RMS: {mejor_config}", ln=True)
-
-        pdf.ln(10)
-        pdf.image("grafico_temp.png", x=10, w=180)
-
-        pdf.ln(10)
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 10, "Resultados por eje y condición:", ln=True)
-        pdf.set_font("Arial", "", 10)
-
-        for _, row in df_resultados.iterrows():
-            texto = f"{row['Condicion']} - {row['Eje']}: RMS={row['RMS (m/s2)']} m/s², Amp={row['Amplitud Temblor (cm)']} cm, Freq={row['Frecuencia Dominante (Hz)']} Hz"
-            pdf.cell(0, 8, texto, ln=True)
-
-        pdf.output(archivo_pdf)
-
-    nombre = datos_personales['Nombre'].values[0] if 'Nombre' in datos_personales.columns else "Paciente"
-    generar_pdf_comparacion(df_final, nombre, config_info, mejor)
-
-    with open("comparacion_temblor.pdf", "rb") as f:
-        st.download_button("📄 Descargar informe PDF", f, file_name="informe_comparacion_temblor.pdf")
+        resultados = []
+        config_labels = {1: "Configuración 1", 2: "Configuración 2"}
+        datos_personales = None
+        config_info = {}
+    
+        for i, config_files in enumerate([uploaded_files_conf1, uploaded_files_conf2], start=1):
+            for test, file in config_files.items():
+                df = pd.read_csv(file)
+                datos_personales = df.iloc[0].to_frame().T
+                config = f"Config {i}"
+                if config not in config_info:
+                    config_info[config] = {k: datos_personales.iloc[0][k] for k in ['Voltaje', 'Frecuencia', 'Corriente'] if k in datos_personales.columns}
+                datos = df.iloc[1:][['Acel_X', 'Acel_Y', 'Acel_Z', 'GiroX', 'GiroY', 'GiroZ']].apply(pd.to_numeric, errors='coerce')
+                for eje in datos.columns:
+                    df_proc = analizar_temblor_por_ventanas(datos[eje], eje, fs=50)
+                    if not df_proc.empty:
+                        prom = df_proc.mean(numeric_only=True)
+                        freq = prom['Frecuencia Dominante (Hz)']
+                        amp_g = prom['Amplitud Temblor (g)']
+                        amp_cm = (amp_g * 981) / ((2 * np.pi * freq) ** 2) if freq > 0 else 0.0
+                        resultados.append({
+                            'Condicion': f"{config_labels[i]} - {test}",
+                            'Eje': eje,
+                            'Frecuencia Dominante (Hz)': round(freq, 2),
+                            'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
+                            'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
+                            'Amplitud Temblor (cm)': round(amp_cm, 2)
+                        })
+    
+        df_final = pd.DataFrame(resultados)
+        st.dataframe(df_final)
+    
+        resumen = df_final.groupby('Condicion')[['RMS (m/s2)', 'Varianza (m2/s4)', 'Amplitud Temblor (cm)']].mean()
+        mejor = resumen['RMS (m/s2)'].idxmin()
+        st.success(f"La mejor configuración en base a menor RMS promedio es: {mejor}")
+    
+        # Generar PDF
+        def generar_pdf_comparacion(df_resultados, nombre, config_info, mejor_config, archivo_pdf="comparacion_temblor.pdf"):
+            from fpdf import FPDF
+            import matplotlib.pyplot as plt
+    
+            plt.figure(figsize=(10, 5))
+            for metrica in ['RMS (m/s2)', 'Amplitud Temblor (cm)']:
+                df_resultados.groupby('Condicion')[metrica].mean().plot(kind='bar', label=metrica)
+            plt.title("Comparación de Métricas entre Configuraciones")
+            plt.ylabel("Valor Promedio")
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig("grafico_temp.png")
+            plt.close()
+    
+            pdf = FPDF()
+            pdf.add_page()
+    
+            pdf.set_font("Arial", "B", 14)
+            pdf.cell(0, 10, f"Comparación de Configuraciones - {nombre}", ln=True)
+    
+            pdf.set_font("Arial", "", 12)
+            if config_info:
+                for conf, info in config_info.items():
+                    if info:
+                        pdf.cell(0, 10, f"{conf}: " + ", ".join(f"{k}: {v}" for k, v in info.items()), ln=True)
+    
+            pdf.cell(0, 10, f"\nMejor configuración según RMS: {mejor_config}", ln=True)
+    
+            pdf.ln(10)
+            pdf.image("grafico_temp.png", x=10, w=180)
+    
+            pdf.ln(10)
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, "Resultados por eje y condición:", ln=True)
+            pdf.set_font("Arial", "", 10)
+    
+            for _, row in df_resultados.iterrows():
+                texto = f"{row['Condicion']} - {row['Eje']}: RMS={row['RMS (m/s2)']} m/s², Amp={row['Amplitud Temblor (cm)']} cm, Freq={row['Frecuencia Dominante (Hz)']} Hz"
+                pdf.cell(0, 8, texto, ln=True)
+    
+            pdf.output(archivo_pdf)
+    
+        nombre = datos_personales['Nombre'].values[0] if 'Nombre' in datos_personales.columns else "Paciente"
+        generar_pdf_comparacion(df_final, nombre, config_info, mejor)
+    
+        with open("comparacion_temblor.pdf", "rb") as f:
+            st.download_button("📄 Descargar informe PDF", f, file_name="informe_comparacion_temblor.pdf")
    
