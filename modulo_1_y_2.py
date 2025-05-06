@@ -290,12 +290,12 @@ elif opcion == "2️⃣ Comparar dos mediciones":
         for test in ["Reposo", "Postural", "Acción"]:
             uploaded_files_conf2[test] = st.file_uploader(f"Configuración 2 - Archivo para test de {test}", type="csv", key=f"c2_{test}")
 
-    if all(uploaded_files_conf2.values()):
-        if st.button("Comparar configuraciones"): 
-         resultados = []
-         config_labels = {1: "Configuración 1", 2: "Configuración 2"}
-         datos_personales = None
-         config_info = {}
+        if all(uploaded_files_conf2.values()):
+            if st.button("Comparar configuraciones"): 
+             resultados = []
+             config_labels = {1: "Configuración 1", 2: "Configuración 2"}
+             datos_personales = None
+             config_info = {}
 
     if st.button("Comparar configuraciones"): 
         resultados = []
