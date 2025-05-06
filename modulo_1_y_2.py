@@ -294,18 +294,18 @@ elif opcion == "2️⃣ Comparar dos mediciones":
         if st.button("Comparar configuraciones"): 
          resultados = []
          config_labels = {1: "Configuración 1", 2: "Configuración 2"}
-            datos_personales = None
-            config_info = {}
+         datos_personales = None
+         config_info = {}
 
-            for i, config_files in enumerate([uploaded_files_conf1, uploaded_files_conf2], start=1):
-                for test, file in config_files.items():
-                    df = pd.read_csv(file)
-                    datos_personales = df.iloc[0].to_frame().T
-                    config = f"Config {i}"
-                    if config not in config_info:
-                        config_info[config] = {k: datos_personales.iloc[0][k] for k in ['Voltaje', 'Frecuencia', 'Corriente'] if k in datos_personales.columns}
-                    datos = df.iloc[1:][['Acel_X', 'Acel_Y', 'Acel_Z', 'GiroX', 'GiroY', 'GiroZ']].apply(pd.to_numeric, errors='coerce')
-                    for eje in datos.columns:
+        for i, config_files in enumerate([uploaded_files_conf1, uploaded_files_conf2], start=1):
+            for test, file in config_files.items():
+                df = pd.read_csv(file)
+                datos_personales = df.iloc[0].to_frame().T
+                config = f"Config {i}"
+                if config not in config_info:
+                    config_info[config] = {k: datos_personales.iloc[0][k] for k in ['Voltaje', 'Frecuencia', 'Corriente'] if k in datos_personales.columns}
+                datos = df.iloc[1:][['Acel_X', 'Acel_Y', 'Acel_Z', 'GiroX', 'GiroY', 'GiroZ']].apply(pd.to_numeric, errors='coerce')
+                for eje in datos.columns:
                         df_proc = analizar_temblor_por_ventanas(datos[eje], eje, fs=50)
                         if not df_proc.empty:
                             prom = df_proc.mean(numeric_only=True)
