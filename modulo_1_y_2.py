@@ -276,14 +276,18 @@ if opcion == "1️⃣ Análisis de una medición":
             
 
 elif opcion == "2️⃣ Comparar dos mediciones":
-    st.write("Sube los 6 archivos CSV: 3 de cada configuración del estimulador")
+    st.write("Sube los 3 archivos CSV para la Configuración 1:")
 
     uploaded_files_conf1 = {}
     uploaded_files_conf2 = {}
 
     for test in ["Reposo", "Postural", "Acción"]:
-        uploaded_files_conf1[test] = st.file_uploader(f"Config 1 - Archivo para test de {test}", type="csv", key=f"c1_{test}")
-        uploaded_files_conf2[test] = st.file_uploader(f"Config 2 - Archivo para test de {test}", type="csv", key=f"c2_{test}")
+        uploaded_files_conf1[test] = st.file_uploader(f"Configuración 1 - Archivo para test de {test}", type="csv", key=f"c1_{test}")
+
+    if all(uploaded_files_conf1.values()):
+        st.write("Ahora sube los 3 archivos CSV para la Configuración 2:")
+        for test in ["Reposo", "Postural", "Acción"]:
+            uploaded_files_conf2[test] = st.file_uploader(f"Configuración 2 - Archivo para test de {test}", type="csv", key=f"c2_{test}")
 
     if all(uploaded_files_conf1.values()) and all(uploaded_files_conf2.values()):
         if st.button("Comparar configuraciones"):
@@ -319,13 +323,55 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             df_final = pd.DataFrame(resultados)
             st.dataframe(df_final)
 
-            crear_grafico(df_final, datos_personales['Nombre'].values[0], archivo="comparacion_temblor.png")
-
-            # Evaluación simple: menor RMS promedio general
             resumen = df_final.groupby('Condicion')[['RMS (m/s2)', 'Varianza (m2/s4)', 'Amplitud Temblor (cm)']].mean()
             mejor = resumen['RMS (m/s2)'].idxmin()
-
             st.success(f"La mejor configuración en base a menor RMS promedio es: {mejor}")
 
-            with open("comparacion_temblor.png", "rb") as f:
-                st.download_button("📈 Descargar gráfico de comparación", f, file_name="comparacion_temblor.png")
+            # Generar PDF
+            def generar_pdf_comparacion(df_resultados, nombre, config_info, mejor_config, archivo_pdf="comparacion_temblor.pdf"):
+                from fpdf import FPDF
+                import matplotlib.pyplot as plt
+
+                plt.figure(figsize=(10, 5))
+                for metrica in ['RMS (m/s2)', 'Amplitud Temblor (cm)']:
+                    df_resultados.groupby('Condicion')[metrica].mean().plot(kind='bar', label=metrica)
+                plt.title("Comparación de Métricas entre Configuraciones")
+                plt.ylabel("Valor Promedio")
+                plt.legend()
+                plt.tight_layout()
+                plt.savefig("grafico_temp.png")
+                plt.close()
+
+                pdf = FPDF()
+                pdf.add_page()
+
+                pdf.set_font("Arial", "B", 14)
+                pdf.cell(0, 10, f"Comparación de Configuraciones - {nombre}", ln=True)
+
+                pdf.set_font("Arial", "", 12)
+                if config_info:
+                    for conf, info in config_info.items():
+                        if info:
+                            pdf.cell(0, 10, f"{conf}: " + ", ".join(f"{k}: {v}" for k, v in info.items()), ln=True)
+
+                pdf.cell(0, 10, f"\nMejor configuración según RMS: {mejor_config}", ln=True)
+
+                pdf.ln(10)
+                pdf.image("grafico_temp.png", x=10, w=180)
+
+                pdf.ln(10)
+                pdf.set_font("Arial", "B", 12)
+                pdf.cell(0, 10, "Resultados por eje y condición:", ln=True)
+                pdf.set_font("Arial", "", 10)
+
+                for _, row in df_resultados.iterrows():
+                    texto = f"{row['Condicion']} - {row['Eje']}: RMS={row['RMS (m/s2)']} m/s², Amp={row['Amplitud Temblor (cm)']} cm, Freq={row['Frecuencia Dominante (Hz)']} Hz"
+                    pdf.cell(0, 8, texto, ln=True)
+
+                pdf.output(archivo_pdf)
+
+            nombre = datos_personales['Nombre'].values[0] if 'Nombre' in datos_personales.columns else "Paciente"
+            generar_pdf_comparacion(df_final, nombre, config_info, mejor)
+
+            with open("comparacion_temblor.pdf", "rb") as f:
+                st.download_button("📄 Descargar informe PDF", f, file_name="informe_comparacion_temblor.pdf")
