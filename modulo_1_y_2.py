@@ -276,21 +276,22 @@ if opcion == "1️⃣ Análisis de una medición":
             
 
 elif opcion == "2️⃣ Comparar dos mediciones":
-    st.write("Sube los 3 archivos CSV para la Configuración 1:")
-
+    import os
+    st.write("Primero, sube los 3 archivos CSV de la **Configuración 1**:")
     uploaded_files_conf1 = {}
-    uploaded_files_conf2 = {}
-
     for test in ["Reposo", "Postural", "Acción"]:
         uploaded_files_conf1[test] = st.file_uploader(f"Configuración 1 - Archivo para test de {test}", type="csv", key=f"c1_{test}")
 
     if all(uploaded_files_conf1.values()):
-        st.write("Ahora sube los 3 archivos CSV para la Configuración 2:")
+        st.write("---")
+        st.write("Ahora, sube los 3 archivos CSV de la **Configuración 2**:")
+        
+        uploaded_files_conf2 = {}
         for test in ["Reposo", "Postural", "Acción"]:
             uploaded_files_conf2[test] = st.file_uploader(f"Configuración 2 - Archivo para test de {test}", type="csv", key=f"c2_{test}")
 
-    if all(uploaded_files_conf1.values()) and all(uploaded_files_conf2.values()):
-        if st.button("Comparar configuraciones"):
+        if all(uploaded_files_conf2.values()):
+            if st.button("Comparar configuraciones"): 
             resultados = []
             config_labels = {1: "Configuración 1", 2: "Configuración 2"}
             datos_personales = None
@@ -370,8 +371,8 @@ elif opcion == "2️⃣ Comparar dos mediciones":
 
                 pdf.output(archivo_pdf)
 
-            nombre = datos_personales['Nombre'].values[0] if 'Nombre' in datos_personales.columns else "Paciente"
-            generar_pdf_comparacion(df_final, nombre, config_info, mejor)
-
-            with open("comparacion_temblor.pdf", "rb") as f:
-                st.download_button("📄 Descargar informe PDF", f, file_name="informe_comparacion_temblor.pdf")
+                nombre = datos_personales['Nombre'].values[0] if 'Nombre' in datos_personales.columns else "Paciente"
+                generar_pdf_comparacion(df_final, nombre, config_info, mejor)
+    
+                with open("comparacion_temblor.pdf", "rb") as f:
+                    st.download_button("📄 Descargar informe PDF", f, file_name="informe_comparacion_temblor.pdf")
