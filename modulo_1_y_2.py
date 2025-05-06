@@ -297,7 +297,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
          datos_personales = None
          config_info = {}
 
-       if st.button("Comparar configuraciones"): 
+    if st.button("Comparar configuraciones"): 
         resultados = []
         config_labels = {1: "Configuración 1", 2: "Configuración 2"}
         datos_personales = None
