@@ -214,7 +214,7 @@ if opcion == "1️⃣ Análisis de una medición":
         
         # ----------- INTERFAZ STREAMLIT ------------
         
-        #st.title("🧠 Análisis de una medición")
+        st.title("🧠 Análisis de una medición")
         st.write("Sube los tres archivos CSV correspondientes a las pruebas de Reposo, Postural y Acción.")
         
         uploaded_files = {}
