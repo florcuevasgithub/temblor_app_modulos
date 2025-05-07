@@ -214,7 +214,7 @@ if opcion == "1️⃣ Análisis de una medición":
         
         # ----------- INTERFAZ STREAMLIT ------------
         
-        st.title("🧠 Análisis de una medición")
+        st.title("📊 Análisis de una medición")
         st.write("Sube los tres archivos CSV correspondientes a las pruebas de Reposo, Postural y Acción.")
         
         uploaded_files = {}
@@ -276,7 +276,7 @@ if opcion == "1️⃣ Análisis de una medición":
             
 
 elif opcion == "2️⃣ Comparar dos mediciones":
-    st.title("🧠 Comparar dos mediciones")
+    st.title("📊 Comparar dos mediciones")
     st.write("Sube los 6 archivos CSV: 3 de cada configuración del estimulador")
 
     uploaded_files_conf1 = {}
