@@ -165,45 +165,21 @@ if opcion == "1️⃣ Análisis de una medición":
         
         st.title("📊 Análisis de una medición")
         st.write("Sube los tres archivos CSV correspondientes a las pruebas de Reposo, Postural y Acción.")
+
         
-        st.markdown("""
-            <style>
-            /* Oculta todo el texto del botón por defecto */
-            .stFileUploader button span {
-                display: none !important;
-            }
-        
-            /* Oculta zona de "drag and drop" y límite de tamaño */
-            .stFileUploader label > div:first-child,
-            .stFileUploader label small {
-                display: none !important;
-            }
-        
-            /* Estilo del botón de carga */
-            .stFileUploader button {
-                background-color: #ff4b4b;
-                color: white;
-                font-weight: bold;
-                border-radius: 6px;
-                padding: 8px 16px;
-                font-size: 16px;
-                position: relative;
-                overflow: hidden;
-            }
-        
-            /* Inserta texto personalizado centrado */
-            .stFileUploader button::after {
-                content: "Seleccionar archivo CSV";
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%);
-                color: white;
-                font-weight: bold;
-                pointer-events: none;
-            }
-            </style>
-        """, unsafe_allow_html=True)
+        # CSS para ocultar el texto "Browse files"
+        hide_browse_files_css = """
+        <style>
+        /* Oculta el texto "Browse files" que aparece por defecto */
+        section[data-testid="stFileUploadDropzone"] button div span:nth-child(2) {
+            display: none !important;
+        }
+        </style>
+        """
+        st.markdown(hide_browse_files_css, unsafe_allow_html=True)
+        archivo_reposo = st.file_uploader("📥 Seleccionar archivo CSV para el test de Reposo", type=["csv"])
+        archivo_postural = st.file_uploader("📥 Seleccionar archivo CSV para el test de Postural", type=["csv"])
+        archivo_accion = st.file_uploader("📥 Seleccionar archivo CSV para el test de Acción", type=["csv"])
                         
         if all(uploaded_files.values()):
             if st.button("Iniciar análisis"):
