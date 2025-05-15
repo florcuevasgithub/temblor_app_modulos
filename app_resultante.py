@@ -168,13 +168,18 @@ if opcion == "1️⃣ Análisis de una medición":
         
         st.markdown("""
             <style>
-            /* Oculta completamente la zona de "drag and drop" */
-            .stFileUploader label div:nth-child(1),
+            /* Oculta todo el texto del botón por defecto */
+            .stFileUploader button span {
+                display: none !important;
+            }
+        
+            /* Oculta zona de "drag and drop" y límite de tamaño */
+            .stFileUploader label > div:first-child,
             .stFileUploader label small {
                 display: none !important;
             }
         
-            /* Estilo del botón personalizado */
+            /* Estilo del botón de carga */
             .stFileUploader button {
                 background-color: #ff4b4b;
                 color: white;
@@ -183,14 +188,10 @@ if opcion == "1️⃣ Análisis de una medición":
                 padding: 8px 16px;
                 font-size: 16px;
                 position: relative;
+                overflow: hidden;
             }
         
-            /* Oculta texto original del botón */
-            .stFileUploader button span {
-                color: transparent !important;
-            }
-        
-            /* Inserta texto personalizado encima del original */
+            /* Inserta texto personalizado centrado */
             .stFileUploader button::after {
                 content: "Seleccionar archivo CSV";
                 position: absolute;
@@ -198,25 +199,11 @@ if opcion == "1️⃣ Análisis de una medición":
                 top: 50%;
                 transform: translate(-50%, -50%);
                 color: white;
+                font-weight: bold;
                 pointer-events: none;
             }
             </style>
         """, unsafe_allow_html=True)
-        
-        uploaded_files = {}
-        
-        for test_name in ["Reposo", "Postural", "Acción"]:
-            st.markdown(
-                f'<p style="color:red; font-size:22px; font-weight:bold;">⬇️ Cargar archivo CSV para el test de {test_name}</p>',
-                unsafe_allow_html=True
-            )
-            st.markdown(
-                '<p style="font-size:16px;">Haz clic en <strong>Seleccionar archivo CSV</strong> para cargar tu archivo.</p>',
-                unsafe_allow_html=True
-            )
-            uploaded_files[test_name] = st.file_uploader(
-                label="", type=["csv"], key=test_name, label_visibility="collapsed"
-            )
                         
         if all(uploaded_files.values()):
             if st.button("Iniciar análisis"):
