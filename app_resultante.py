@@ -169,16 +169,12 @@ if opcion == "1️⃣ Análisis de una medición":
         st.markdown("""
             <style>
             /* Oculta completamente la zona de "drag and drop" */
-            .stFileUploader label div:nth-child(1) {
-                display: none !important;
-            }
-        
-            /* Oculta mensaje de límite de tamaño y formato */
+            .stFileUploader label div:nth-child(1),
             .stFileUploader label small {
                 display: none !important;
             }
         
-            /* Reemplaza el botón "Browse files" por uno en español */
+            /* Estilo del botón personalizado */
             .stFileUploader button {
                 background-color: #ff4b4b;
                 color: white;
@@ -186,14 +182,23 @@ if opcion == "1️⃣ Análisis de una medición":
                 border-radius: 6px;
                 padding: 8px 16px;
                 font-size: 16px;
+                position: relative;
             }
         
-            .stFileUploader button::before {
-                content: "Seleccionar archivo CSV";
-            }
-        
+            /* Oculta texto original del botón */
             .stFileUploader button span {
-                display: none; /* Oculta el texto original del botón */
+                color: transparent !important;
+            }
+        
+            /* Inserta texto personalizado encima del original */
+            .stFileUploader button::after {
+                content: "Seleccionar archivo CSV";
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                pointer-events: none;
             }
             </style>
         """, unsafe_allow_html=True)
@@ -212,7 +217,7 @@ if opcion == "1️⃣ Análisis de una medición":
             uploaded_files[test_name] = st.file_uploader(
                 label="", type=["csv"], key=test_name, label_visibility="collapsed"
             )
-                
+                        
         if all(uploaded_files.values()):
             if st.button("Iniciar análisis"):
                 mediciones_tests = {}
