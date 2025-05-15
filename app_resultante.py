@@ -136,6 +136,11 @@ if opcion == "1️⃣ Análisis de una medición":
             plt.close()
         
         def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo, diagnostico_auto, df):
+            import unicodedata
+            def limpiar_texto_para_pdf(texto):
+                return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
+            texto_clinico = diag_clinico if pd.notna(diag_clinico) and str(diag_clinico).strip() != "" else "Sin diagnóstico previo"
+            fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", 'B', 16)
@@ -208,7 +213,7 @@ if opcion == "1️⃣ Análisis de una medición":
         
      # ----------- INTERFAZ STREAMLIT ------------
         
-        st.title("🧠 Análisis de Temblor")
+        st.title("🧠 Análisis de una medicion")
         st.write("Sube los tres archivos CSV correspondientes a las pruebas de Reposo, Postural y Acción.")
         uploaded_files = {}
         for test_name in ["Reposo", "Postural", "Acción"]:
