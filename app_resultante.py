@@ -166,26 +166,36 @@ if opcion == "1️⃣ Análisis de una medición":
         st.title("📊 Análisis de una medición")
         st.write("Sube los tres archivos CSV correspondientes a las pruebas de Reposo, Postural y Acción.")
         
-        # CSS para reemplazar texto del botón y ocultar textos en inglés
+        # CSS para ocultar textos en inglés y personalizar el botón
         st.markdown("""
             <style>
+            /* Ocultar texto "Drag and drop file here" y "Limit 200MB per file" */
+            .stFileUploader label div div:nth-child(1),
             .stFileUploader label div div:nth-child(2),
             .stFileUploader label div div:nth-child(3) {
-                display: none;
+                display: none !important;
             }
+        
+            /* Personalizar botón "Browse files" */
             .stFileUploader label div::after {
                 content: "Seleccionar archivo CSV";
-                color: black;
+                color: white;
+                background-color: #ff4b4b;
+                padding: 8px 16px;
+                border-radius: 6px;
                 font-weight: bold;
-                background-color: #f0f0f0;
-                padding: 6px 12px;
-                border-radius: 4px;
-                border: 1px solid #ccc;
+                display: inline-block;
+                border: none;
+            }
+        
+            /* Ocultar texto vacío por defecto */
+            .stFileUploader label > div > div {
+                min-height: 0px;
             }
             </style>
         """, unsafe_allow_html=True)
         
-        # Títulos personalizados en rojo y grandes + instrucciones en español
+        # Instrucciones en español
         uploaded_files = {}
         
         for test_name in ["Reposo", "Postural", "Acción"]:
@@ -194,7 +204,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 unsafe_allow_html=True
             )
             st.markdown(
-                '<p style="font-size:16px;">Arrastra y suelta el archivo aquí o haz clic en “Seleccionar archivo CSV”</p>',
+                '<p style="font-size:16px;">Haz clic en “Seleccionar archivo CSV” para cargar tu archivo.</p>',
                 unsafe_allow_html=True
             )
             uploaded_files[test_name] = st.file_uploader(
