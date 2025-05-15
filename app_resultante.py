@@ -168,52 +168,52 @@ if opcion == "1️⃣ Análisis de una medición":
 
         
        # CSS para ocultar el texto "Browse files"
-           st.markdown("""
-                    <style>
-                    /* Oculta completamente la zona de "drag and drop" */
-                    .stFileUploader label div:nth-child(1) {
-                        display: none !important;
-                    }
-                
-                    /* Oculta mensaje de límite de tamaño y formato */
-                    .stFileUploader label small {
-                        display: none !important;
-                    }
-                
-                    /* Reemplaza el botón "Browse files" por uno en español */
-                    .stFileUploader button {
-                        background-color: #ff4b4b;
-                        color: white;
-                        font-weight: bold;
-                        border-radius: 6px;
-                        padding: 8px 16px;
-                        font-size: 16px;
-                    }
-                
-                    .stFileUploader button::before {
-                        content: "Seleccionar archivo CSV";
-                    }
-                
-                    .stFileUploader button span {
-                        display: none; /* Oculta el texto original del botón */
-                    }
-                    </style>
-                """, unsafe_allow_html=True)
-                
-                uploaded_files = {}
-                
-                for test_name in ["Reposo", "Postural", "Acción"]:
-                    st.markdown(
-                        f'<p style="color:red; font-size:22px; font-weight:bold;">⬇️ Cargar archivo CSV para el test de {test_name}</p>',
-                        unsafe_allow_html=True
-                    )
-                    st.markdown(
-                        '<p style="font-size:16px;">Haz clic en <strong>Seleccionar archivo CSV</strong> para cargar tu archivo.</p>',
-                        unsafe_allow_html=True
-                    )
-                    uploaded_files[test_name] = st.file_uploader(
-                        label="", type=["csv"], key=test_name, label_visibility="collapsed"
-                    )           
+        st.markdown("""
+            <style>
+            /* Oculta completamente la zona de "drag and drop" */
+            .stFileUploader label div:nth-child(1) {
+                display: none !important;
+            }
+        
+            /* Oculta mensaje de límite de tamaño y formato */
+            .stFileUploader label small {
+                display: none !important;
+            }
+        
+            /* Reemplaza el botón "Browse files" por uno en español */
+            .stFileUploader button {
+                background-color: #ff4b4b;
+                color: white;
+                font-weight: bold;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 16px;
+            }
+        
+            .stFileUploader button::before {
+                content: "Seleccionar archivo CSV";
+            }
+        
+            .stFileUploader button span {
+                display: none; /* Oculta el texto original del botón */
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        uploaded_files = {}
+        
+        for test_name in ["Reposo", "Postural", "Acción"]:
+            st.markdown(
+                f'<p style="color:red; font-size:22px; font-weight:bold;">⬇️ Cargar archivo CSV para el test de {test_name}</p>',
+                unsafe_allow_html=True
+            )
+            st.markdown(
+                '<p style="font-size:16px;">Haz clic en <strong>Seleccionar archivo CSV</strong> para cargar tu archivo.</p>',
+                unsafe_allow_html=True
+            )
+            uploaded_files[test_name] = st.file_uploader(
+                label="", type=["csv"], key=test_name, label_visibility="collapsed"
+            )        
                         
         if all(uploaded_files.values()):
             if st.button("Iniciar análisis"):
