@@ -166,15 +166,16 @@ if opcion == "1️⃣ Análisis de una medición":
         st.title("📊 Análisis de una medición")
         st.write("Sube los tres archivos CSV correspondientes a las pruebas de Reposo, Postural y Acción.")
         
-        # Estilo CSS para cambiar "Browse files" por "Seleccionar archivo"
+        # CSS para reemplazar texto del botón y ocultar textos en inglés
         st.markdown("""
             <style>
-            .stFileUploader label div div:nth-child(2) {
+            .stFileUploader label div div:nth-child(2),
+            .stFileUploader label div div:nth-child(3) {
                 display: none;
             }
             .stFileUploader label div::after {
-                content: "Seleccionar archivo";
-                color: #000;
+                content: "Seleccionar archivo CSV";
+                color: black;
                 font-weight: bold;
                 background-color: #f0f0f0;
                 padding: 6px 12px;
@@ -183,13 +184,17 @@ if opcion == "1️⃣ Análisis de una medición":
             }
             </style>
         """, unsafe_allow_html=True)
-
-        # Carga de archivos para Reposo, Postural y Acción con títulos en rojo y grandes
+        
+        # Títulos personalizados en rojo y grandes + instrucciones en español
         uploaded_files = {}
-
+        
         for test_name in ["Reposo", "Postural", "Acción"]:
             st.markdown(
                 f'<p style="color:red; font-size:22px; font-weight:bold;">⬇️ Cargar archivo CSV para el test de {test_name}</p>',
+                unsafe_allow_html=True
+            )
+            st.markdown(
+                '<p style="font-size:16px;">Arrastra y suelta el archivo aquí o haz clic en “Seleccionar archivo CSV”</p>',
                 unsafe_allow_html=True
             )
             uploaded_files[test_name] = st.file_uploader(
