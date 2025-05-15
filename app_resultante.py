@@ -168,7 +168,7 @@ if opcion == "1️⃣ Análisis de una medición":
 
         
        # CSS para ocultar el texto "Browse files"
-       st.markdown("""
+           st.markdown("""
                     <style>
                     /* Oculta completamente la zona de "drag and drop" */
                     .stFileUploader label div:nth-child(1) {
@@ -213,7 +213,7 @@ if opcion == "1️⃣ Análisis de una medición":
                     )
                     uploaded_files[test_name] = st.file_uploader(
                         label="", type=["csv"], key=test_name, label_visibility="collapsed"
-                    )
+                    )           
                         
         if all(uploaded_files.values()):
             if st.button("Iniciar análisis"):
