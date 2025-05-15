@@ -206,51 +206,54 @@ if opcion == "1️⃣ Análisis de una medición":
             pdf.output(filename)
             return filename
         
-                # ----------- INTERFAZ STREAMLIT ------------
+     # ----------- INTERFAZ STREAMLIT ------------
         
-                st.title("🧠 Análisis de Temblor")
-                st.write("Sube los tres archivos CSV correspondientes a las pruebas de Reposo, Postural y Acción.")
-        
-                if all(uploaded_files.values()):
-            if st.button("Iniciar análisis"):
-                mediciones_tests = {}
-                datos_personales = None
-                resultados = []
-        
-                for test, file in uploaded_files.items():
-                    df = pd.read_csv(file)
-                    datos_personales = df.iloc[0].to_frame().T
-                    mediciones = df.iloc[1:][['Acel_X', 'Acel_Y', 'Acel_Z']].apply(pd.to_numeric, errors='coerce')
-                    mediciones['Resultante'] = calcular_resultante(mediciones)
-                    amplitud_media = (mediciones[['Acel_X', 'Acel_Y', 'Acel_Z']].max() - mediciones[['Acel_X', 'Acel_Y', 'Acel_Z']].min()).mean() * 9.81 * 0.5  # cm
-                    analisis = analizar_temblor_resultante(mediciones['Resultante'])
-                    if not analisis.empty:
-                        resultado_prom = analisis.mean()
-                        resultados.append({
-                            'Test': test,
-                            'Frecuencia Dominante (Hz)': resultado_prom['Frecuencia Dominante (Hz)'],
-                            'Varianza (m2/s4)': resultado_prom['Varianza (m2/s4)'],
-                            'RMS (m/s2)': resultado_prom['RMS (m/s2)'],
-                            'Amplitud Media (cm)': amplitud_media
-                        })
-        
-                df_resultado = pd.DataFrame(resultados)
-                crear_grafico(df_resultado, datos_personales.iloc[0]['Nombre'])
-                diag = diagnosticar(df_resultado)
-                nombre_pdf = generar_pdf(
-                    datos_personales.iloc[0].get("Nombre", "No especificado"),
-                    datos_personales.iloc[0].get("Apellido", "No especificado"),
-                    datos_personales.iloc[0].get("Edad", "No especificado"),
-                    datos_personales.iloc[0].get("Sexo", "No especificado"),
-                    datos_personales.iloc[0].get("Diagnóstico", ""),
-                    datos_personales.iloc[0].get("Mano", ""),
-                    datos_personales.iloc[0].get("Dedo", ""),
-                    diag,
-                    df_resultado
-                )
-                st.success("✅ Análisis completado.")
-                with open(nombre_pdf, "rb") as f:
-                    st.download_button("📄 Descargar PDF", f, file_name=nombre_pdf, mime="application/pdf")
+        st.title("🧠 Análisis de Temblor")
+        st.write("Sube los tres archivos CSV correspondientes a las pruebas de Reposo, Postural y Acción.")
+        uploaded_files = {}
+        for test_name in ["Reposo", "Postural", "Acción"]:
+                uploaded_files[test_name] = st.file_uploader(f"Archivo para test de {test_name}", type=["csv"], key=test_name)
+                
+        if all(uploaded_files.values()):
+                if st.button("Iniciar análisis"):
+                    mediciones_tests = {}
+                    datos_personales = None
+                    resultados = []
+            
+                    for test, file in uploaded_files.items():
+                        df = pd.read_csv(file)
+                        datos_personales = df.iloc[0].to_frame().T
+                        mediciones = df.iloc[1:][['Acel_X', 'Acel_Y', 'Acel_Z']].apply(pd.to_numeric, errors='coerce')
+                        mediciones['Resultante'] = calcular_resultante(mediciones)
+                        amplitud_media = (mediciones[['Acel_X', 'Acel_Y', 'Acel_Z']].max() - mediciones[['Acel_X', 'Acel_Y', 'Acel_Z']].min()).mean() * 9.81 * 0.5  # cm
+                        analisis = analizar_temblor_resultante(mediciones['Resultante'])
+                        if not analisis.empty:
+                            resultado_prom = analisis.mean()
+                            resultados.append({
+                                'Test': test,
+                                'Frecuencia Dominante (Hz)': resultado_prom['Frecuencia Dominante (Hz)'],
+                                'Varianza (m2/s4)': resultado_prom['Varianza (m2/s4)'],
+                                'RMS (m/s2)': resultado_prom['RMS (m/s2)'],
+                                'Amplitud Media (cm)': amplitud_media
+                            })
+            
+                        df_resultado = pd.DataFrame(resultados)
+                        crear_grafico(df_resultado, datos_personales.iloc[0]['Nombre'])
+                        diag = diagnosticar(df_resultado)
+                        nombre_pdf = generar_pdf(
+                            datos_personales.iloc[0].get("Nombre", "No especificado"),
+                            datos_personales.iloc[0].get("Apellido", "No especificado"),
+                            datos_personales.iloc[0].get("Edad", "No especificado"),
+                            datos_personales.iloc[0].get("Sexo", "No especificado"),
+                            datos_personales.iloc[0].get("Diagnóstico", ""),
+                            datos_personales.iloc[0].get("Mano", ""),
+                            datos_personales.iloc[0].get("Dedo", ""),
+                            diag,
+                            df_resultado
+                        )
+                        st.success("✅ Análisis completado.")
+                        with open(nombre_pdf, "rb") as f:
+                            st.download_button("📄 Descargar PDF", f, file_name=nombre_pdf, mime="application/pdf")
 
 
 elif opcion == "2️⃣ Comparar dos mediciones":
