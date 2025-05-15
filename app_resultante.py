@@ -69,188 +69,188 @@ if opcion == "1️⃣ Análisis de una medición":
         # -*- coding: utf-8 -*-
         # app_temblor.py
 
-       import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.signal import butter, filtfilt, welch
-from fpdf import FPDF
-from datetime import datetime, timedelta
-
-# --------- Funciones auxiliares ----------
-
-def filtrar_temblor(signal, fs=200):
-    b, a = butter(N=4, Wn=[3, 12], btype='bandpass', fs=fs)
-    return filtfilt(b, a, signal)
-
-def calcular_resultante(df):
-    return np.sqrt(df['Acel_X']**2 + df['Acel_Y']**2 + df['Acel_Z']**2)
-
-def analizar_temblor_resultante(df, fs=200, ventana_seg=2):
-    signal = df.dropna().to_numpy()
-    signal_filtrada = filtrar_temblor(signal, fs)
-
-    tamaño_ventana = int(fs * ventana_seg)
-    num_ventanas = len(signal_filtrada) // tamaño_ventana
-    resultados = []
-
-    for i in range(num_ventanas):
-        segmento = signal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
-        if len(segmento) < tamaño_ventana:
-            continue
-
-        f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
-        freq_dominante = f[np.argmax(Pxx)]
-
-        segmento_m_s2 = segmento * 9.81
-        varianza = np.var(segmento_m_s2)
-        rms = np.sqrt(np.mean(segmento_m_s2**2))
-
-        resultados.append({
-            'Frecuencia Dominante (Hz)': freq_dominante,
-            'Varianza (m2/s4)': varianza,
-            'RMS (m/s2)': rms,
-        })
-
-    return pd.DataFrame(resultados)
-
-def diagnosticar(df_amp_freq):
-    def max_amp(test): return df_amp_freq[df_amp_freq['Test'] == test]['Amplitud Media (cm)'].max()
-    def mean_freq(test): return df_amp_freq[df_amp_freq['Test'] == test]['Frecuencia Dominante (Hz)'].mean()
-
-    if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 7:
-        return "Probable Parkinson"
-    elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (8 <= mean_freq('Postural') <= 10 or 8 <= mean_freq('Acción') <= 10):
-        return "Probable Temblor Esencial"
-    else:
-        return "Temblor dentro de parámetros normales"
-
-def crear_grafico(df, nombre):
-    df.plot(x='Test', y=['Frecuencia Dominante (Hz)', 'Varianza (m2/s4)', 'RMS (m/s2)', 'Amplitud Media (cm)'],
-            kind='bar', figsize=(10, 6))
-    plt.title(f"Resumen de Medidas - {nombre}")
-    plt.ylabel("Valor")
-    plt.xticks(rotation=0)
-    plt.tight_layout()
-    plt.savefig("grafico_resumen.png")
-    plt.close()
-
-def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo, diagnostico_auto, df):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
-
-    pdf.set_font("Arial", size=12)
-    pdf.ln(10)
-    pdf.cell(200, 10, f"Nombre: {nombre_paciente}", ln=True)
-    pdf.cell(200, 10, f"Apellido: {apellido_paciente}", ln=True)
-    pdf.cell(200, 10, f"Edad: {edad}", ln=True)
-    pdf.cell(200, 10, f"Sexo: {sexo}", ln=True)
-    pdf.cell(200, 10, f"Diagnóstico clínico: {diag_clinico or 'Sin diagnóstico previo'}", ln=True)
-    pdf.cell(200, 10, f"Mano: {mano}", ln=True)
-    pdf.cell(200, 10, f"Dedo: {dedo}", ln=True)
-    fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
-    pdf.cell(200, 10, f"Fecha y hora: {fecha_hora}", ln=True)
-
-    pdf.ln(5)
-    pdf.image("grafico_resumen.png", x=10, w=180)
-
-    pdf.ln(5)
-    pdf.set_font("Arial", 'B', 10)
-    pdf.cell(30, 10, "Test", 1)
-    pdf.cell(40, 10, "Frecuencia (Hz)", 1)
-    pdf.cell(40, 10, "Varianza", 1)
-    pdf.cell(40, 10, "RMS", 1)
-    pdf.cell(40, 10, "Amplitud Media (cm)", 1)
-    pdf.ln(10)
-
-    pdf.set_font("Arial", size=9)
-    for _, row in df.iterrows():
-        pdf.cell(30, 10, row['Test'], 1)
-        pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
-        pdf.cell(40, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
-        pdf.cell(40, 10, f"{row['RMS (m/s2)']:.4f}", 1)
-        pdf.cell(40, 10, f"{row['Amplitud Media (cm)']:.2f}", 1)
-        pdf.ln(10)
-
-    pdf.ln(10)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(200, 10, "Interpretación clínica:", ln=True)
-    pdf.set_font("Arial", size=11)
-    pdf.multi_cell(0, 8, """
-Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
-
-Los valores de referencia considerados son:
-- Temblor Parkinsoniano: 3-6 Hz en reposo.
-- Temblor Esencial: 8-10 Hz en acción o postura.
-
-Amplitudes mayores a 0.3 cm pueden ser clínicamente relevantes.
-
-Varianza (m2/s4):
-- Normal: 0.001–0.1
-- Temblor leve: 0.1–0.5
-- Patológico: 1–10
-
-RMS (m/s2):
-- Normal: < 0.5
-- PK leve: 0.5–1.5
-- TE severo: 2–3 o más
-
-La clasificación automática es orientativa.
-    """)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(200, 10, f"Diagnóstico automático: {diagnostico_auto}", ln=True)
-
-    filename = f"{nombre_paciente}_informe_temblor.pdf"
-    pdf.output(filename)
-    return filename
-
-        # ----------- INTERFAZ STREAMLIT ------------
-
-        st.title("🧠 Análisis de Temblor")
-        st.write("Sube los tres archivos CSV correspondientes a las pruebas de Reposo, Postural y Acción.")
-
-        if all(uploaded_files.values()):
-    if st.button("Iniciar análisis"):
-        mediciones_tests = {}
-        datos_personales = None
-        resultados = []
-
-        for test, file in uploaded_files.items():
-            df = pd.read_csv(file)
-            datos_personales = df.iloc[0].to_frame().T
-            mediciones = df.iloc[1:][['Acel_X', 'Acel_Y', 'Acel_Z']].apply(pd.to_numeric, errors='coerce')
-            mediciones['Resultante'] = calcular_resultante(mediciones)
-            amplitud_media = (mediciones[['Acel_X', 'Acel_Y', 'Acel_Z']].max() - mediciones[['Acel_X', 'Acel_Y', 'Acel_Z']].min()).mean() * 9.81 * 0.5  # cm
-            analisis = analizar_temblor_resultante(mediciones['Resultante'])
-            if not analisis.empty:
-                resultado_prom = analisis.mean()
+        import streamlit as st
+        import pandas as pd
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from scipy.signal import butter, filtfilt, welch
+        from fpdf import FPDF
+        from datetime import datetime, timedelta
+        
+        # --------- Funciones auxiliares ----------
+        
+        def filtrar_temblor(signal, fs=200):
+            b, a = butter(N=4, Wn=[3, 12], btype='bandpass', fs=fs)
+            return filtfilt(b, a, signal)
+        
+        def calcular_resultante(df):
+            return np.sqrt(df['Acel_X']**2 + df['Acel_Y']**2 + df['Acel_Z']**2)
+        
+        def analizar_temblor_resultante(df, fs=200, ventana_seg=2):
+            signal = df.dropna().to_numpy()
+            signal_filtrada = filtrar_temblor(signal, fs)
+        
+            tamaño_ventana = int(fs * ventana_seg)
+            num_ventanas = len(signal_filtrada) // tamaño_ventana
+            resultados = []
+        
+            for i in range(num_ventanas):
+                segmento = signal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
+                if len(segmento) < tamaño_ventana:
+                    continue
+        
+                f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
+                freq_dominante = f[np.argmax(Pxx)]
+        
+                segmento_m_s2 = segmento * 9.81
+                varianza = np.var(segmento_m_s2)
+                rms = np.sqrt(np.mean(segmento_m_s2**2))
+        
                 resultados.append({
-                    'Test': test,
-                    'Frecuencia Dominante (Hz)': resultado_prom['Frecuencia Dominante (Hz)'],
-                    'Varianza (m2/s4)': resultado_prom['Varianza (m2/s4)'],
-                    'RMS (m/s2)': resultado_prom['RMS (m/s2)'],
-                    'Amplitud Media (cm)': amplitud_media
+                    'Frecuencia Dominante (Hz)': freq_dominante,
+                    'Varianza (m2/s4)': varianza,
+                    'RMS (m/s2)': rms,
                 })
-
-        df_resultado = pd.DataFrame(resultados)
-        crear_grafico(df_resultado, datos_personales.iloc[0]['Nombre'])
-        diag = diagnosticar(df_resultado)
-        nombre_pdf = generar_pdf(
-            datos_personales.iloc[0].get("Nombre", "No especificado"),
-            datos_personales.iloc[0].get("Apellido", "No especificado"),
-            datos_personales.iloc[0].get("Edad", "No especificado"),
-            datos_personales.iloc[0].get("Sexo", "No especificado"),
-            datos_personales.iloc[0].get("Diagnóstico", ""),
-            datos_personales.iloc[0].get("Mano", ""),
-            datos_personales.iloc[0].get("Dedo", ""),
-            diag,
-            df_resultado
-        )
-        st.success("✅ Análisis completado.")
-        with open(nombre_pdf, "rb") as f:
-            st.download_button("📄 Descargar PDF", f, file_name=nombre_pdf, mime="application/pdf")
+        
+            return pd.DataFrame(resultados)
+        
+        def diagnosticar(df_amp_freq):
+            def max_amp(test): return df_amp_freq[df_amp_freq['Test'] == test]['Amplitud Media (cm)'].max()
+            def mean_freq(test): return df_amp_freq[df_amp_freq['Test'] == test]['Frecuencia Dominante (Hz)'].mean()
+        
+            if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 7:
+                return "Probable Parkinson"
+            elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (8 <= mean_freq('Postural') <= 10 or 8 <= mean_freq('Acción') <= 10):
+                return "Probable Temblor Esencial"
+            else:
+                return "Temblor dentro de parámetros normales"
+        
+        def crear_grafico(df, nombre):
+            df.plot(x='Test', y=['Frecuencia Dominante (Hz)', 'Varianza (m2/s4)', 'RMS (m/s2)', 'Amplitud Media (cm)'],
+                    kind='bar', figsize=(10, 6))
+            plt.title(f"Resumen de Medidas - {nombre}")
+            plt.ylabel("Valor")
+            plt.xticks(rotation=0)
+            plt.tight_layout()
+            plt.savefig("grafico_resumen.png")
+            plt.close()
+        
+        def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo, diagnostico_auto, df):
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 16)
+            pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
+        
+            pdf.set_font("Arial", size=12)
+            pdf.ln(10)
+            pdf.cell(200, 10, f"Nombre: {nombre_paciente}", ln=True)
+            pdf.cell(200, 10, f"Apellido: {apellido_paciente}", ln=True)
+            pdf.cell(200, 10, f"Edad: {edad}", ln=True)
+            pdf.cell(200, 10, f"Sexo: {sexo}", ln=True)
+            pdf.cell(200, 10, f"Diagnóstico clínico: {diag_clinico or 'Sin diagnóstico previo'}", ln=True)
+            pdf.cell(200, 10, f"Mano: {mano}", ln=True)
+            pdf.cell(200, 10, f"Dedo: {dedo}", ln=True)
+            fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
+            pdf.cell(200, 10, f"Fecha y hora: {fecha_hora}", ln=True)
+        
+            pdf.ln(5)
+            pdf.image("grafico_resumen.png", x=10, w=180)
+        
+            pdf.ln(5)
+            pdf.set_font("Arial", 'B', 10)
+            pdf.cell(30, 10, "Test", 1)
+            pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+            pdf.cell(40, 10, "Varianza", 1)
+            pdf.cell(40, 10, "RMS", 1)
+            pdf.cell(40, 10, "Amplitud Media (cm)", 1)
+            pdf.ln(10)
+        
+            pdf.set_font("Arial", size=9)
+            for _, row in df.iterrows():
+                pdf.cell(30, 10, row['Test'], 1)
+                pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+                pdf.cell(40, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
+                pdf.cell(40, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+                pdf.cell(40, 10, f"{row['Amplitud Media (cm)']:.2f}", 1)
+                pdf.ln(10)
+        
+            pdf.ln(10)
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(200, 10, "Interpretación clínica:", ln=True)
+            pdf.set_font("Arial", size=11)
+            pdf.multi_cell(0, 8, """
+        Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
+        
+        Los valores de referencia considerados son:
+        - Temblor Parkinsoniano: 3-6 Hz en reposo.
+        - Temblor Esencial: 8-10 Hz en acción o postura.
+        
+        Amplitudes mayores a 0.3 cm pueden ser clínicamente relevantes.
+        
+        Varianza (m2/s4):
+        - Normal: 0.001–0.1
+        - Temblor leve: 0.1–0.5
+        - Patológico: 1–10
+        
+        RMS (m/s2):
+        - Normal: < 0.5
+        - PK leve: 0.5–1.5
+        - TE severo: 2–3 o más
+        
+        La clasificación automática es orientativa.
+            """)
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(200, 10, f"Diagnóstico automático: {diagnostico_auto}", ln=True)
+        
+            filename = f"{nombre_paciente}_informe_temblor.pdf"
+            pdf.output(filename)
+            return filename
+        
+                # ----------- INTERFAZ STREAMLIT ------------
+        
+                st.title("🧠 Análisis de Temblor")
+                st.write("Sube los tres archivos CSV correspondientes a las pruebas de Reposo, Postural y Acción.")
+        
+                if all(uploaded_files.values()):
+            if st.button("Iniciar análisis"):
+                mediciones_tests = {}
+                datos_personales = None
+                resultados = []
+        
+                for test, file in uploaded_files.items():
+                    df = pd.read_csv(file)
+                    datos_personales = df.iloc[0].to_frame().T
+                    mediciones = df.iloc[1:][['Acel_X', 'Acel_Y', 'Acel_Z']].apply(pd.to_numeric, errors='coerce')
+                    mediciones['Resultante'] = calcular_resultante(mediciones)
+                    amplitud_media = (mediciones[['Acel_X', 'Acel_Y', 'Acel_Z']].max() - mediciones[['Acel_X', 'Acel_Y', 'Acel_Z']].min()).mean() * 9.81 * 0.5  # cm
+                    analisis = analizar_temblor_resultante(mediciones['Resultante'])
+                    if not analisis.empty:
+                        resultado_prom = analisis.mean()
+                        resultados.append({
+                            'Test': test,
+                            'Frecuencia Dominante (Hz)': resultado_prom['Frecuencia Dominante (Hz)'],
+                            'Varianza (m2/s4)': resultado_prom['Varianza (m2/s4)'],
+                            'RMS (m/s2)': resultado_prom['RMS (m/s2)'],
+                            'Amplitud Media (cm)': amplitud_media
+                        })
+        
+                df_resultado = pd.DataFrame(resultados)
+                crear_grafico(df_resultado, datos_personales.iloc[0]['Nombre'])
+                diag = diagnosticar(df_resultado)
+                nombre_pdf = generar_pdf(
+                    datos_personales.iloc[0].get("Nombre", "No especificado"),
+                    datos_personales.iloc[0].get("Apellido", "No especificado"),
+                    datos_personales.iloc[0].get("Edad", "No especificado"),
+                    datos_personales.iloc[0].get("Sexo", "No especificado"),
+                    datos_personales.iloc[0].get("Diagnóstico", ""),
+                    datos_personales.iloc[0].get("Mano", ""),
+                    datos_personales.iloc[0].get("Dedo", ""),
+                    diag,
+                    df_resultado
+                )
+                st.success("✅ Análisis completado.")
+                with open(nombre_pdf, "rb") as f:
+                    st.download_button("📄 Descargar PDF", f, file_name=nombre_pdf, mime="application/pdf")
 
 
 elif opcion == "2️⃣ Comparar dos mediciones":
