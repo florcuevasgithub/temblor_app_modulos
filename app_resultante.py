@@ -128,7 +128,7 @@ if opcion == "1️⃣ Análisis de una medición":
             diag_clinico = datos_personales.iloc[0].get("Diagnostico", "No disponible")
             mano = datos_personales.iloc[0].get("Mano", "No disponible")
             dedo = datos_personales.iloc[0].get("Dedo", "No disponible")
-        generar_pdf(nombre_paciente=nombre,apellido_paciente=apellido,edad=edad,sexo=sexo,diag_clinico=diagnostico_clinico,mano=mano,dedo=dedo,diagnostico_auto=diagnostico,df=df_resultados):
+        generar_pdf(nombre_paciente,apellido_paciente,edad,sexo,mano,dedo,diagnostico,df=df_resultados):
         
             def limpiar_texto_para_pdf(texto):
                 return unicodedata.normalize("NFKD", str(texto)).encode("ASCII", "ignore").decode("ASCII")
