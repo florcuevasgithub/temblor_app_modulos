@@ -121,38 +121,30 @@ if opcion == "1️⃣ Análisis de una medición":
                 return "Probable Temblor Esencial"
             else:
                 return "Temblor dentro de parámetros normales"
-            nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
-            apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
-            edad = datos_personales.iloc[0].get("Edad", "No especificado")
-            sexo = datos_personales.iloc[0].get("Sexo", "No especificado")
-            diag_clinico = datos_personales.iloc[0].get("Diagnostico", "No disponible")
-            mano = datos_personales.iloc[0].get("Mano", "No disponible")
-            dedo = datos_personales.iloc[0].get("Dedo", "No disponible")
-        generar_pdf(nombre_paciente,apellido_paciente,edad,sexo,mano,dedo,diagnostico,df=df_resultados):
         
+       def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo, diagnostico_auto, df):
+            import unicodedata
             def limpiar_texto_para_pdf(texto):
-                return unicodedata.normalize("NFKD", str(texto)).encode("ASCII", "ignore").decode("ASCII")
-        
+                return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
             texto_clinico = diag_clinico if pd.notna(diag_clinico) and str(diag_clinico).strip() != "" else "Sin diagnóstico previo"
             fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
-        
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
         
-            # Datos personales
             pdf.set_font("Arial", size=12)
             pdf.ln(10)
-            pdf.cell(200, 10, f"Nombre: {limpiar_texto_para_pdf(nombre_paciente)}", ln=True)
-            pdf.cell(200, 10, f"Apellido: {limpiar_texto_para_pdf(apellido_paciente)}", ln=True)
+            pdf.cell(200, 10, f"Nombre: {nombre_paciente}", ln=True)
+            pdf.cell(200, 10, f"Apellido: {apellido_paciente}", ln=True)
             pdf.cell(200, 10, f"Edad: {edad}", ln=True)
-            pdf.cell(200, 10, f"Sexo: {limpiar_texto_para_pdf(sexo)}", ln=True)
-            pdf.cell(200, 10, f"Diagnóstico clínico: {limpiar_texto_para_pdf(diag_clinico)}", ln=True)
-            pdf.cell(200, 10, f"Mano: {limpiar_texto_para_pdf(mano)}", ln=True)
-            pdf.cell(200, 10, f"Dedo: {limpiar_texto_para_pdf(dedo)}", ln=True)
+            pdf.cell(200, 10, f"Sexo: {sexo}", ln=True)
+            pdf.cell(200, 10, f"Diagnóstico clínico: {texto_clinico}", ln=True)
+            pdf.cell(200, 10, f"Mano: {mano}", ln=True)
+            pdf.cell(200, 10, f"Dedo: {dedo}", ln=True)
             pdf.cell(200, 10, f"Fecha y hora: {fecha_hora}", ln=True)
         
+            pdf.ln(5)
             # Tabla de resultados
             pdf.ln(10)
             pdf.set_font("Arial", "B", 12)
@@ -171,6 +163,28 @@ if opcion == "1️⃣ Análisis de una medición":
                 pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
                 pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
                 pdf.ln(10)
+
+                    def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo, diagnostico_auto, df):
+            import unicodedata
+            def limpiar_texto_para_pdf(texto):
+                return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
+            texto_clinico = diag_clinico if pd.notna(diag_clinico) and str(diag_clinico).strip() != "" else "Sin diagnóstico previo"
+            fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 16)
+            pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
+        
+            pdf.set_font("Arial", size=12)
+            pdf.ln(10)
+            pdf.cell(200, 10, f"Nombre: {nombre_paciente}", ln=True)
+            pdf.cell(200, 10, f"Apellido: {apellido_paciente}", ln=True)
+            pdf.cell(200, 10, f"Edad: {edad}", ln=True)
+            pdf.cell(200, 10, f"Sexo: {sexo}", ln=True)
+            pdf.cell(200, 10, f"Diagnóstico clínico: {texto_clinico}", ln=True)
+            pdf.cell(200, 10, f"Mano: {mano}", ln=True)
+            pdf.cell(200, 10, f"Dedo: {dedo}", ln=True)
+            pdf.cell(200, 10, f"Fecha y hora: {fecha_hora}", ln=True)
         
             # Interpretación clínica
             pdf.ln(10)
@@ -201,8 +215,7 @@ if opcion == "1️⃣ Análisis de una medición":
         
         La clasificación automática es orientativa y debe ser evaluada por un profesional.
         """
-            texto_limpio = limpiar_texto_para_pdf(texto_original)
-            pdf.multi_cell(0, 8, texto_limpio)
+            
         
             # Diagnóstico automático
             pdf.ln(5)
@@ -240,7 +253,13 @@ if opcion == "1️⃣ Análisis de una medición":
                         'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
                         'Amplitud Temblor (cm)': round(amp_cm, 2)
                     })
-        
+                nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
+                apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
+                edad = datos_personales.iloc[0].get("Edad", "No especificado")
+                sexo = datos_personales.iloc[0].get("Sexo", "No especificado")
+                diag_clinico = datos_personales.iloc[0].get("Diagnostico", "No disponible")
+                mano = datos_personales.iloc[0].get("Mano", "No disponible")
+                dedo = datos_personales.iloc[0].get("Dedo", "No disponible")
             if resultados_globales:
                 df_resultados = pd.DataFrame(resultados_globales)
                 st.subheader("Resultados Promediados por Test")
