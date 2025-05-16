@@ -102,8 +102,24 @@ if opcion == "1️⃣ Análisis de una medición":
                 })
         
             return pd.DataFrame(resultados)
+
+        def diagnosticar(df):
+            def max_amp(test):
+                fila = df[df['Test'] == test]
+                return fila['Amplitud Temblor (cm)'].max() if not fila.empty else 0
         
-        def generar_pdf(df, nombre_archivo="informe_temblor.pdf"):
+            def mean_freq(test):
+                fila = df[df['Test'] == test]
+                return fila['Frecuencia Dominante (Hz)'].mean() if not fila.empty else 0
+        
+            if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 7:
+                return "Probable Parkinson"
+            elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (8 <= mean_freq('Postural') <= 10 or 8 <= mean_freq('Acción') <= 10):
+                return "Probable Temblor Esencial"
+            else:
+                return "Temblor dentro de parámetros normales"
+        
+        def generar_pdf(df, nombre_archivo="informe_temblor.pdf", diagnostico=""):
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", "B", 16)
@@ -125,6 +141,13 @@ if opcion == "1️⃣ Análisis de una medición":
                 pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
                 pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
                 pdf.ln(10)
+        
+            if diagnostico:
+                pdf.ln(10)
+                pdf.set_font("Arial", "B", 12)
+                pdf.cell(0, 10, "Diagnóstico:", ln=True)
+                pdf.set_font("Arial", "", 12)
+                pdf.multi_cell(0, 10, diagnostico)
         
             pdf.output(nombre_archivo)
         
@@ -160,8 +183,11 @@ if opcion == "1️⃣ Análisis de una medición":
                 df_resultados = pd.DataFrame(resultados_globales)
                 st.subheader("Resultados Promediados por Test")
                 st.dataframe(df_resultados)
+                diagnostico = diagnosticar(df_resultados)
+                st.subheader("Diagnóstico")
+                st.write(diagnostico)
         
-                generar_pdf(df_resultados)
+                generar_pdf(df_resultados, diagnostico=diagnostico)
                 with open("informe_temblor.pdf", "rb") as file:
                     st.download_button(
                         label="📄 Descargar Informe PDF",
