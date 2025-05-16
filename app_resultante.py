@@ -147,14 +147,10 @@ if opcion == "1️⃣ Análisis de una medición":
                 pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
                 pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
                 pdf.ln(10)
-            if diagnostico:
-                    pdf.ln(10)
-                    pdf.set_font("Arial", "B", 12)
-                    pdf.cell(0, 10, "Diagnóstico automático:", ln=True)
-                    pdf.set_font("Arial", "", 12)
-                    pdf.multi_cell(0, 10, diagnostico)
 
 
+            def limpiar_texto_para_pdf(texto):
+                return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
             pdf.ln(10)
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(200, 10, "Interpretación clínica:", ln=True)
@@ -187,7 +183,14 @@ if opcion == "1️⃣ Análisis de una medición":
             texto_limpio = limpiar_texto_para_pdf(texto_original)
             pdf.multi_cell(0, 8, texto_limpio)
             pdf.set_font("Arial", 'B', 12)
-            
+
+            if diagnostico:
+                    pdf.ln(10)
+                    pdf.set_font("Arial", "B", 12)
+                    pdf.cell(0, 10, "Diagnóstico automático:", ln=True)
+                    pdf.set_font("Arial", "", 12)
+                    pdf.multi_cell(0, 10, diagnostico)
+                    
             pdf.output(nombre_archivo)
         
         
