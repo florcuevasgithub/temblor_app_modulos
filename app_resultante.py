@@ -260,4 +260,4 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             st.success(f"La mejor configuración en base a menor RMS promedio es: {mejor}")
 
             with open("comparacion_temblor.png", "rb") as f:
-                st.download_button("📈 Descargar gráfico de comparación", f, file_name="comparacion_temblor.png"
+                st.download_button("📈 Descargar gráfico de comparación", f, file_name="comparacion_temblor.png")
