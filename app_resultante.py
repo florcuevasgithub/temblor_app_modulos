@@ -177,7 +177,6 @@ if opcion == "1️⃣ Análisis de una medición":
                         
                         La clasificación automática es orientativa y debe ser evaluada por un profesional.
                         """      
-                texto_limpio = limpiar_texto_para_pdf(texto_original)
                 pdf.multi_cell(0, 8, texto_limpio)
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(200, 10, f"Diagnóstico automático: {diagnostico_auto}", ln=True)
