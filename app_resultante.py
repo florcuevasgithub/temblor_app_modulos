@@ -11,6 +11,9 @@ from datetime import datetime, timedelta
 import os
 import streamlit as st
 from scipy.fft import fft, fftfreq
+import unicodedata
+from fpdf import FPDF
+            
         
       
         
@@ -119,11 +122,35 @@ if opcion == "1️⃣ Análisis de una medición":
             else:
                 return "Temblor dentro de parámetros normales"
         
-        def generar_pdf(df, nombre_archivo="informe_temblor.pdf", diagnostico=""):
+        def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo, diagnostico_auto, df):
+            import unicodedata
+            from fpdf import FPDF
+            from datetime import datetime, timedelta
+        
+            def limpiar_texto_para_pdf(texto):
+                return unicodedata.normalize("NFKD", str(texto)).encode("ASCII", "ignore").decode("ASCII")
+        
+            texto_clinico = diag_clinico if pd.notna(diag_clinico) and str(diag_clinico).strip() != "" else "Sin diagnóstico previo"
+            fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
+        
             pdf = FPDF()
             pdf.add_page()
-            pdf.set_font("Arial", "B", 16)
-            pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align="C")
+            pdf.set_font("Arial", 'B', 16)
+            pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
+        
+            # Datos personales
+            pdf.set_font("Arial", size=12)
+            pdf.ln(10)
+            pdf.cell(200, 10, f"Nombre: {limpiar_texto_para_pdf(nombre_paciente)}", ln=True)
+            pdf.cell(200, 10, f"Apellido: {limpiar_texto_para_pdf(apellido_paciente)}", ln=True)
+            pdf.cell(200, 10, f"Edad: {edad}", ln=True)
+            pdf.cell(200, 10, f"Sexo: {limpiar_texto_para_pdf(sexo)}", ln=True)
+            pdf.cell(200, 10, f"Diagnóstico clínico: {limpiar_texto_para_pdf(texto_clinico)}", ln=True)
+            pdf.cell(200, 10, f"Mano: {limpiar_texto_para_pdf(mano)}", ln=True)
+            pdf.cell(200, 10, f"Dedo: {limpiar_texto_para_pdf(dedo)}", ln=True)
+            pdf.cell(200, 10, f"Fecha y hora: {fecha_hora}", ln=True)
+        
+            # Tabla de resultados
             pdf.ln(10)
             pdf.set_font("Arial", "B", 12)
             pdf.cell(30, 10, "Test", 1)
@@ -142,45 +169,46 @@ if opcion == "1️⃣ Análisis de una medición":
                 pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
                 pdf.ln(10)
         
-            if diagnostico:
-                pdf.ln(10)
-                pdf.set_font("Arial", "B", 12)
-                pdf.cell(0, 10, "Diagnóstico:", ln=True)
-                pdf.set_font("Arial", "", 12)
-                pdf.multi_cell(0, 10, diagnostico)
-
-                pdf.ln(10)
-                pdf.set_font("Arial", 'B', 12)
-                pdf.cell(200, 10, "Interpretación clínica:", ln=True)
-                pdf.set_font("Arial", size=11)
-                texto_original = """
-                        Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
-                        
-                        Los valores de referencia considerados son:
-                          Para las frecuencias (Hz):
-                        - Temblor Parkinsoniano: 3-6 Hz en reposo.
-                        - Temblor Esencial: 8-10 Hz en acción o postura.
-                        
-                          Para las amplitudes:
-                        - Mayores a 0.3 cm pueden ser clínicamente relevantes.
-                        
-                          Para la varianza (m2/s4):
-                        Representa la dispersión de la señal. En el contexto de temblores:
-                        - Normal/sano: muy baja, puede estar entre 0.001 – 0.1 m2/s4.
-                        - Temblor leve: entre 0.1 – 0.5 m2/s4.
-                        - Temblor patológico (PK o TE): suele superar 1.0 m2/s4, llegando hasta 5–10 m2/s4 en casos severos.
-                        
-                          Para el RMS (m/s2):
-                        - Normal/sano: menor a 0.5 m/s2.
-                        - PK leve: entre 0.5 y 1.5 m/s2.
-                        - TE o PK severo: puede llegar a 2–3 m/s2 o más.
-                        
-                        La clasificación automática es orientativa y debe ser evaluada por un profesional.
-                        """      
-                pdf.multi_cell(0, 8, texto_limpio)
-                pdf.set_font("Arial", 'B', 12)
-                pdf.cell(200, 10, f"Diagnóstico automático: {diagnostico_auto}", ln=True)
-                pdf.output(nombre_archivo)
+            # Interpretación clínica
+            pdf.ln(10)
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(200, 10, "Interpretación clínica:", ln=True)
+            pdf.set_font("Arial", size=11)
+            texto_original = """
+        Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
+        
+        Los valores de referencia considerados son:
+          Para las frecuencias (Hz):
+        - Temblor Parkinsoniano: 3-6 Hz en reposo.
+        - Temblor Esencial: 8-10 Hz en acción o postura.
+        
+          Para las amplitudes:
+        - Mayores a 0.3 cm pueden ser clínicamente relevantes.
+        
+          Para la varianza (m2/s4):
+        Representa la dispersión de la señal. En el contexto de temblores:
+        - Normal/sano: muy baja, puede estar entre 0.001 – 0.1 m2/s4.
+        - Temblor leve: entre 0.1 – 0.5 m2/s4.
+        - Temblor patológico (PK o TE): suele superar 1.0 m2/s4, llegando hasta 5–10 m2/s4 en casos severos.
+        
+          Para el RMS (m/s2):
+        - Normal/sano: menor a 0.5 m/s2.
+        - PK leve: entre 0.5 y 1.5 m/s2.
+        - TE o PK severo: puede llegar a 2–3 m/s2 o más.
+        
+        La clasificación automática es orientativa y debe ser evaluada por un profesional.
+        """
+            texto_limpio = limpiar_texto_para_pdf(texto_original)
+            pdf.multi_cell(0, 8, texto_limpio)
+        
+            # Diagnóstico automático
+            pdf.ln(5)
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(200, 10, f"Diagnóstico automático: {limpiar_texto_para_pdf(diagnostico_auto)}", ln=True)
+        
+            filename = f"{nombre_paciente}_informe_temblor.pdf"
+            pdf.output(filename)
+            return filename
         
         st.title("Análisis de Temblor - Aceleración Resultante (Modo 1)")
         
