@@ -122,10 +122,17 @@ if opcion == "1️⃣ Análisis de una medición":
             else:
                 return "Temblor dentro de parámetros normales"
         
-        def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo, diagnostico_auto, df):
-            import unicodedata
-            from fpdf import FPDF
-            from datetime import datetime, timedelta
+        generar_pdf(
+                nombre_paciente=nombre,
+                apellido_paciente=apellido,
+                edad=edad,
+                sexo=sexo,
+                diag_clinico=diagnostico_clinico,
+                mano=mano,
+                dedo=dedo,
+                diagnostico_auto=diagnostico,
+                df=df_resultados
+            ):
         
             def limpiar_texto_para_pdf(texto):
                 return unicodedata.normalize("NFKD", str(texto)).encode("ASCII", "ignore").decode("ASCII")
