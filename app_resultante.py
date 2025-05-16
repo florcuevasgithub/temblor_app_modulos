@@ -122,7 +122,7 @@ if opcion == "1️⃣ Análisis de una medición":
             else:
                 return "Temblor dentro de parámetros normales"
             
-        generar_pdf(df_resultados, diagnostico=diagnostico):
+        def generar_pdf(df, nombre_archivo="informe_temblor.pdf", diagnostico=""):
         
             pdf = FPDF()
             pdf.add_page()
