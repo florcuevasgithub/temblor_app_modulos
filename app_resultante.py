@@ -121,30 +121,14 @@ if opcion == "1️⃣ Análisis de una medición":
                 return "Probable Temblor Esencial"
             else:
                 return "Temblor dentro de parámetros normales"
+            
+        generar_pdf(df_resultados, diagnostico=diagnostico):
         
-       def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo, diagnostico_auto, df):
-            import unicodedata
-            def limpiar_texto_para_pdf(texto):
-                return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
-            texto_clinico = diag_clinico if pd.notna(diag_clinico) and str(diag_clinico).strip() != "" else "Sin diagnóstico previo"
-            fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
         
-            pdf.set_font("Arial", size=12)
-            pdf.ln(10)
-            pdf.cell(200, 10, f"Nombre: {nombre_paciente}", ln=True)
-            pdf.cell(200, 10, f"Apellido: {apellido_paciente}", ln=True)
-            pdf.cell(200, 10, f"Edad: {edad}", ln=True)
-            pdf.cell(200, 10, f"Sexo: {sexo}", ln=True)
-            pdf.cell(200, 10, f"Diagnóstico clínico: {texto_clinico}", ln=True)
-            pdf.cell(200, 10, f"Mano: {mano}", ln=True)
-            pdf.cell(200, 10, f"Dedo: {dedo}", ln=True)
-            pdf.cell(200, 10, f"Fecha y hora: {fecha_hora}", ln=True)
-        
-            pdf.ln(5)
             # Tabla de resultados
             pdf.ln(10)
             pdf.set_font("Arial", "B", 12)
@@ -163,70 +147,18 @@ if opcion == "1️⃣ Análisis de una medición":
                 pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
                 pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
                 pdf.ln(10)
-
-                    def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo, diagnostico_auto, df):
-            import unicodedata
-            def limpiar_texto_para_pdf(texto):
-                return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
-            texto_clinico = diag_clinico if pd.notna(diag_clinico) and str(diag_clinico).strip() != "" else "Sin diagnóstico previo"
-            fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", 'B', 16)
-            pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
-        
-            pdf.set_font("Arial", size=12)
-            pdf.ln(10)
-            pdf.cell(200, 10, f"Nombre: {nombre_paciente}", ln=True)
-            pdf.cell(200, 10, f"Apellido: {apellido_paciente}", ln=True)
-            pdf.cell(200, 10, f"Edad: {edad}", ln=True)
-            pdf.cell(200, 10, f"Sexo: {sexo}", ln=True)
-            pdf.cell(200, 10, f"Diagnóstico clínico: {texto_clinico}", ln=True)
-            pdf.cell(200, 10, f"Mano: {mano}", ln=True)
-            pdf.cell(200, 10, f"Dedo: {dedo}", ln=True)
-            pdf.cell(200, 10, f"Fecha y hora: {fecha_hora}", ln=True)
-        
-            # Interpretación clínica
-            pdf.ln(10)
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(200, 10, "Interpretación clínica:", ln=True)
-            pdf.set_font("Arial", size=11)
-            texto_original = """
-        Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
-        
-        Los valores de referencia considerados son:
-          Para las frecuencias (Hz):
-        - Temblor Parkinsoniano: 3-6 Hz en reposo.
-        - Temblor Esencial: 8-10 Hz en acción o postura.
-        
-          Para las amplitudes:
-        - Mayores a 0.3 cm pueden ser clínicamente relevantes.
-        
-          Para la varianza (m2/s4):
-        Representa la dispersión de la señal. En el contexto de temblores:
-        - Normal/sano: muy baja, puede estar entre 0.001 – 0.1 m2/s4.
-        - Temblor leve: entre 0.1 – 0.5 m2/s4.
-        - Temblor patológico (PK o TE): suele superar 1.0 m2/s4, llegando hasta 5–10 m2/s4 en casos severos.
-        
-          Para el RMS (m/s2):
-        - Normal/sano: menor a 0.5 m/s2.
-        - PK leve: entre 0.5 y 1.5 m/s2.
-        - TE o PK severo: puede llegar a 2–3 m/s2 o más.
-        
-        La clasificación automática es orientativa y debe ser evaluada por un profesional.
-        """
+            if diagnostico:
+                    pdf.ln(10)
+                    pdf.set_font("Arial", "B", 12)
+                    pdf.cell(0, 10, "Diagnóstico automático:", ln=True)
+                    pdf.set_font("Arial", "", 12)
+                    pdf.multi_cell(0, 10, diagnostico)
             
+            pdf.output(nombre_archivo)
         
-            # Diagnóstico automático
-            pdf.ln(5)
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(200, 10, f"Diagnóstico automático: {limpiar_texto_para_pdf(diagnostico_auto)}", ln=True)
         
-            filename = f"{nombre_paciente}_informe_temblor.pdf"
-            pdf.output(filename)
-            return filename
         
-        st.title("Análisis de Temblor - Aceleración Resultante (Modo 1)")
+        st.title("Análisis de una medicion")
         
         uploaded_files = {
             "Reposo": st.file_uploader("Subir archivo CSV para prueba en reposo", type=["csv"], key="reposo"),
@@ -253,13 +185,7 @@ if opcion == "1️⃣ Análisis de una medición":
                         'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
                         'Amplitud Temblor (cm)': round(amp_cm, 2)
                     })
-                nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
-                apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
-                edad = datos_personales.iloc[0].get("Edad", "No especificado")
-                sexo = datos_personales.iloc[0].get("Sexo", "No especificado")
-                diag_clinico = datos_personales.iloc[0].get("Diagnostico", "No disponible")
-                mano = datos_personales.iloc[0].get("Mano", "No disponible")
-                dedo = datos_personales.iloc[0].get("Dedo", "No disponible")
+        
             if resultados_globales:
                 df_resultados = pd.DataFrame(resultados_globales)
                 st.subheader("Resultados Promediados por Test")
@@ -334,4 +260,4 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             st.success(f"La mejor configuración en base a menor RMS promedio es: {mejor}")
 
             with open("comparacion_temblor.png", "rb") as f:
-                st.download_button("📈 Descargar gráfico de comparación", f, file_name="comparacion_temblor.png")
+                st.download_button("📈 Descargar gráfico de comparación", f, file_name="comparacion_temblor.png"
