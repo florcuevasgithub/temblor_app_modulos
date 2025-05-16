@@ -65,113 +65,113 @@ if opcion == "1️⃣ Análisis de una medición":
         # -*- coding: utf-8 -*-
        
         # --------- Funciones auxiliares ----------
-def filtrar_temblor(senal, fs, lowcut=2, highcut=20, order=4):
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    b, a = butter(order, [low, high], btype='band')
-    return filtfilt(b, a, senal)
-
-def analizar_temblor_por_ventanas_resultante(df, fs=50, ventana_seg=2):
-    df = df[['Acel_X', 'Acel_Y', 'Acel_Z']].dropna()
-    ax = df['Acel_X'].to_numpy()
-    ay = df['Acel_Y'].to_numpy()
-    az = df['Acel_Z'].to_numpy()
-    resultante = np.sqrt(ax**2 + ay**2 + az**2)
-
-    señal_filtrada = filtrar_temblor(resultante, fs)
-
-    tamaño_ventana = int(fs * ventana_seg)
-    num_ventanas = len(señal_filtrada) // tamaño_ventana
-    resultados = []
-
-    for i in range(num_ventanas):
-        segmento = señal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
-        if len(segmento) < tamaño_ventana:
-            continue
-        f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
-        freq_dominante = f[np.argmax(Pxx)]
-        varianza = np.var(segmento)
-        rms = np.sqrt(np.mean(segmento**2))
-        amplitud = np.max(segmento) - np.min(segmento)
-        resultados.append({
-            'Frecuencia Dominante (Hz)': freq_dominante,
-            'Varianza (m2/s4)': varianza,
-            'RMS (m/s2)': rms,
-            'Amplitud Temblor (g)': amplitud
-        })
-
-    return pd.DataFrame(resultados)
-
-def generar_pdf(df, nombre_archivo="informe_temblor.pdf"):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align="C")
-    pdf.ln(10)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(30, 10, "Test", 1)
-    pdf.cell(40, 10, "Frecuencia (Hz)", 1)
-    pdf.cell(30, 10, "Varianza", 1)
-    pdf.cell(30, 10, "RMS", 1)
-    pdf.cell(50, 10, "Amplitud (cm)", 1)
-    pdf.ln(10)
-
-    pdf.set_font("Arial", "", 12)
-    for _, row in df.iterrows():
-        pdf.cell(30, 10, row['Test'], 1)
-        pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
-        pdf.cell(30, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
-        pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
-        pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
-        pdf.ln(10)
-
-    pdf.output(nombre_archivo)
-
-st.title("Análisis de Temblor - Aceleración Resultante (Modo 1)")
-
-uploaded_files = {
-    "Reposo": st.file_uploader("Subir archivo CSV para prueba en reposo", type=["csv"], key="reposo"),
-    "Postural": st.file_uploader("Subir archivo CSV para prueba postural", type=["csv"], key="postural"),
-    "Acción": st.file_uploader("Subir archivo CSV para prueba en acción", type=["csv"], key="accion"),
-}
-
-if st.button("Iniciar análisis"):
-    resultados_globales = []
-    mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
-
-    for test, datos in mediciones_tests.items():
-        df_ventana = analizar_temblor_por_ventanas_resultante(datos, fs=50)
-        if not df_ventana.empty:
-            prom = df_ventana.mean(numeric_only=True)
-            freq = prom['Frecuencia Dominante (Hz)']
-            amp_g = prom['Amplitud Temblor (g)']
-            amp_cm = (amp_g * 981) / ((2 * np.pi * freq) ** 2) if freq > 0 else 0.0
-
-            resultados_globales.append({
-                'Test': test,
-                'Frecuencia Dominante (Hz)': round(freq, 2),
-                'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
-                'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
-                'Amplitud Temblor (cm)': round(amp_cm, 2)
-            })
-
-    if resultados_globales:
-        df_resultados = pd.DataFrame(resultados_globales)
-        st.subheader("Resultados Promediados por Test")
-        st.dataframe(df_resultados)
-
-        generar_pdf(df_resultados)
-        with open("informe_temblor.pdf", "rb") as file:
-            st.download_button(
-                label="📄 Descargar Informe PDF",
-                data=file,
-                file_name="informe_temblor.pdf",
-                mime="application/pdf"
-            )
-    else:
-        st.warning("No se encontraron datos suficientes para el análisis.")
-            
+        def filtrar_temblor(senal, fs, lowcut=2, highcut=20, order=4):
+            nyq = 0.5 * fs
+            low = lowcut / nyq
+            high = highcut / nyq
+            b, a = butter(order, [low, high], btype='band')
+            return filtfilt(b, a, senal)
+        
+        def analizar_temblor_por_ventanas_resultante(df, fs=50, ventana_seg=2):
+            df = df[['Acel_X', 'Acel_Y', 'Acel_Z']].dropna()
+            ax = df['Acel_X'].to_numpy()
+            ay = df['Acel_Y'].to_numpy()
+            az = df['Acel_Z'].to_numpy()
+            resultante = np.sqrt(ax**2 + ay**2 + az**2)
+        
+            señal_filtrada = filtrar_temblor(resultante, fs)
+        
+            tamaño_ventana = int(fs * ventana_seg)
+            num_ventanas = len(señal_filtrada) // tamaño_ventana
+            resultados = []
+        
+            for i in range(num_ventanas):
+                segmento = señal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
+                if len(segmento) < tamaño_ventana:
+                    continue
+                f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
+                freq_dominante = f[np.argmax(Pxx)]
+                varianza = np.var(segmento)
+                rms = np.sqrt(np.mean(segmento**2))
+                amplitud = np.max(segmento) - np.min(segmento)
+                resultados.append({
+                    'Frecuencia Dominante (Hz)': freq_dominante,
+                    'Varianza (m2/s4)': varianza,
+                    'RMS (m/s2)': rms,
+                    'Amplitud Temblor (g)': amplitud
+                })
+        
+            return pd.DataFrame(resultados)
+        
+        def generar_pdf(df, nombre_archivo="informe_temblor.pdf"):
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", "B", 16)
+            pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align="C")
+            pdf.ln(10)
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(30, 10, "Test", 1)
+            pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+            pdf.cell(30, 10, "Varianza", 1)
+            pdf.cell(30, 10, "RMS", 1)
+            pdf.cell(50, 10, "Amplitud (cm)", 1)
+            pdf.ln(10)
+        
+            pdf.set_font("Arial", "", 12)
+            for _, row in df.iterrows():
+                pdf.cell(30, 10, row['Test'], 1)
+                pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+                pdf.cell(30, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
+                pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+                pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+                pdf.ln(10)
+        
+            pdf.output(nombre_archivo)
+        
+        st.title("Análisis de Temblor - Aceleración Resultante (Modo 1)")
+        
+        uploaded_files = {
+            "Reposo": st.file_uploader("Subir archivo CSV para prueba en reposo", type=["csv"], key="reposo"),
+            "Postural": st.file_uploader("Subir archivo CSV para prueba postural", type=["csv"], key="postural"),
+            "Acción": st.file_uploader("Subir archivo CSV para prueba en acción", type=["csv"], key="accion"),
+        }
+        
+        if st.button("Iniciar análisis"):
+            resultados_globales = []
+            mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
+        
+            for test, datos in mediciones_tests.items():
+                df_ventana = analizar_temblor_por_ventanas_resultante(datos, fs=50)
+                if not df_ventana.empty:
+                    prom = df_ventana.mean(numeric_only=True)
+                    freq = prom['Frecuencia Dominante (Hz)']
+                    amp_g = prom['Amplitud Temblor (g)']
+                    amp_cm = (amp_g * 981) / ((2 * np.pi * freq) ** 2) if freq > 0 else 0.0
+        
+                    resultados_globales.append({
+                        'Test': test,
+                        'Frecuencia Dominante (Hz)': round(freq, 2),
+                        'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
+                        'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
+                        'Amplitud Temblor (cm)': round(amp_cm, 2)
+                    })
+        
+            if resultados_globales:
+                df_resultados = pd.DataFrame(resultados_globales)
+                st.subheader("Resultados Promediados por Test")
+                st.dataframe(df_resultados)
+        
+                generar_pdf(df_resultados)
+                with open("informe_temblor.pdf", "rb") as file:
+                    st.download_button(
+                        label="📄 Descargar Informe PDF",
+                        data=file,
+                        file_name="informe_temblor.pdf",
+                        mime="application/pdf"
+                    )
+            else:
+                st.warning("No se encontraron datos suficientes para el análisis.")
+                    
 
 elif opcion == "2️⃣ Comparar dos mediciones":
     st.title("📊 Comparar dos mediciones")
