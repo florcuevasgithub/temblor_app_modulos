@@ -121,7 +121,13 @@ if opcion == "1️⃣ Análisis de una medición":
                 return "Probable Temblor Esencial"
             else:
                 return "Temblor dentro de parámetros normales"
-        
+            nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
+            apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
+            edad = datos_personales.iloc[0].get("Edad", "No especificado")
+            sexo = datos_personales.iloc[0].get("Sexo", "No especificado")
+            diag_clinico = datos_personales.iloc[0].get("Diagnostico", "No disponible")
+            mano = datos_personales.iloc[0].get("Mano", "No disponible")
+            dedo = datos_personales.iloc[0].get("Dedo", "No disponible")
         generar_pdf(
                 nombre_paciente=nombre,
                 apellido_paciente=apellido,
@@ -152,7 +158,7 @@ if opcion == "1️⃣ Análisis de una medición":
             pdf.cell(200, 10, f"Apellido: {limpiar_texto_para_pdf(apellido_paciente)}", ln=True)
             pdf.cell(200, 10, f"Edad: {edad}", ln=True)
             pdf.cell(200, 10, f"Sexo: {limpiar_texto_para_pdf(sexo)}", ln=True)
-            pdf.cell(200, 10, f"Diagnóstico clínico: {limpiar_texto_para_pdf(texto_clinico)}", ln=True)
+            pdf.cell(200, 10, f"Diagnóstico clínico: {limpiar_texto_para_pdf(diag_clinico)}", ln=True)
             pdf.cell(200, 10, f"Mano: {limpiar_texto_para_pdf(mano)}", ln=True)
             pdf.cell(200, 10, f"Dedo: {limpiar_texto_para_pdf(dedo)}", ln=True)
             pdf.cell(200, 10, f"Fecha y hora: {fecha_hora}", ln=True)
