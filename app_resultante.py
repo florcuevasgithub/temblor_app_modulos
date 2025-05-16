@@ -75,7 +75,7 @@ if opcion == "1️⃣ Análisis de una medición":
             b, a = butter(order, [low, high], btype='band')
             return filtfilt(b, a, senal)
         
-        def analizar_temblor_por_ventanas_resultante(df, fs=50, ventana_seg=2):
+        def analizar_temblor_por_ventanas_resultante(df, fs=200, ventana_seg=2):
             df = df[['Acel_X', 'Acel_Y', 'Acel_Z']].dropna()
             ax = df['Acel_X'].to_numpy()
             ay = df['Acel_Y'].to_numpy()
@@ -96,14 +96,16 @@ if opcion == "1️⃣ Análisis de una medición":
                 freq_dominante = f[np.argmax(Pxx)]
                 varianza = np.var(segmento)
                 rms = np.sqrt(np.mean(segmento**2))
-                amplitud = np.max(segmento) - np.min(segmento)
+                amp_g = np.max(segmento) - np.min(segmento)
+                amp_cm = (amp_g * 981) / ((2 * np.pi * freq_dominante) ** 2) if freq_dominante > 0 else 0.0
+                
                 resultados.append({
                     'Frecuencia Dominante (Hz)': freq_dominante,
                     'Varianza (m2/s4)': varianza,
                     'RMS (m/s2)': rms,
-                    'Amplitud Temblor (g)': amplitud
+                    'Amplitud Temblor (cm)': amp_cm
                 })
-        
+
             return pd.DataFrame(resultados)
 
         def diagnosticar(df):
@@ -208,7 +210,7 @@ if opcion == "1️⃣ Análisis de una medición":
             mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
         
             for test, datos in mediciones_tests.items():
-                df_ventana = analizar_temblor_por_ventanas_resultante(datos, fs=50)
+                df_ventana = analizar_temblor_por_ventanas_resultante(datos, fs=200)
                 if not df_ventana.empty:
                     prom = df_ventana.mean(numeric_only=True)
                     freq = prom['Frecuencia Dominante (Hz)']
