@@ -103,6 +103,7 @@ if opcion == "1️⃣ Análisis de una medición":
                     'Frecuencia Dominante (Hz)': freq_dominante,
                     'Varianza (m2/s4)': varianza,
                     'RMS (m/s2)': rms,
+                    'Amplitud Temblor (g)': amp_g,
                     'Amplitud Temblor (cm)': amp_cm
                 })
 
