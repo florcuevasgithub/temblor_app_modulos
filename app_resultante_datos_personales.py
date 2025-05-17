@@ -223,10 +223,10 @@ if opcion == "1️⃣ Análisis de una medición":
                     pdf.set_font("Arial", "B", 12)
                     pdf.cell(0, 10, "Diagnóstico automático:", ln=True)
                     pdf.set_font("Arial", "", 12)
-                    pdf.cell(0, 10, "La clasificacion automatica es orientativa y debe ser evaluada por un profesional.", ln=True
+                    pdf.cell(0, 10, "La clasificacion automatica es orientativa y debe ser evaluada por un profesional.", ln=True)
                     pdf.set_font("Arial", "", 10)
                     pdf.multi_cell(0, 10, diagnostico)
-                    )
+                    
             pdf.output(nombre_archivo)
 
 
