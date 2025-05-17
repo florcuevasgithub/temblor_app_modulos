@@ -147,7 +147,12 @@ if opcion == "1️⃣ Análisis de una medición":
             pdf.ln(10)
             pdf.cell(200, 10, f"Nombre: {nombre_paciente}", ln=True)
             pdf.cell(200, 10, f"Apellido: {apellido_paciente}", ln=True)
-            pdf.cell(200, 10, f"Edad: {edad}", ln=True)
+            try:
+                edad_int = int(float(edad))  # por si viene como float
+                edad_str = str(edad_int)
+            except:
+                edad_str = "No especificado"
+            pdf.cell(200, 10, f"Edad: {edad_str}", ln=True)
             pdf.cell(200, 10, f"Sexo: {sexo}", ln=True)
             pdf.cell(200, 10, f"Diagnóstico clínico: {texto_clinico}", ln=True)
             pdf.cell(200, 10, f"Mano: {mano}", ln=True)
