@@ -62,7 +62,7 @@ def analizar_temblor_por_ventanas_resultante(df, fs=200, ventana_seg=2):
 # ------------------ Modo principal --------------------
 
 st.title("🧠 Análisis de Temblor")
-opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos configuraciones de estimulacións"])
+opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos configuraciones de estimulación"])
 
 if opcion == "1️⃣ Análisis de una medición":
         # -*- coding: utf-8 -*-
