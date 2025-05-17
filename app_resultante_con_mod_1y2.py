@@ -284,15 +284,18 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
 
                     # Extraer datos personales una vez desde Config 1
                     if datos_personales is None and config_num == 1:
-                        datos_personales = extraer_datos_personales(df1)
-                        estimulacion1 = extraer_parametros_estim(df1)
-                        estimulacion2 = extraer_parametros_estim(df2)
-
+                            datos_personales = extraer_datos_personales(df)
+                            estimulacion1 = extraer_parametros_estim(df)
+                                
                     # Extraer parámetros por configuración (una sola vez)
                     if config_num == 1 and not parametros_config1:
-                        parametros_config1 = extraer_parametros_estim(df)
+                            parametros_config1 = extraer_parametros_estim(df)
                     elif config_num == 2 and not parametros_config2:
-                        parametros_config2 = extraer_parametros_estim(df)
+                            parametros_config2 = extraer_parametros_estim(df)
+                            if 'estimulacion2' not in locals():
+                                estimulacion2 = extraer_parametros_estim(df)
+
+                    
 
                     # Filtrar y calcular métricas
                     df_filtrado = filtrar_senal(df)
