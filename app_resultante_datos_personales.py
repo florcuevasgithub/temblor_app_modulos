@@ -127,9 +127,9 @@ if opcion == "1️⃣ Análisis de una medición":
                 fila = df[df['Test'] == test]
                 return fila['Frecuencia Dominante (Hz)'].mean() if not fila.empty else 0
 
-            if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 8:
+            if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 6.5:
                 return "Probable Parkinson"
-            elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (8 <= mean_freq('Postural') <= 12 or 8 <= mean_freq('Acción') <= 12):
+            elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (7.5 <= mean_freq('Postural') <= 12 or 7.5 <= mean_freq('Acción') <= 12):
                 return "Probable Temblor Esencial"
             else:
                 return "Temblor dentro de parámetros normales"
@@ -197,7 +197,7 @@ if opcion == "1️⃣ Análisis de una medición":
         - Temblor Esencial: 8-10 Hz en acción o postura.
 
           Para las amplitudes:
-        - Mayores a 0.3 cm pueden ser clínicamente relevantes.
+        - Mayores a 0.5 cm pueden ser clínicamente relevantes.
 
           Para la varianza (m2/s4):
         Representa la dispersión de la señal. En el contexto de temblores:
@@ -208,9 +208,10 @@ if opcion == "1️⃣ Análisis de una medición":
           Para el RMS (m/s2):
         - Normal/sano: menor a 0.5 m/s2.
         - PK leve: entre 0.5 y 1.5 m/s2.
-        - TE o PK severo: puede llegar a 2–3 m/s2 o más.
+        - TE o PK severo: mayor a 2 m/s2.
 
-        La clasificación automática es orientativa y debe ser evaluada por un profesional.
+        Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica. 
+        
         """
 
             texto_limpio = limpiar_texto_para_pdf(texto_original)
@@ -223,7 +224,9 @@ if opcion == "1️⃣ Análisis de una medición":
                     pdf.cell(0, 10, "Diagnóstico automático:", ln=True)
                     pdf.set_font("Arial", "", 12)
                     pdf.multi_cell(0, 10, diagnostico)
-
+                    pdf.ln(10)
+                    pdf.set_font("Arial", "B", 12)
+                    pdf.cell(0, 10, "La clasificacion automatica es orientativa y debe ser evaluada por un profesional.", ln=True)
             pdf.output(nombre_archivo)
 
 
