@@ -267,7 +267,8 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
         resultados_config2 = []
 
         datos_personales = None
-        parametros_estim = {}
+        parametros_config1 = {}
+        parametros_config2 = {}
 
         for config_num, archivos in zip([1, 2], [config1_archivos, config2_archivos]):
             resultados = []
@@ -276,10 +277,15 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                 if archivo is not None:
                     df = pd.read_csv(archivo)
 
-                    # Extraer datos personales y parámetros si es el primer archivo
+                    # Extraer datos personales una vez desde Config 1
                     if datos_personales is None and config_num == 1:
                         datos_personales = extraer_datos_personales(df)
-                        parametros_estim = extraer_parametros_estim(df)
+
+                    # Extraer parámetros por configuración (una sola vez)
+                    if config_num == 1 and not parametros_config1:
+                        parametros_config1 = extraer_parametros_estim(df)
+                    elif config_num == 2 and not parametros_config2:
+                        parametros_config2 = extraer_parametros_estim(df)
 
                     # Filtrar y calcular métricas
                     df_filtrado = filtrar_senal(df)
@@ -320,14 +326,19 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             st.markdown("### Resultados - Configuración 2")
             st.dataframe(df2)
 
-            # Diagnóstico comparativo
+            # Diagnóstico comparativo por promedio general
             promedio1 = df1[["Frecuencia Dominante (Hz)", "Varianza (m2/s4)", "RMS (m/s2)", "Amplitud Temblor (cm)"]].mean()
             promedio2 = df2[["Frecuencia Dominante (Hz)", "Varianza (m2/s4)", "RMS (m/s2)", "Amplitud Temblor (cm)"]].mean()
 
-            # Evaluar cuál es mejor (menor promedio de temblor en general)
             suma1 = promedio1.sum()
             suma2 = promedio2.sum()
             mejor_config = "Configuración 1" if suma1 < suma2 else "Configuración 2"
+
+            # Comparación por métrica
+            comparacion_metricas = {}
+            for columna in promedio1.index:
+                mejor = "Configuración 1" if promedio1[columna] < promedio2[columna] else "Configuración 2"
+                comparacion_metricas[columna] = mejor
 
             # Crear PDF
             nombre = datos_personales.get("Nombre", "No especificado")
@@ -338,11 +349,13 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                 nombre,
                 apellido,
                 datos_personales,
-                parametros_estim,
+                parametros_config1,
+                parametros_config2,
                 df1,
                 df2,
                 nombre_pdf,
-                mejor_config
+                mejor_config,
+                comparacion_metricas
             )
 
             with open(nombre_pdf, "rb") as f:
