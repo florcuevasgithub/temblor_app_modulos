@@ -187,7 +187,7 @@ if opcion == "1️⃣ Análisis de una medición":
             pdf.ln(10)
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(200, 10, "Interpretación clínica:", ln=True)
-            pdf.set_font("Arial", size=11)
+            pdf.set_font("Arial", size=10)
             texto_original = """
         Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
 
@@ -223,10 +223,10 @@ if opcion == "1️⃣ Análisis de una medición":
                     pdf.set_font("Arial", "B", 12)
                     pdf.cell(0, 10, "Diagnóstico automático:", ln=True)
                     pdf.set_font("Arial", "", 12)
+                    pdf.cell(0, 10, "La clasificacion automatica es orientativa y debe ser evaluada por un profesional.", ln=True
+                    pdf.set_font("Arial", "", 10)
                     pdf.multi_cell(0, 10, diagnostico)
-                    pdf.ln(10)
-                    pdf.set_font("Arial", "B", 12)
-                    pdf.cell(0, 10, "La clasificacion automatica es orientativa y debe ser evaluada por un profesional.", ln=True)
+                    )
             pdf.output(nombre_archivo)
 
 
