@@ -235,10 +235,13 @@ if opcion == "1️⃣ Análisis de una medición":
             resultados_globales = []
             mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
             datos_personales = None
-
+                
             for test, datos in mediciones_tests.items():
                 df_ventana = analizar_temblor_por_ventanas_resultante(datos, fs=200)
-                datos_personales = df.iloc[0].to_frame().T
+
+                if datos_personales is None:
+                    datos_personales = datos.iloc[0].to_frame().T
+                
                 if not df_ventana.empty:
                     prom = df_ventana.mean(numeric_only=True)
                     freq = prom['Frecuencia Dominante (Hz)']
@@ -252,16 +255,18 @@ if opcion == "1️⃣ Análisis de una medición":
                         'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
                         'Amplitud Temblor (cm)': round(amp_cm, 2)
                     })
-              nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
-              apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
-              edad = datos_personales.iloc[0].get("Edad", "No especificado")
-              sexo = datos_personales.iloc[0].get("Sexo", "No especificado")
-              diag_clinico = datos_personales.iloc[0].get("Diagnostico", "No disponible")
-              mano = datos_personales.iloc[0].get("Mano", "No disponible")
-              dedo = datos_personales.iloc[0].get("Dedo", "No disponible")
-
+            
 
             if resultados_globales:
+
+                nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
+                apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
+                edad = datos_personales.iloc[0].get("Edad", "No especificado")
+                sexo = datos_personales.iloc[0].get("Sexo", "No especificado")
+                diag_clinico = datos_personales.iloc[0].get("Diagnostico", "No disponible")
+                mano = datos_personales.iloc[0].get("Mano", "No disponible")
+                dedo = datos_personales.iloc[0].get("Dedo", "No disponible")
+                
                 df_resultados = pd.DataFrame(resultados_globales)
                 st.subheader("Resultados Promediados por Test")
                 st.dataframe(df_resultados)
@@ -269,7 +274,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 st.subheader("Diagnóstico")
                 st.write(diagnostico)
 
-                generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo,df_resultados, diagnostico=diagnostico)
+                generar_pdf(nombre, apellido, edad, sexo, diag_clinico, mano, dedo, df_resultados, diagnostico=diagnostico)
                 with open("informe_temblor.pdf", "rb") as file:
                     st.download_button(
                         label="📄 Descargar Informe PDF",
