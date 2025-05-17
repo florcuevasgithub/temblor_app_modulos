@@ -261,10 +261,10 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
         "Postural": st.file_uploader("CSV Postural - Config 2", type="csv", key="postural2"),
         "Acción": st.file_uploader("CSV Acción - Config 2", type="csv", key="accion2")
     }
-   def extraer_datos_personales(df):
+    def extraer_datos_personales(df):
     return df.iloc[0][["Nombre", "Edad", "Género"]].to_dict()
 
-   def extraer_parametros_estim(df):
+    def extraer_parametros_estim(df):
     return df.iloc[0][["ECP", "GPI", "NST", "Polaridad", "Duración", "Pulso", "Corriente", "Voltaje", "Frecuencia"]].to_dict()
                
     if st.button("Comparar configuraciones"):
