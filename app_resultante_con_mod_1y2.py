@@ -144,13 +144,13 @@ if opcion == "1️⃣ Análisis de una medición":
             pdf.ln(10)
 
             pdf.set_font("Arial", "", 12)
-            for _, row in df.iterrows():
-                pdf.cell(30, 10, row['Test'], 1)
-                pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
-                pdf.cell(30, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
-                pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
-                pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
-                pdf.ln(10)
+                for _, row in df.iterrows():
+                    pdf.cell(30, 10, row['Test'], 1)
+                    pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+                    pdf.cell(30, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
+                    pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+                    pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+                    pdf.ln(10)
 
 
             def limpiar_texto_para_pdf(texto):
