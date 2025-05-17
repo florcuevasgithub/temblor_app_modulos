@@ -68,7 +68,7 @@ if opcion == "1️⃣ Análisis de una medición":
         # -*- coding: utf-8 -*-
        
         # --------- Funciones auxiliares ----------
-        def filtrar_temblor(senal, fs, lowcut=2, highcut=20, order=4):
+        def filtrar_temblor(senal, fs, lowcut=3, highcut=12, order=4):
             nyq = 0.5 * fs
             low = lowcut / nyq
             high = highcut / nyq
@@ -118,9 +118,9 @@ if opcion == "1️⃣ Análisis de una medición":
                 fila = df[df['Test'] == test]
                 return fila['Frecuencia Dominante (Hz)'].mean() if not fila.empty else 0
         
-            if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 7:
+            if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 8:
                 return "Probable Parkinson"
-            elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (8 <= mean_freq('Postural') <= 10 or 8 <= mean_freq('Acción') <= 10):
+            elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (8 <= mean_freq('Postural') <= 12 or 8 <= mean_freq('Acción') <= 12):
                 return "Probable Temblor Esencial"
             else:
                 return "Temblor dentro de parámetros normales"
