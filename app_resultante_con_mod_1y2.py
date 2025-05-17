@@ -261,7 +261,12 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
         "Postural": st.file_uploader("CSV Postural - Config 2", type="csv", key="postural2"),
         "Acción": st.file_uploader("CSV Acción - Config 2", type="csv", key="accion2")
     }
+   def extraer_datos_personales(df):
+    return df.iloc[0][["Nombre", "Edad", "Género"]].to_dict()
 
+   def extraer_parametros_estim(df):
+    return df.iloc[0][["ECP", "GPI", "NST", "Polaridad", "Duración", "Pulso", "Corriente", "Voltaje", "Frecuencia"]].to_dict()
+               
     if st.button("Comparar configuraciones"):
         resultados_config1 = []
         resultados_config2 = []
@@ -279,7 +284,9 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
 
                     # Extraer datos personales una vez desde Config 1
                     if datos_personales is None and config_num == 1:
-                        datos_personales = extraer_datos_personales(df)
+                        datos_personales = extraer_datos_personales(df1)
+                        estimulacion1 = extraer_parametros_estim(df1)
+                        estimulacion2 = extraer_parametros_estim(df2)
 
                     # Extraer parámetros por configuración (una sola vez)
                     if config_num == 1 and not parametros_config1:
