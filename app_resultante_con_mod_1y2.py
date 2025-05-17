@@ -44,7 +44,7 @@ def filtrar_temblor(senal, fs, lowcut=3, highcut=12, order=4):
             b, a = butter(order, [low, high], btype='band')
             return filtfilt(b, a, senal)
 
-        def analizar_temblor_por_ventanas_resultante(df, fs=200, ventana_seg=2):
+def analizar_temblor_por_ventanas_resultante(df, fs=200, ventana_seg=2):
             df = df[['Acel_X', 'Acel_Y', 'Acel_Z']].dropna()
             ax = df['Acel_X'].to_numpy()
             ay = df['Acel_Y'].to_numpy()
