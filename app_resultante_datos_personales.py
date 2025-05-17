@@ -127,9 +127,9 @@ if opcion == "1️⃣ Análisis de una medición":
                 fila = df[df['Test'] == test]
                 return fila['Frecuencia Dominante (Hz)'].mean() if not fila.empty else 0
 
-            if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 8:
+            if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 6.5:
                 return "Probable Parkinson"
-            elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (8 <= mean_freq('Postural') <= 12 or 8 <= mean_freq('Acción') <= 12):
+            elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (7.5 <= mean_freq('Postural') <= 12 or 7.5 <= mean_freq('Acción') <= 12):
                 return "Probable Temblor Esencial"
             else:
                 return "Temblor dentro de parámetros normales"
@@ -147,7 +147,12 @@ if opcion == "1️⃣ Análisis de una medición":
             pdf.ln(10)
             pdf.cell(200, 10, f"Nombre: {nombre_paciente}", ln=True)
             pdf.cell(200, 10, f"Apellido: {apellido_paciente}", ln=True)
-            pdf.cell(200, 10, f"Edad: {edad}", ln=True)
+            try:
+                edad_int = int(float(edad))  # por si viene como float
+                edad_str = str(edad_int)
+            except:
+                edad_str = "No especificado"
+            pdf.cell(200, 10, f"Edad: {edad_str}", ln=True)
             pdf.cell(200, 10, f"Sexo: {sexo}", ln=True)
             pdf.cell(200, 10, f"Diagnóstico clínico: {texto_clinico}", ln=True)
             pdf.cell(200, 10, f"Mano: {mano}", ln=True)
@@ -182,7 +187,7 @@ if opcion == "1️⃣ Análisis de una medición":
             pdf.ln(10)
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(200, 10, "Interpretación clínica:", ln=True)
-            pdf.set_font("Arial", size=11)
+            pdf.set_font("Arial", size=10)
             texto_original = """
         Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
 
@@ -192,7 +197,7 @@ if opcion == "1️⃣ Análisis de una medición":
         - Temblor Esencial: 8-10 Hz en acción o postura.
 
           Para las amplitudes:
-        - Mayores a 0.3 cm pueden ser clínicamente relevantes.
+        - Mayores a 0.5 cm pueden ser clínicamente relevantes.
 
           Para la varianza (m2/s4):
         Representa la dispersión de la señal. En el contexto de temblores:
@@ -203,9 +208,10 @@ if opcion == "1️⃣ Análisis de una medición":
           Para el RMS (m/s2):
         - Normal/sano: menor a 0.5 m/s2.
         - PK leve: entre 0.5 y 1.5 m/s2.
-        - TE o PK severo: puede llegar a 2–3 m/s2 o más.
+        - TE o PK severo: mayor a 2 m/s2.
 
-        La clasificación automática es orientativa y debe ser evaluada por un profesional.
+        Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica. 
+        
         """
 
             texto_limpio = limpiar_texto_para_pdf(texto_original)
@@ -213,12 +219,14 @@ if opcion == "1️⃣ Análisis de una medición":
             pdf.set_font("Arial", 'B', 12)
 
             if diagnostico:
-                    pdf.ln(10)
+                    pdf.ln(5)
                     pdf.set_font("Arial", "B", 12)
                     pdf.cell(0, 10, "Diagnóstico automático:", ln=True)
                     pdf.set_font("Arial", "", 12)
                     pdf.multi_cell(0, 10, diagnostico)
-
+                    pdf.set_font("Arial", "", 10)
+                    pdf.cell(0, 10, "La clasificacion automatica es orientativa y debe ser evaluada por un profesional.", ln=True)
+                    
             pdf.output(nombre_archivo)
 
 
@@ -235,10 +243,13 @@ if opcion == "1️⃣ Análisis de una medición":
             resultados_globales = []
             mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
             datos_personales = None
-
+                
             for test, datos in mediciones_tests.items():
                 df_ventana = analizar_temblor_por_ventanas_resultante(datos, fs=200)
-                datos_personales = df.iloc[0].to_frame().T
+
+                if datos_personales is None:
+                    datos_personales = datos.iloc[0].to_frame().T
+                
                 if not df_ventana.empty:
                     prom = df_ventana.mean(numeric_only=True)
                     freq = prom['Frecuencia Dominante (Hz)']
@@ -252,16 +263,18 @@ if opcion == "1️⃣ Análisis de una medición":
                         'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
                         'Amplitud Temblor (cm)': round(amp_cm, 2)
                     })
-              nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
-              apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
-              edad = datos_personales.iloc[0].get("Edad", "No especificado")
-              sexo = datos_personales.iloc[0].get("Sexo", "No especificado")
-              diag_clinico = datos_personales.iloc[0].get("Diagnostico", "No disponible")
-              mano = datos_personales.iloc[0].get("Mano", "No disponible")
-              dedo = datos_personales.iloc[0].get("Dedo", "No disponible")
-
+            
 
             if resultados_globales:
+
+                nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
+                apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
+                edad = datos_personales.iloc[0].get("Edad", "No especificado")
+                sexo = datos_personales.iloc[0].get("Sexo", "No especificado")
+                diag_clinico = datos_personales.iloc[0].get("Diagnostico", "No disponible")
+                mano = datos_personales.iloc[0].get("Mano", "No disponible")
+                dedo = datos_personales.iloc[0].get("Dedo", "No disponible")
+                
                 df_resultados = pd.DataFrame(resultados_globales)
                 st.subheader("Resultados Promediados por Test")
                 st.dataframe(df_resultados)
@@ -269,7 +282,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 st.subheader("Diagnóstico")
                 st.write(diagnostico)
 
-                generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo,df_resultados, diagnostico=diagnostico)
+                generar_pdf(nombre, apellido, edad, sexo, diag_clinico, mano, dedo, df_resultados, diagnostico=diagnostico)
                 with open("informe_temblor.pdf", "rb") as file:
                     st.download_button(
                         label="📄 Descargar Informe PDF",
