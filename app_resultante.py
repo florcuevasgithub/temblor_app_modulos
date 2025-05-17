@@ -28,6 +28,9 @@ import os
 =======
 import streamlit as st
 from scipy.fft import fft, fftfreq
+import unicodedata
+from fpdf import FPDF
+            
         
       
         
@@ -275,14 +278,14 @@ elif opcion == "2️⃣ Comparar dos mediciones":
 =======
        
         # --------- Funciones auxiliares ----------
-        def filtrar_temblor(senal, fs, lowcut=2, highcut=20, order=4):
+        def filtrar_temblor(senal, fs, lowcut=3, highcut=12, order=4):
             nyq = 0.5 * fs
             low = lowcut / nyq
             high = highcut / nyq
             b, a = butter(order, [low, high], btype='band')
             return filtfilt(b, a, senal)
         
-        def analizar_temblor_por_ventanas_resultante(df, fs=50, ventana_seg=2):
+        def analizar_temblor_por_ventanas_resultante(df, fs=200, ventana_seg=2):
             df = df[['Acel_X', 'Acel_Y', 'Acel_Z']].dropna()
             ax = df['Acel_X'].to_numpy()
             ay = df['Acel_Y'].to_numpy()
@@ -303,14 +306,17 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                 freq_dominante = f[np.argmax(Pxx)]
                 varianza = np.var(segmento)
                 rms = np.sqrt(np.mean(segmento**2))
-                amplitud = np.max(segmento) - np.min(segmento)
+                amp_g = np.max(segmento) - np.min(segmento)
+                amp_cm = (amp_g * 981) / ((2 * np.pi * freq_dominante) ** 2) if freq_dominante > 0 else 0.0
+                
                 resultados.append({
                     'Frecuencia Dominante (Hz)': freq_dominante,
                     'Varianza (m2/s4)': varianza,
                     'RMS (m/s2)': rms,
-                    'Amplitud Temblor (g)': amplitud
+                    'Amplitud Temblor (g)': amp_g,
+                    'Amplitud Temblor (cm)': amp_cm
                 })
-        
+
             return pd.DataFrame(resultados)
 
         def diagnosticar(df):
@@ -322,18 +328,21 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                 fila = df[df['Test'] == test]
                 return fila['Frecuencia Dominante (Hz)'].mean() if not fila.empty else 0
         
-            if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 7:
+            if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 8:
                 return "Probable Parkinson"
-            elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (8 <= mean_freq('Postural') <= 10 or 8 <= mean_freq('Acción') <= 10):
+            elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (8 <= mean_freq('Postural') <= 12 or 8 <= mean_freq('Acción') <= 12):
                 return "Probable Temblor Esencial"
             else:
                 return "Temblor dentro de parámetros normales"
-        
+            
         def generar_pdf(df, nombre_archivo="informe_temblor.pdf", diagnostico=""):
+        
             pdf = FPDF()
             pdf.add_page()
-            pdf.set_font("Arial", "B", 16)
-            pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align="C")
+            pdf.set_font("Arial", 'B', 16)
+            pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
+        
+            # Tabla de resultados
             pdf.ln(10)
             pdf.set_font("Arial", "B", 12)
             pdf.cell(30, 10, "Test", 1)
@@ -351,49 +360,55 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                 pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
                 pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
                 pdf.ln(10)
-        
-            if diagnostico:
-                pdf.ln(10)
-                pdf.set_font("Arial", "B", 12)
-                pdf.cell(0, 10, "Diagnóstico:", ln=True)
-                pdf.set_font("Arial", "", 12)
-                pdf.multi_cell(0, 10, diagnostico)
 
-                pdf.ln(10)
-                pdf.set_font("Arial", 'B', 12)
-                pdf.cell(200, 10, "Interpretación clínica:", ln=True)
-                pdf.set_font("Arial", size=11)
-                texto_original = """
-                        Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
-                        
-                        Los valores de referencia considerados son:
-                          Para las frecuencias (Hz):
-                        - Temblor Parkinsoniano: 3-6 Hz en reposo.
-                        - Temblor Esencial: 8-10 Hz en acción o postura.
-                        
-                          Para las amplitudes:
-                        - Mayores a 0.3 cm pueden ser clínicamente relevantes.
-                        
-                          Para la varianza (m2/s4):
-                        Representa la dispersión de la señal. En el contexto de temblores:
-                        - Normal/sano: muy baja, puede estar entre 0.001 – 0.1 m2/s4.
-                        - Temblor leve: entre 0.1 – 0.5 m2/s4.
-                        - Temblor patológico (PK o TE): suele superar 1.0 m2/s4, llegando hasta 5–10 m2/s4 en casos severos.
-                        
-                          Para el RMS (m/s2):
-                        - Normal/sano: menor a 0.5 m/s2.
-                        - PK leve: entre 0.5 y 1.5 m/s2.
-                        - TE o PK severo: puede llegar a 2–3 m/s2 o más.
-                        
-                        La clasificación automática es orientativa y debe ser evaluada por un profesional.
-                        """      
-                texto_limpio = limpiar_texto_para_pdf(texto_original)
-                pdf.multi_cell(0, 8, texto_limpio)
-                pdf.set_font("Arial", 'B', 12)
-                pdf.cell(200, 10, f"Diagnóstico automático: {diagnostico_auto}", ln=True)
-                pdf.output(nombre_archivo)
+
+            def limpiar_texto_para_pdf(texto):
+                return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
+            pdf.ln(10)
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(200, 10, "Interpretación clínica:", ln=True)
+            pdf.set_font("Arial", size=11)
+            texto_original = """
+        Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
         
-        st.title("Análisis de Temblor - Aceleración Resultante (Modo 1)")
+        Los valores de referencia considerados son:
+          Para las frecuencias (Hz):
+        - Temblor Parkinsoniano: 3-6 Hz en reposo.
+        - Temblor Esencial: 8-10 Hz en acción o postura.
+        
+          Para las amplitudes:
+        - Mayores a 0.3 cm pueden ser clínicamente relevantes.
+        
+          Para la varianza (m2/s4):
+        Representa la dispersión de la señal. En el contexto de temblores:
+        - Normal/sano: muy baja, puede estar entre 0.001 – 0.1 m2/s4.
+        - Temblor leve: entre 0.1 – 0.5 m2/s4.
+        - Temblor patológico (PK o TE): suele superar 1.0 m2/s4, llegando hasta 5–10 m2/s4 en casos severos.
+        
+          Para el RMS (m/s2):
+        - Normal/sano: menor a 0.5 m/s2.
+        - PK leve: entre 0.5 y 1.5 m/s2.
+        - TE o PK severo: puede llegar a 2–3 m/s2 o más.
+        
+        La clasificación automática es orientativa y debe ser evaluada por un profesional.
+        """
+        
+            texto_limpio = limpiar_texto_para_pdf(texto_original)
+            pdf.multi_cell(0, 8, texto_limpio)
+            pdf.set_font("Arial", 'B', 12)
+
+            if diagnostico:
+                    pdf.ln(10)
+                    pdf.set_font("Arial", "B", 12)
+                    pdf.cell(0, 10, "Diagnóstico automático:", ln=True)
+                    pdf.set_font("Arial", "", 12)
+                    pdf.multi_cell(0, 10, diagnostico)
+                    
+            pdf.output(nombre_archivo)
+        
+        
+        
+        st.title("Análisis de una medicion")
         
         uploaded_files = {
             "Reposo": st.file_uploader("Subir archivo CSV para prueba en reposo", type=["csv"], key="reposo"),
@@ -406,7 +421,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
         
             for test, datos in mediciones_tests.items():
-                df_ventana = analizar_temblor_por_ventanas_resultante(datos, fs=50)
+                df_ventana = analizar_temblor_por_ventanas_resultante(datos, fs=200)
                 if not df_ventana.empty:
                     prom = df_ventana.mean(numeric_only=True)
                     freq = prom['Frecuencia Dominante (Hz)']
