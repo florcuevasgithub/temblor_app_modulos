@@ -248,127 +248,173 @@ if opcion == "1️⃣ Análisis de una medición":
 elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
     st.title("📊 Comparar dos configuraciones de estimulación")
 
-    st.markdown("### Cargar archivos de la **Configuración 1**")
-    config1_archivos = {
-        "Reposo": st.file_uploader("CSV Reposo - Config 1", type="csv", key="reposo1"),
-        "Postural": st.file_uploader("CSV Postural - Config 1", type="csv", key="postural1"),
-        "Acción": st.file_uploader("CSV Acción - Config 1", type="csv", key="accion1")
-    }
+    def analizar_configuracion(archivos):
+    import pandas as pd
+    resultados = []
+    datos_personales = {}
+    parametros_estim = {}
 
-    st.markdown("### Cargar archivos de la **Configuración 2**")
-    config2_archivos = {
-        "Reposo": st.file_uploader("CSV Reposo - Config 2", type="csv", key="reposo2"),
-        "Postural": st.file_uploader("CSV Postural - Config 2", type="csv", key="postural2"),
-        "Acción": st.file_uploader("CSV Acción - Config 2", type="csv", key="accion2")
-    }
-    def extraer_datos_personales(df):
-      return df.iloc[0][["Nombre", "Edad", "Género"]].to_dict()
+    for archivo in archivos:
+        df = pd.read_csv(archivo)
 
-    def extraer_parametros_estim(df):
-      return df.iloc[0][["ECP", "GPI", "NST", "Polaridad", "Duración", "Pulso", "Corriente", "Voltaje", "Frecuencia"]].to_dict()
-               
-    if st.button("Comparar configuraciones"):
-        resultados_config1 = []
-        resultados_config2 = []
+        # Extraer info personal y de estimulación desde primera fila
+        if not datos_personales:
+            datos_personales["Nombre"] = df.columns[1]
+            datos_personales["Edad"] = df.columns[2]
+            datos_personales["Diagnóstico"] = df.columns[3]
+            parametros_estim["ECP"] = df.columns[4]
+            parametros_estim["GPI"] = df.columns[5]
+            parametros_estim["NST"] = df.columns[6]
+            parametros_estim["Polaridad"] = df.columns[7]
+            parametros_estim["Duración"] = df.columns[8]
+            parametros_estim["Pulso"] = df.columns[9]
+            parametros_estim["Corriente"] = df.columns[10]
+            parametros_estim["Voltaje"] = df.columns[11]
+            parametros_estim["Frecuencia"] = df.columns[12]
 
-        datos_personales = None
-        parametros_config1 = {}
-        parametros_config2 = {}
+        # Limpiar columnas y convertir a valores
+        df = df.iloc[1:].dropna()
+        df.columns = ['Time', 'Ax', 'Ay', 'Az', 'Gx', 'Gy', 'Gz']
+        df = df.astype(float)
 
-        for config_num, archivos in zip([1, 2], [config1_archivos, config2_archivos]):
-            resultados = []
+        # Calcular aceleración resultante
+        df['A_resultante'] = np.sqrt(df['Ax']**2 + df['Ay']**2 + df['Az']**2)
 
-            for test, archivo in archivos.items():
-                if archivo is not None:
-                    df = pd.read_csv(archivo)
+        # Filtrado Butterworth
+        fs = 100  # frecuencia de muestreo
+        lowcut = 4
+        highcut = 12
+        b, a = butter(4, [lowcut / (0.5 * fs), highcut / (0.5 * fs)], btype='band')
+        señal_filtrada = filtfilt(b, a, df['A_resultante'])
 
-                    # Extraer datos personales una vez desde Config 1
-                    if datos_personales is None and config_num == 1:
-                            datos_personales = extraer_datos_personales(df)
-                            estimulacion1 = extraer_parametros_estim(df)
-                                
-                    # Extraer parámetros por configuración (una sola vez)
-                    if config_num == 1 and not parametros_config1:
-                            parametros_config1 = extraer_parametros_estim(df)
-                    elif config_num == 2 and not parametros_config2:
-                            parametros_config2 = extraer_parametros_estim(df)
-                            if 'estimulacion2' not in locals():
-                                estimulacion2 = extraer_parametros_estim(df)
+        # Ventanas
+        ventana_size = int(2 * fs)
+        solape = int(ventana_size * 0.5)
+        ventanas = [
+            señal_filtrada[i:i + ventana_size]
+            for i in range(0, len(señal_filtrada) - ventana_size + 1, solape)
+        ]
 
-                    
+        # Métricas por ventana
+        frecs, rmss, vars_, amps = [], [], [], []
+        for ventana in ventanas:
+            N = len(ventana)
+            fft_vals = np.fft.fft(ventana)
+            fft_freqs = np.fft.fftfreq(N, d=1/fs)
+            amplitudes = 2.0 / N * np.abs(fft_vals[:N // 2])
+            frecuencias = fft_freqs[:N // 2]
+            freq_dominante = frecuencias[np.argmax(amplitudes)]
+            frecs.append(freq_dominante)
+            rmss.append(np.sqrt(np.mean(ventana**2)))
+            vars_.append(np.var(ventana))
+            amp_cm = 0.5 * 9.81 * np.max(ventana)
+            amps.append(amp_cm)
 
-                    # Filtrar y calcular métricas
-                    df_filtrado = filtrar_senal(df)
-                    resultante = calcular_resultante(df_filtrado)
-                    ventanas = segmentar_ventanas(resultante, ventana_tiempo=2, solapamiento=0.5, frecuencia_muestreo=100)
-                    metricas = [calcular_metricas_resultante(ventana, fs=100) for ventana in ventanas]
+        resultados.append({
+            "Frecuencia dominante (Hz)": np.mean(frecs),
+            "RMS (g)": np.mean(rmss),
+            "Varianza": np.mean(vars_),
+            "Amplitud (cm)": np.mean(amps)
+        })
 
-                    # Calcular promedios por test
-                    if metricas:
-                        df_metricas = pd.DataFrame(metricas)
-                        prom = df_metricas.mean()
-                        freq = prom["Frecuencia Dominante (Hz)"]
-                        var = prom["Varianza (m2/s4)"]
-                        rms = prom["RMS (m/s2)"]
-                        amp_cm = prom["Amplitud (cm)"]
+    # Promedio de los tres tests
+    df_resultados = pd.DataFrame(resultados)
+    promedio = df_resultados.mean().to_frame().T
+    return promedio, datos_personales, parametros_estim
 
-                        resultados.append({
-                            'Test': test,
-                            'Frecuencia Dominante (Hz)': round(freq, 2),
-                            'Varianza (m2/s4)': round(var, 4),
-                            'RMS (m/s2)': round(rms, 4),
-                            'Amplitud Temblor (cm)': round(amp_cm, 2)
-                        })
+def generar_conclusion_comparativa(res1, res2):
+    # Menor valor en cada métrica indica menor temblor
+    score1 = res1.values[0]
+    score2 = res2.values[0]
+    mejor = "Configuración 1" if np.sum(score1) < np.sum(score2) else "Configuración 2"
+    return f"La {mejor} presenta un menor promedio en las métricas analizadas, lo que indica una reducción más efectiva del temblor."
 
-            if config_num == 1:
-                resultados_config1 = resultados
-            else:
-                resultados_config2 = resultados
+from fpdf import FPDF
+import io
 
-        # Mostrar y generar comparación solo si hay datos válidos
-        if resultados_config1 and resultados_config2:
-            df1 = pd.DataFrame(resultados_config1)
-            df2 = pd.DataFrame(resultados_config2)
+def generar_pdf_comparativo(datos1, params1, res1, datos2, params2, res2, conclusion):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True)
 
-            st.markdown("### Resultados - Configuración 1")
-            st.dataframe(df1)
+    pdf.set_font("Arial", "", 12)
+    pdf.ln(5)
+    pdf.cell(0, 10, f"Nombre: {datos1['Nombre']}", ln=True)
+    pdf.cell(0, 10, f"Edad: {datos1['Edad']}", ln=True)
+    pdf.cell(0, 10, f"Diagnóstico: {datos1['Diagnóstico']}", ln=True)
 
-            st.markdown("### Resultados - Configuración 2")
-            st.dataframe(df2)
+    def agregar_parametros(titulo, params):
+        pdf.ln(5)
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 10, titulo, ln=True)
+        pdf.set_font("Arial", "", 11)
+        for k, v in params.items():
+            pdf.cell(0, 8, f"{k}: {v}", ln=True)
 
-            # Diagnóstico comparativo por promedio general
-            promedio1 = df1[["Frecuencia Dominante (Hz)", "Varianza (m2/s4)", "RMS (m/s2)", "Amplitud Temblor (cm)"]].mean()
-            promedio2 = df2[["Frecuencia Dominante (Hz)", "Varianza (m2/s4)", "RMS (m/s2)", "Amplitud Temblor (cm)"]].mean()
+    def agregar_resultados(titulo, res):
+        pdf.ln(4)
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 10, titulo, ln=True)
+        pdf.set_font("Arial", "", 11)
+        for col in res.columns:
+            val = res[col].values[0]
+            pdf.cell(0, 8, f"{col}: {val:.2f}", ln=True)
 
-            suma1 = promedio1.sum()
-            suma2 = promedio2.sum()
-            mejor_config = "Configuración 1" if suma1 < suma2 else "Configuración 2"
+    agregar_parametros("Parámetros Configuración 1", params1)
+    agregar_resultados("Resultados Configuración 1", res1)
 
-            # Comparación por métrica
-            comparacion_metricas = {}
-            for columna in promedio1.index:
-                mejor = "Configuración 1" if promedio1[columna] < promedio2[columna] else "Configuración 2"
-                comparacion_metricas[columna] = mejor
+    agregar_parametros("Parámetros Configuración 2", params2)
+    agregar_resultados("Resultados Configuración 2", res2)
 
-            # Crear PDF
-            nombre = datos_personales.get("Nombre", "No especificado")
-            apellido = datos_personales.get("Apellido", "No especificado")
-            nombre_pdf = f"comparacion_temblor_{nombre}_{apellido}.pdf"
+    pdf.ln(10)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Conclusión:", ln=True)
+    pdf.set_font("Arial", "", 11)
+    pdf.multi_cell(0, 8, conclusion)
 
-            generar_pdf_config_comparacion(
-                nombre,
-                apellido,
-                datos_personales,
-                parametros_config1,
-                parametros_config2,
-                df1,
-                df2,
-                nombre_pdf,
-                mejor_config,
-                comparacion_metricas
+    buffer = io.BytesIO()
+    pdf.output(buffer)
+    buffer.seek(0)
+    return buffer
+
+st.markdown("### Suba los archivos de la **Configuración 1** (reposo, postural y acción)")
+    archivos_config1 = st.file_uploader("Archivos configuración 1", type="csv", accept_multiple_files=True, key="conf1")
+
+    st.markdown("### Suba los archivos de la **Configuración 2** (reposo, postural y acción)")
+    archivos_config2 = st.file_uploader("Archivos configuración 2", type="csv", accept_multiple_files=True, key="conf2")
+
+    if len(archivos_config1) == 3 and len(archivos_config2) == 3:
+        if st.button("📊 Comparar configuraciones"):
+            with st.spinner("Analizando Configuración 1..."):
+                res1, datos1, params1 = analizar_configuracion(archivos_config1)
+
+            with st.spinner("Analizando Configuración 2..."):
+                res2, datos2, params2 = analizar_configuracion(archivos_config2)
+
+            # Mostrar resultados
+            st.subheader("Resultados promedio de cada configuración")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Configuración 1**")
+                st.dataframe(res1.style.format("{:.2f}"))
+            with col2:
+                st.markdown("**Configuración 2**")
+                st.dataframe(res2.style.format("{:.2f}"))
+
+            # Conclusión automática
+            conclusion = generar_conclusion_comparativa(res1, res2)
+            st.markdown("### 🧠 Conclusión automática")
+            st.success(conclusion)
+
+            # Generar PDF
+            buffer_pdf = generar_pdf_comparativo(datos1, params1, res1, datos2, params2, res2, conclusion)
+
+            st.download_button(
+                label="📄 Descargar informe PDF",
+                data=buffer_pdf,
+                file_name="informe_comparativo.pdf",
+                mime="application/pdf"
             )
-
-            with open(nombre_pdf, "rb") as f:
-                st.download_button("📄 Descargar informe comparativo en PDF", f, file_name=nombre_pdf)
-        else:
-            st.warning("⚠️ Se requieren archivos válidos para ambas configuraciones.")
+    else:
+        st.warning("Debe subir exactamente 3 archivos CSV para cada configuración.")
