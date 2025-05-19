@@ -252,22 +252,22 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
 
     st.markdown("### Cargar archivos de la **Configuración 1**")
     config1_archivos = {
-        "Reposo": st.file_uploader("CSV Reposo - Config 1", type="csv", key="reposo1"),
-        "Postural": st.file_uploader("CSV Postural - Config 1", type="csv", key="postural1"),
-        "Acción": st.file_uploader("CSV Acción - Config 1", type="csv", key="accion1")
+        "Reposo": st.file_uploader("Archivo de REPOSO configuracion 1", type="csv", key="reposo1"),
+        "Postural": st.file_uploader("Archivo de POSTURAL configuracion 1", type="csv", key="postural1"),
+        "Acción": st.file_uploader("Archivo de ACCION configuracion 1", type="csv", key="accion1")
     }
 
     st.markdown("### Cargar archivos de la **Configuración 2**")
     config2_archivos = {
-        "Reposo": st.file_uploader("CSV Reposo - Config 2", type="csv", key="reposo2"),
-        "Postural": st.file_uploader("CSV Postural - Config 2", type="csv", key="postural2"),
-        "Acción": st.file_uploader("CSV Acción - Config 2", type="csv", key="accion2")
+        "Reposo": st.file_uploader("Archivo de REPOSO configuracion 2", type="csv", key="reposo2"),
+        "Postural": st.file_uploader("Archivo de POSTURAL configuracion 2", type="csv", key="postural2"),
+        "Acción": st.file_uploader("Archivo de ACCION configuracion 2", type="csv", key="accion2")
     }
 
     def analizar_configuracion(archivos, fs=200):
         resultados = []
         for test, archivo in archivos.items():
-            st.write(f"Archivo para test '{test}': tipo -> {type(archivo)}")
+            #st.write(f"Archivo para test '{test}': tipo -> {type(archivo)}")
             if archivo is not None:
                 archivo.seek(0)
                 df = pd.read_csv(archivo)
@@ -374,7 +374,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                 pdf.cell(30, 10, "RMS", 1)
                 pdf.cell(50, 10, "Amplitud (cm)", 1)
                 pdf.ln(10)
-                pdf.set_font("Arial", "", 12)
+                pdf.set_font("Arial", "", 10)
 
                 for _, row in df.iterrows():
                     pdf.cell(30, 10, row['Test'], 1)
@@ -391,7 +391,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True, align="C")
 
-            pdf.set_font("Arial", size=12)
+            pdf.set_font("Arial", size=10)
             pdf.ln(10)
             pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
 
