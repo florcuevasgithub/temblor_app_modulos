@@ -304,44 +304,59 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
 
         if not archivos_cargados:
             st.warning("Por favor, cargue los 3 archivos CSV para ambas configuraciones.")
+       
         else:
-            # Extraer datos personales y parámetros de cada configuración (desde el CSV "Reposo" que es el primero)
-            df_config1_reposo = pd.read_csv(config1_archivos["Reposo"])
-            df_config2_reposo = pd.read_csv(config2_archivos["Reposo"])
-
-            datos_personales = extraer_datos_personales(df_config1_reposo)
-            parametros_config1 = extraer_parametros_estim(df_config1_reposo)
-            parametros_config2 = extraer_parametros_estim(df_config2_reposo)
-
-            # Analizar las configuraciones
-            df_resultados_config1 = analizar_configuracion(config1_archivos)
-            df_resultados_config2 = analizar_configuracion(config2_archivos)
-
-            st.subheader("Resultados Configuración 1")
-            st.dataframe(df_resultados_config1)
-
-            st.subheader("Resultados Configuración 2")
-            st.dataframe(df_resultados_config2)
-
-            # Comparar promedios totales para decidir cuál es mejor (menor temblor)
-            prom_config1 = df_resultados_config1.mean(numeric_only=True)
-            prom_config2 = df_resultados_config2.mean(numeric_only=True)
-
-            # Definir una "puntuación" simple como suma de métricas que reflejan temblor (mayor es peor)
-            puntaje1 = prom_config1['Frecuencia Dominante (Hz)'] + prom_config1['Varianza (m2/s4)'] + prom_config1['RMS (m/s2)'] + prom_config1['Amplitud Temblor (cm)']
-            puntaje2 = prom_config2['Frecuencia Dominante (Hz)'] + prom_config2['Varianza (m2/s4)'] + prom_config2['RMS (m/s2)'] + prom_config2['Amplitud Temblor (cm)']
-
-            if puntaje1 < puntaje2:
-                conclusion = "La Configuración 1 muestra una reducción mayor del temblor."
-            elif puntaje2 < puntaje1:
-                conclusion = "La Configuración 2 muestra una reducción mayor del temblor."
-            else:
-                conclusion = "Ambas configuraciones muestran resultados similares."
-
-            st.subheader("Conclusión")
-            st.write(conclusion)
+                # Extraer datos personales y parámetros de cada configuración (desde el CSV "Reposo" que es el primero)
+                df_config1_reposo = pd.read_csv(config1_archivos["Reposo"])
+                df_config2_reposo = pd.read_csv(config2_archivos["Reposo"])
+            
+                # Limpiar NaN y reemplazar por "No especificado"
+                def limpiar_campos(df, campos):
+                    resultado = {}
+                    for campo in campos:
+                        valor = df.iloc[0].get(campo, "No especificado")
+                        if pd.isna(valor) or str(valor).strip() == "":
+                            valor = "No especificado"
+                        resultado[campo] = valor
+                    return resultado
+            
+                campos_personales = ["Nombre", "Edad", "Sexo"]
+                campos_estim = ["ECP", "GPI", "NST", "Polaridad", "Duración", "Pulso", "Corriente", "Voltaje", "Frecuencia"]
+            
+                datos_personales = limpiar_campos(df_config1_reposo, campos_personales)
+                parametros_config1 = limpiar_campos(df_config1_reposo, campos_estim)
+                parametros_config2 = limpiar_campos(df_config2_reposo, campos_estim)
+            
+                # Analizar las configuraciones
+                df_resultados_config1 = analizar_configuracion(config1_archivos)
+                df_resultados_config2 = analizar_configuracion(config2_archivos)
+            
+                st.subheader("Resultados Configuración 1")
+                st.dataframe(df_resultados_config1)
+            
+                st.subheader("Resultados Configuración 2")
+                st.dataframe(df_resultados_config2)
+            
+                # Comparar promedios totales para decidir cuál es mejor (menor temblor)
+                prom_config1 = df_resultados_config1.mean(numeric_only=True)
+                prom_config2 = df_resultados_config2.mean(numeric_only=True)
+            
+                # Definir una "puntuación" simple como suma de métricas que reflejan temblor (mayor es peor)
+                puntaje1 = prom_config1['Frecuencia Dominante (Hz)'] + prom_config1['Varianza (m2/s4)'] + prom_config1['RMS (m/s2)'] + prom_config1['Amplitud Temblor (cm)']
+                puntaje2 = prom_config2['Frecuencia Dominante (Hz)'] + prom_config2['Varianza (m2/s4)'] + prom_config2['RMS (m/s2)'] + prom_config2['Amplitud Temblor (cm)']
+            
+                if puntaje1 < puntaje2:
+                    conclusion = "La Configuración 1 muestra una reducción mayor del temblor."
+                elif puntaje2 < puntaje1:
+                    conclusion = "La Configuración 2 muestra una reducción mayor del temblor."
+                else:
+                    conclusion = "Ambas configuraciones muestran resultados similares."
+            
+                st.subheader("Conclusión")
+                st.write(conclusion)
 
             # Generar PDF con datos personales, parámetros, resultados y conclusión
+            fecha_hora_actual = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", 'B', 16)
@@ -349,6 +364,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
 
             pdf.set_font("Arial", size=12)
             pdf.ln(10)
+            pdf.cell(0, 10, f"Fecha y hora del análisis: {fecha_hora_actual}", ln=True)
             pdf.cell(0, 10, f"Nombre: {datos_personales.get('Nombre', 'No especificado')}", ln=True)
             pdf.cell(0, 10, f"Apellido: {datos_personales.get('Apellido', 'No especificado')}", ln=True)
             pdf.cell(0, 10, f"Edad: {datos_personales.get('Edad', 'No especificado')}", ln=True)
