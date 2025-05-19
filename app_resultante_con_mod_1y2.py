@@ -397,12 +397,15 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
 
             # Guardar PDF en buffer para descargar
             pdf_output = BytesIO()
-            pdf.output(pdf_output)
+            pdf_bytes = pdf.output(dest='S').encode('latin1')  # obtener contenido del PDF como string (bytes)
+            pdf_output.write(pdf_bytes)  # escribirlo en BytesIO
             pdf_output.seek(0)
 
             st.download_button(
                 label="Descargar Informe PDF",
                 data=pdf_output,
-                file_name="Informe_Comparacion_Configuraciones.pdf",
+                file_name="informe_temblor.pdf",
                 mime="application/pdf"
+
+            
             )
