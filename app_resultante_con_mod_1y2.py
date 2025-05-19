@@ -364,8 +364,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
 
             pdf.set_font("Arial", size=12)
             pdf.ln(10) 
-            fecha_hora_actual = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
-            pdf.cell(0, 10, f"Fecha y hora del análisis: {fecha_hora_actual}", ln=True)
+            pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")}", ln=True)
             pdf.cell(0, 10, f"Nombre: {datos_personales.get('Nombre', 'No especificado')}", ln=True)
             pdf.cell(0, 10, f"Apellido: {datos_personales.get('Apellido', 'No especificado')}", ln=True)
             pdf.cell(0, 10, f"Edad: {edad_str}, {datos_personales.get('Edad', 'No especificado')}", ln=True) 
