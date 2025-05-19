@@ -297,121 +297,121 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
 
     if st.button("Comparar configuraciones"):
     # Validar que los 6 archivos estén cargados
-    archivos_cargados = all([
-        config1_archivos[test] is not None and config2_archivos[test] is not None
-        for test in ["Reposo", "Postural", "Acción"]
-    ])
-
-    if not archivos_cargados:
-        st.warning("Por favor, cargue los 3 archivos CSV para ambas configuraciones.")
-    else:
-        df_config1_reposo = pd.read_csv(config1_archivos["Reposo"])
-        df_config2_reposo = pd.read_csv(config2_archivos["Reposo"])
-
-        def limpiar_campos(df, campos):
-            resultado = {}
-            for campo in campos:
-                valor = df.iloc[0].get(campo, "No especificado")
-                if pd.isna(valor) or str(valor).strip() == "":
-                    valor = "No especificado"
-                resultado[campo] = valor
-            return resultado
-
-        campos_personales = ["Nombre", "Apellido", "Edad", "Sexo"]
-        campos_estim = ["ECP", "GPI", "NST", "Polaridad", "Duración", "Pulso", "Corriente", "Voltaje", "Frecuencia"]
-
-        datos_personales = limpiar_campos(df_config1_reposo, campos_personales)
-        parametros_config1 = limpiar_campos(df_config1_reposo, campos_estim)
-        parametros_config2 = limpiar_campos(df_config2_reposo, campos_estim)
-
-        df_resultados_config1 = analizar_configuracion(config1_archivos)
-        df_resultados_config2 = analizar_configuracion(config2_archivos)
-
-        st.subheader("Resultados Configuración 1")
-        st.dataframe(df_resultados_config1)
-
-        st.subheader("Resultados Configuración 2")
-        st.dataframe(df_resultados_config2)
-
-        prom_config1 = df_resultados_config1.mean(numeric_only=True)
-        prom_config2 = df_resultados_config2.mean(numeric_only=True)
-
-        puntaje1 = prom_config1['Frecuencia Dominante (Hz)'] + prom_config1['Varianza (m2/s4)'] + prom_config1['RMS (m/s2)'] + prom_config1['Amplitud Temblor (cm)']
-        puntaje2 = prom_config2['Frecuencia Dominante (Hz)'] + prom_config2['Varianza (m2/s4)'] + prom_config2['RMS (m/s2)'] + prom_config2['Amplitud Temblor (cm)']
-
-        if puntaje1 < puntaje2:
-            conclusion = "La Configuración 1 muestra una reducción mayor del temblor."
-        elif puntaje2 < puntaje1:
-            conclusion = "La Configuración 2 muestra una reducción mayor del temblor."
-        else:
-            conclusion = "Ambas configuraciones muestran resultados similares."
-
-        st.subheader("Conclusión")
-        st.write(conclusion)
-
-        # Generar PDF
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", 'B', 16)
-        pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True, align="C")
-
-        pdf.set_font("Arial", size=12)
-        pdf.ln(10)
-        pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
-        pdf.cell(0, 10, f"Nombre: {datos_personales.get('Nombre', 'No especificado')}", ln=True)
-        pdf.cell(0, 10, f"Apellido: {datos_personales.get('Apellido', 'No especificado')}", ln=True)
-        pdf.cell(0, 10, f"Edad: {datos_personales.get('Edad', 'No especificado')}", ln=True)
-        pdf.cell(0, 10, f"Sexo: {datos_personales.get('Sexo', 'No especificado')}", ln=True)
-        pdf.ln(5)
-
-        def imprimir_parametros(pdf, parametros, titulo):
-            pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, titulo, ln=True)
-            pdf.set_font("Arial", size=12)
-            for key, value in parametros.items():
-                pdf.cell(0, 8, f"{key}: {value}", ln=True)
-            pdf.ln(5)
-
-        def imprimir_resultados(pdf, df, titulo):
-            pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, titulo, ln=True)
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(30, 10, "Test", 1)
-            pdf.cell(40, 10, "Frecuencia (Hz)", 1)
-            pdf.cell(30, 10, "Varianza", 1)
-            pdf.cell(30, 10, "RMS", 1)
-            pdf.cell(50, 10, "Amplitud (cm)", 1)
-            pdf.ln(10)
-            pdf.set_font("Arial", "", 12)
-
-            for _, row in df.iterrows():
-                pdf.cell(30, 10, row['Test'], 1)
-                pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
-                pdf.cell(30, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
-                pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
-                pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
-                pdf.ln(10)
-            pdf.ln(5)
-
-        imprimir_parametros(pdf, parametros_config1, "Parámetros Configuración 1")
-        imprimir_parametros(pdf, parametros_config2, "Parámetros Configuración 2")
-        imprimir_resultados(pdf, df_resultados_config1, "Resultados Configuración 1")
-        imprimir_resultados(pdf, df_resultados_config2, "Resultados Configuración 2")
-
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Conclusión", ln=True)
-        pdf.set_font("Arial", size=12)
-        pdf.multi_cell(0, 10, conclusion)
-
-        pdf_output = BytesIO()
-        pdf_bytes = pdf.output(dest='S').encode('latin1')
-        pdf_output.write(pdf_bytes)
-        pdf_output.seek(0)
-
-        st.download_button(
-            label="Descargar Informe PDF",
-            data=pdf_output,
-            file_name="informe_temblor.pdf",
-            mime="application/pdf"
-        )
+                archivos_cargados = all([
+                    config1_archivos[test] is not None and config2_archivos[test] is not None
+                    for test in ["Reposo", "Postural", "Acción"]
+                ])
+            
+                if not archivos_cargados:
+                    st.warning("Por favor, cargue los 3 archivos CSV para ambas configuraciones.")
+                else:
+                    df_config1_reposo = pd.read_csv(config1_archivos["Reposo"])
+                    df_config2_reposo = pd.read_csv(config2_archivos["Reposo"])
+            
+                    def limpiar_campos(df, campos):
+                        resultado = {}
+                        for campo in campos:
+                            valor = df.iloc[0].get(campo, "No especificado")
+                            if pd.isna(valor) or str(valor).strip() == "":
+                                valor = "No especificado"
+                            resultado[campo] = valor
+                        return resultado
+            
+                    campos_personales = ["Nombre", "Apellido", "Edad", "Sexo"]
+                    campos_estim = ["ECP", "GPI", "NST", "Polaridad", "Duración", "Pulso", "Corriente", "Voltaje", "Frecuencia"]
+            
+                    datos_personales = limpiar_campos(df_config1_reposo, campos_personales)
+                    parametros_config1 = limpiar_campos(df_config1_reposo, campos_estim)
+                    parametros_config2 = limpiar_campos(df_config2_reposo, campos_estim)
+            
+                    df_resultados_config1 = analizar_configuracion(config1_archivos)
+                    df_resultados_config2 = analizar_configuracion(config2_archivos)
+            
+                    st.subheader("Resultados Configuración 1")
+                    st.dataframe(df_resultados_config1)
+            
+                    st.subheader("Resultados Configuración 2")
+                    st.dataframe(df_resultados_config2)
+            
+                    prom_config1 = df_resultados_config1.mean(numeric_only=True)
+                    prom_config2 = df_resultados_config2.mean(numeric_only=True)
+            
+                    puntaje1 = prom_config1['Frecuencia Dominante (Hz)'] + prom_config1['Varianza (m2/s4)'] + prom_config1['RMS (m/s2)'] + prom_config1['Amplitud Temblor (cm)']
+                    puntaje2 = prom_config2['Frecuencia Dominante (Hz)'] + prom_config2['Varianza (m2/s4)'] + prom_config2['RMS (m/s2)'] + prom_config2['Amplitud Temblor (cm)']
+            
+                    if puntaje1 < puntaje2:
+                        conclusion = "La Configuración 1 muestra una reducción mayor del temblor."
+                    elif puntaje2 < puntaje1:
+                        conclusion = "La Configuración 2 muestra una reducción mayor del temblor."
+                    else:
+                        conclusion = "Ambas configuraciones muestran resultados similares."
+            
+                    st.subheader("Conclusión")
+                    st.write(conclusion)
+            
+                    # Generar PDF
+                    pdf = FPDF()
+                    pdf.add_page()
+                    pdf.set_font("Arial", 'B', 16)
+                    pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True, align="C")
+            
+                    pdf.set_font("Arial", size=12)
+                    pdf.ln(10)
+                    pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
+                    pdf.cell(0, 10, f"Nombre: {datos_personales.get('Nombre', 'No especificado')}", ln=True)
+                    pdf.cell(0, 10, f"Apellido: {datos_personales.get('Apellido', 'No especificado')}", ln=True)
+                    pdf.cell(0, 10, f"Edad: {datos_personales.get('Edad', 'No especificado')}", ln=True)
+                    pdf.cell(0, 10, f"Sexo: {datos_personales.get('Sexo', 'No especificado')}", ln=True)
+                    pdf.ln(5)
+            
+                    def imprimir_parametros(pdf, parametros, titulo):
+                        pdf.set_font("Arial", 'B', 14)
+                        pdf.cell(0, 10, titulo, ln=True)
+                        pdf.set_font("Arial", size=12)
+                        for key, value in parametros.items():
+                            pdf.cell(0, 8, f"{key}: {value}", ln=True)
+                        pdf.ln(5)
+            
+                    def imprimir_resultados(pdf, df, titulo):
+                        pdf.set_font("Arial", 'B', 14)
+                        pdf.cell(0, 10, titulo, ln=True)
+                        pdf.set_font("Arial", 'B', 12)
+                        pdf.cell(30, 10, "Test", 1)
+                        pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+                        pdf.cell(30, 10, "Varianza", 1)
+                        pdf.cell(30, 10, "RMS", 1)
+                        pdf.cell(50, 10, "Amplitud (cm)", 1)
+                        pdf.ln(10)
+                        pdf.set_font("Arial", "", 12)
+            
+                        for _, row in df.iterrows():
+                            pdf.cell(30, 10, row['Test'], 1)
+                            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+                            pdf.cell(30, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
+                            pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+                            pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+                            pdf.ln(10)
+                        pdf.ln(5)
+            
+                    imprimir_parametros(pdf, parametros_config1, "Parámetros Configuración 1")
+                    imprimir_parametros(pdf, parametros_config2, "Parámetros Configuración 2")
+                    imprimir_resultados(pdf, df_resultados_config1, "Resultados Configuración 1")
+                    imprimir_resultados(pdf, df_resultados_config2, "Resultados Configuración 2")
+            
+                    pdf.set_font("Arial", 'B', 14)
+                    pdf.cell(0, 10, "Conclusión", ln=True)
+                    pdf.set_font("Arial", size=12)
+                    pdf.multi_cell(0, 10, conclusion)
+            
+                    pdf_output = BytesIO()
+                    pdf_bytes = pdf.output(dest='S').encode('latin1')
+                    pdf_output.write(pdf_bytes)
+                    pdf_output.seek(0)
+            
+                    st.download_button(
+                        label="Descargar Informe PDF",
+                        data=pdf_output,
+                        file_name="informe_temblor.pdf",
+                        mime="application/pdf"
+                    )
 
