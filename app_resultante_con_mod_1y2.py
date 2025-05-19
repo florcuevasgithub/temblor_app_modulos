@@ -324,9 +324,9 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
 
     def generar_conclusion_comparativa(res1, res2):
     # Menor valor en cada métrica indica menor temblor
-    score1 = res1.values[0]
-    score2 = res2.values[0]
-    mejor = "Configuración 1" if np.sum(score1) < np.sum(score2) else "Configuración 2"
+                score1 = res1.values[0]
+                score2 = res2.values[0]
+                mejor = "Configuración 1" if np.sum(score1) < np.sum(score2) else "Configuración 2"
     return f"La {mejor} presenta un menor promedio en las métricas analizadas, lo que indica una reducción más efectiva del temblor."
 
     from fpdf import FPDF
