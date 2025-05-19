@@ -355,21 +355,21 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                 st.subheader("Conclusión")
                 st.write(conclusion)
 
-            # Generar PDF con datos personales, parámetros, resultados y conclusión
-           
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", 'B', 16)
-            pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True, align="C")
-
-            pdf.set_font("Arial", size=12)
-            pdf.ln(10) 
-            pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")}", ln=True)
-            pdf.cell(0, 10, f"Nombre: {datos_personales.get('Nombre', 'No especificado')}", ln=True)
-            pdf.cell(0, 10, f"Apellido: {datos_personales.get('Apellido', 'No especificado')}", ln=True)
-            pdf.cell(0, 10, f"Edad: {edad_str}, {datos_personales.get('Edad', 'No especificado')}", ln=True) 
-            pdf.cell(0, 10, f"Sexo: {datos_personales.get('Sexo', 'No especificado')}", ln=True)
-            pdf.ln(5)
+                        # Generar PDF con datos personales, parámetros, resultados y conclusión
+                       
+                        pdf = FPDF()
+                        pdf.add_page()
+                        pdf.set_font("Arial", 'B', 16)
+                        pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True, align="C")
+            
+                        pdf.set_font("Arial", size=12)
+                        pdf.ln(10) 
+                        pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")}", ln=True)
+                        pdf.cell(0, 10, f"Nombre: {datos_personales.get('Nombre', 'No especificado')}", ln=True)
+                        pdf.cell(0, 10, f"Apellido: {datos_personales.get('Apellido', 'No especificado')}", ln=True)
+                        pdf.cell(0, 10, f"Edad: {edad_str}, {datos_personales.get('Edad', 'No especificado')}", ln=True) 
+                        pdf.cell(0, 10, f"Sexo: {datos_personales.get('Sexo', 'No especificado')}", ln=True)
+                        pdf.ln(5)
 
             def imprimir_parametros(pdf, parametros, titulo):
                 pdf.set_font("Arial", 'B', 14)
