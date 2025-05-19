@@ -249,10 +249,10 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
     st.title("📊 Comparar dos configuraciones de estimulación")
 
     def analizar_configuracion(archivos):
-    import pandas as pd
-    resultados = []
-    datos_personales = {}
-    parametros_estim = {}
+                import pandas as pd
+                resultados = []
+                datos_personales = {}
+                parametros_estim = {}
 
     for archivo in archivos:
         df = pd.read_csv(archivo)
