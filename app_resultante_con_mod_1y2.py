@@ -388,7 +388,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             # Generar PDF
             pdf = FPDF()
             pdf.add_page()
-            pdf.set_font("Arial", 'B', 16)
+            pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True, align="C")
 
             pdf.set_font("Arial", size=10)
@@ -406,9 +406,9 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             imprimir_resultados(pdf, df_resultados_config1, "Resultados Configuración 1")
             imprimir_resultados(pdf, df_resultados_config2, "Resultados Configuración 2")
 
-            pdf.set_font("Arial", 'B', 14)
+            pdf.set_font("Arial", 'B', 12)
             pdf.cell(0, 10, "Conclusión", ln=True)
-            pdf.set_font("Arial", size=12)
+            pdf.set_font("Arial", size=10)
             pdf.multi_cell(0, 10, conclusion)
 
             pdf_output = BytesIO()
