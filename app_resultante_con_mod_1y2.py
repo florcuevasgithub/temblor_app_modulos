@@ -276,6 +276,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
         for test, archivo in archivos.items():
             st.write(f"Archivo para test '{test}': tipo -> {type(archivo)}")
             if archivo is not None:
+                archivo.seek(0)
                 df = pd.read_csv(archivo)
                 df_ventana = analizar_temblor_por_ventanas_resultante(df, fs=fs)
                 if not df_ventana.empty:
