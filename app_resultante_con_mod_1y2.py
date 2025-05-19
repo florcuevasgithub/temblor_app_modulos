@@ -322,27 +322,27 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
     promedio = df_resultados.mean().to_frame().T
     return promedio, datos_personales, parametros_estim
 
-def generar_conclusion_comparativa(res1, res2):
+    def generar_conclusion_comparativa(res1, res2):
     # Menor valor en cada métrica indica menor temblor
     score1 = res1.values[0]
     score2 = res2.values[0]
     mejor = "Configuración 1" if np.sum(score1) < np.sum(score2) else "Configuración 2"
     return f"La {mejor} presenta un menor promedio en las métricas analizadas, lo que indica una reducción más efectiva del temblor."
 
-from fpdf import FPDF
-import io
+    from fpdf import FPDF
+    import io
 
-def generar_pdf_comparativo(datos1, params1, res1, datos2, params2, res2, conclusion):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True)
-
-    pdf.set_font("Arial", "", 12)
-    pdf.ln(5)
-    pdf.cell(0, 10, f"Nombre: {datos1['Nombre']}", ln=True)
-    pdf.cell(0, 10, f"Edad: {datos1['Edad']}", ln=True)
-    pdf.cell(0, 10, f"Diagnóstico: {datos1['Diagnóstico']}", ln=True)
+   def generar_pdf_comparativo(datos1, params1, res1, datos2, params2, res2, conclusion):
+                pdf = FPDF()
+                pdf.add_page()
+                pdf.set_font("Arial", "B", 14)
+                pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True)
+            
+                pdf.set_font("Arial", "", 12)
+                pdf.ln(5)
+                pdf.cell(0, 10, f"Nombre: {datos1['Nombre']}", ln=True)
+                pdf.cell(0, 10, f"Edad: {datos1['Edad']}", ln=True)
+                pdf.cell(0, 10, f"Diagnóstico: {datos1['Diagnóstico']}", ln=True)
 
     def agregar_parametros(titulo, params):
         pdf.ln(5)
@@ -378,43 +378,43 @@ def generar_pdf_comparativo(datos1, params1, res1, datos2, params2, res2, conclu
     buffer.seek(0)
     return buffer
 
-st.markdown("### Suba los archivos de la **Configuración 1** (reposo, postural y acción)")
-    archivos_config1 = st.file_uploader("Archivos configuración 1", type="csv", accept_multiple_files=True, key="conf1")
-
-    st.markdown("### Suba los archivos de la **Configuración 2** (reposo, postural y acción)")
-    archivos_config2 = st.file_uploader("Archivos configuración 2", type="csv", accept_multiple_files=True, key="conf2")
-
-    if len(archivos_config1) == 3 and len(archivos_config2) == 3:
-        if st.button("📊 Comparar configuraciones"):
-            with st.spinner("Analizando Configuración 1..."):
-                res1, datos1, params1 = analizar_configuracion(archivos_config1)
-
-            with st.spinner("Analizando Configuración 2..."):
-                res2, datos2, params2 = analizar_configuracion(archivos_config2)
-
-            # Mostrar resultados
-            st.subheader("Resultados promedio de cada configuración")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("**Configuración 1**")
-                st.dataframe(res1.style.format("{:.2f}"))
-            with col2:
-                st.markdown("**Configuración 2**")
-                st.dataframe(res2.style.format("{:.2f}"))
-
-            # Conclusión automática
-            conclusion = generar_conclusion_comparativa(res1, res2)
-            st.markdown("### 🧠 Conclusión automática")
-            st.success(conclusion)
-
-            # Generar PDF
-            buffer_pdf = generar_pdf_comparativo(datos1, params1, res1, datos2, params2, res2, conclusion)
-
-            st.download_button(
-                label="📄 Descargar informe PDF",
-                data=buffer_pdf,
-                file_name="informe_comparativo.pdf",
-                mime="application/pdf"
-            )
+    st.markdown("### Suba los archivos de la **Configuración 1** (reposo, postural y acción)")
+                archivos_config1 = st.file_uploader("Archivos configuración 1", type="csv", accept_multiple_files=True, key="conf1")
+            
+                st.markdown("### Suba los archivos de la **Configuración 2** (reposo, postural y acción)")
+                archivos_config2 = st.file_uploader("Archivos configuración 2", type="csv", accept_multiple_files=True, key="conf2")
+            
+                if len(archivos_config1) == 3 and len(archivos_config2) == 3:
+                    if st.button("📊 Comparar configuraciones"):
+                        with st.spinner("Analizando Configuración 1..."):
+                            res1, datos1, params1 = analizar_configuracion(archivos_config1)
+            
+                        with st.spinner("Analizando Configuración 2..."):
+                            res2, datos2, params2 = analizar_configuracion(archivos_config2)
+            
+                        # Mostrar resultados
+                        st.subheader("Resultados promedio de cada configuración")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.markdown("**Configuración 1**")
+                            st.dataframe(res1.style.format("{:.2f}"))
+                        with col2:
+                            st.markdown("**Configuración 2**")
+                            st.dataframe(res2.style.format("{:.2f}"))
+            
+                        # Conclusión automática
+                        conclusion = generar_conclusion_comparativa(res1, res2)
+                        st.markdown("### 🧠 Conclusión automática")
+                        st.success(conclusion)
+            
+                        # Generar PDF
+                        buffer_pdf = generar_pdf_comparativo(datos1, params1, res1, datos2, params2, res2, conclusion)
+            
+                        st.download_button(
+                            label="📄 Descargar informe PDF",
+                            data=buffer_pdf,
+                            file_name="informe_comparativo.pdf",
+                            mime="application/pdf"
+                        )
     else:
         st.warning("Debe subir exactamente 3 archivos CSV para cada configuración.")
