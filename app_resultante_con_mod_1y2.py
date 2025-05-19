@@ -9,10 +9,9 @@ from scipy.signal import butter, filtfilt, welch
 from fpdf import FPDF
 from datetime import datetime, timedelta
 import os
-import streamlit as st
 from scipy.fft import fft, fftfreq
 import unicodedata
-from fpdf import FPDF
+import io
 
 
 
@@ -245,12 +244,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
 
-mport streamlit as st
-import numpy as np
-import pandas as pd
-from scipy.signal import butter, filtfilt
-from fpdf import FPDF
-import io
+
 
 elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
     st.title("📊 Comparar dos configuraciones de estimulación")
