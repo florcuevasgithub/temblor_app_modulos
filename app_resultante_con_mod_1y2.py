@@ -13,40 +13,46 @@ import unicodedata
 import io
 from io import BytesIO, StringIO
 import streamlit as st
-# Personalización del file_uploader
+
+# Cambios visuales del file_uploader
 st.markdown("""
     <style>
-    /* Cambiar texto central de arrastrar */
-    div[data-testid="stFileUploader"] > div > div > div > span {
-        font-size: 16px;
+    /* Cambiar etiquetas de encabezado para Reposo, Postural, Acción */
+    .prueba-titulo {
+        font-size: 20px;
+        color: #0a84ff;
         font-weight: bold;
-        color: #444;
-    }
-    
-    /* Cambiar el botón Browse files por 'Cargar archivos' */
-    div[data-testid="stFileUploader"] label {
-        color: white !important;
-        background-color: #0E1117;
-        border: 1px solid #CCC;
-        border-radius: 8px;
-        padding: 0.5em 1em;
+        margin-top: 1em;
     }
 
-    div[data-testid="stFileUploader"] label span {
+    /* Cambiar texto del botón "Browse files" */
+    button[kind="secondary"] {
         visibility: hidden;
-        position: relative;
     }
-
-    div[data-testid="stFileUploader"] label span::before {
+    button[kind="secondary"]::before {
         content: "Cargar archivos";
         visibility: visible;
-        position: absolute;
-        left: 0;
+        display: inline-block;
+        background-color: #0E1117;
+        color: white;
+        padding: 0.5em 1em;
+        border-radius: 6px;
+    }
+
+    /* Cambiar texto principal del uploader */
+    span[class^="uploadDropzone"]::before {
+        content: "Arrastrar archivos aquí";
+        display: block;
+        font-weight: bold;
+        font-size: 16px;
+        color: #444;
+    }
+
+    span[class^="uploadDropzone"] > span {
+        display: none;
     }
     </style>
 """, unsafe_allow_html=True)
-
-
 
 # --------- Funciones compartidas ----------
 def filtrar_temblor(signal, fs=100):
@@ -214,11 +220,21 @@ if opcion == "1️⃣ Análisis de una medición":
 
         
 
+        st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en reposo</div>', unsafe_allow_html=True)
+        reposo_file = st.file_uploader("", type=["csv"], key="reposo")
+
+        st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba postural</div>', unsafe_allow_html=True)
+        postural_file = st.file_uploader("", type=["csv"], key="postural")
+
+        st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en acción</div>', unsafe_allow_html=True)
+        accion_file = st.file_uploader("", type=["csv"], key="accion")
+
         uploaded_files = {
-            "Reposo": st.file_uploader("Subir archivo CSV para prueba en reposo", type=["csv"], key="reposo"),
-            "Postural": st.file_uploader("Subir archivo CSV para prueba postural", type=["csv"], key="postural"),
-            "Acción": st.file_uploader("Subir archivo CSV para prueba en acción", type=["csv"], key="accion"),
+            "Reposo": reposo_file,
+            "Postural": postural_file,
+            "Acción": accion_file,
         }
+            
 
         if st.button("Iniciar análisis"):
             resultados_globales = []
