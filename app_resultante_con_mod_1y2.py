@@ -52,7 +52,6 @@ div[data-testid="stFileUploaderDropzoneInstructions"] > div > span::before {
     font-size: 16px;
     color: #444;
 }
-}
 </style>
 """, unsafe_allow_html=True)
 # --------- Funciones compartidas ----------
