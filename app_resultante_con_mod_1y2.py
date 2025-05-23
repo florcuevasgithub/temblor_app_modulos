@@ -33,7 +33,7 @@ st.markdown("""
         content: "Cargar archivos";
         visibility: visible;
         display: inline-block;
-        background-color: #0E1117;
+        background-color: #0e1617;
         color: white;
         padding: 0.5em 1em;
         border-radius: 6px;
@@ -220,13 +220,13 @@ if opcion == "1️⃣ Análisis de una medición":
 
         
 
-        st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en reposo</div>', unsafe_allow_html=True)
+        st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
         reposo_file = st.file_uploader("", type=["csv"], key="reposo")
 
-        st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba postural</div>', unsafe_allow_html=True)
+        st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba POSTURAL</div>', unsafe_allow_html=True)
         postural_file = st.file_uploader("", type=["csv"], key="postural")
 
-        st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en acción</div>', unsafe_allow_html=True)
+        st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
         accion_file = st.file_uploader("", type=["csv"], key="accion")
 
         uploaded_files = {
