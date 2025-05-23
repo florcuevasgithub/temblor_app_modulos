@@ -13,43 +13,38 @@ import unicodedata
 import io
 from io import BytesIO, StringIO
 import streamlit as st
-# CSS personalizado para traducir el file_uploader
+# Personalización del file_uploader
 st.markdown("""
     <style>
-    /* Cambiar texto del área de arrastrar archivos */
-    div[data-testid="stFileUploaderDropzone"] > div:first-child {
-        visibility: hidden;
-        position: relative;
-        height: 40px;
-    }
-
-    div[data-testid="stFileUploaderDropzone"] > div:first-child::before {
-        content: "Arrastrar archivos aquí";
-        visibility: visible;
-        position: absolute;
-        top: 0;
-        left: 0;
-        font-weight: bold;
+    /* Cambiar texto central de arrastrar */
+    div[data-testid="stFileUploader"] > div > div > div > span {
         font-size: 16px;
+        font-weight: bold;
         color: #444;
     }
-
-    /* Cambiar texto del botón */
-    button[kind="primary"] {
-        position: relative;
-        color: transparent !important;
+    
+    /* Cambiar el botón Browse files por 'Cargar archivos' */
+    div[data-testid="stFileUploader"] label {
+        color: white !important;
+        background-color: #0E1117;
+        border: 1px solid #CCC;
+        border-radius: 8px;
+        padding: 0.5em 1em;
     }
 
-    button[kind="primary"]::after {
+    div[data-testid="stFileUploader"] label span {
+        visibility: hidden;
+        position: relative;
+    }
+
+    div[data-testid="stFileUploader"] label span::before {
         content: "Cargar archivos";
-        color: white;
+        visibility: visible;
         position: absolute;
-        left: 16px;
-        top: 0;
+        left: 0;
     }
     </style>
 """, unsafe_allow_html=True)
-
 
 
 
