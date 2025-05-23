@@ -24,12 +24,11 @@ st.markdown("""
         font-weight: bold;
         margin-top: 1em;
     }
-
     /* Cambiar texto del botón "Browse files" */
-    button[kind="secondary"] {
+    span[class^="uploadDropzone"] button[kind="secondary"] {
         visibility: hidden;
     }
-    button[kind="secondary"]::before {
+    span[class^="uploadDropzone"] button[kind="secondary"]::before {
         content: "Cargar archivos";
         visibility: visible;
         display: inline-block;
