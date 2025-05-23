@@ -180,7 +180,7 @@ if opcion == "1️⃣ Análisis de una medición":
 
 
 
-        st.title("Análisis de una medicion")
+        
 
         uploaded_files = {
             "Reposo": st.file_uploader("Subir archivo CSV para prueba en reposo", type=["csv"], key="reposo"),
