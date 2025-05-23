@@ -62,6 +62,7 @@ st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos configuraciones de estimulación"])
 
 if opcion == "1️⃣ Análisis de una medición":
+           st.title("📈​ Análisis de una medición")
         # -*- coding: utf-8 -*-
 
         # --------- Funciones auxiliares ----------
