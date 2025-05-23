@@ -21,7 +21,7 @@ div[data-testid="stFileUploader"] button[kind="secondary"] {
 }
 div[data-testid="stFileUploader"] button[kind="secondary"]::before {
     float: right;
-    margin-right: 0;  /* para que quede pegado al borde derecho */
+    margin-right: 0;
     content: "Cargar archivos";
     visibility: visible;
     display: inline-block;
@@ -30,6 +30,13 @@ div[data-testid="stFileUploader"] button[kind="secondary"]::before {
     padding: 0.5em 1em;
     border-radius: 6px;
     border: 2px solid white;
+    cursor: pointer;
+}
+/* Contenedor padre para alinear el botón a la derecha */
+div[data-testid="stFileUploader"] > div {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
 }
 div[data-testid="stFileUploader"] span[class^="uploadDropzone"]::before {
     content: "Arrastrar archivos aquí";
