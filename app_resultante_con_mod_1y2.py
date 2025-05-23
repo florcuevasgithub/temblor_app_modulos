@@ -20,13 +20,16 @@ div[data-testid="stFileUploader"] button[kind="secondary"] {
     visibility: hidden;
 }
 div[data-testid="stFileUploader"] button[kind="secondary"]::before {
+    float: right;
+    margin-right: 0;  /* para que quede pegado al borde derecho */
     content: "Cargar archivos";
     visibility: visible;
     display: inline-block;
-    background-color: #0e1617;
+    background-color: #FF5722;
     color: white;
     padding: 0.5em 1em;
     border-radius: 6px;
+    border: 2px solid white;
 }
 div[data-testid="stFileUploader"] span[class^="uploadDropzone"]::before {
     content: "Arrastrar archivos aquí";
