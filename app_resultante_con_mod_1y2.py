@@ -14,7 +14,8 @@ import io
 from io import BytesIO, StringIO
 import streamlit as st
 
-/* Aplica solo a botones secundarios que estén dentro del file uploader */
+st.markdown("""
+<style>
 div[data-testid="stFileUploader"] button[kind="secondary"] {
     visibility: hidden;
 }
@@ -27,8 +28,6 @@ div[data-testid="stFileUploader"] button[kind="secondary"]::before {
     padding: 0.5em 1em;
     border-radius: 6px;
 }
-
-/* Cambiar texto principal del uploader */
 div[data-testid="stFileUploader"] span[class^="uploadDropzone"]::before {
     content: "Arrastrar archivos aquí";
     display: block;
@@ -39,6 +38,8 @@ div[data-testid="stFileUploader"] span[class^="uploadDropzone"]::before {
 div[data-testid="stFileUploader"] span[class^="uploadDropzone"] > span {
     display: none;
 }
+</style>
+""", unsafe_allow_html=True)
 # --------- Funciones compartidas ----------
 def filtrar_temblor(signal, fs=100):
            b, a = butter(N=4, Wn=[1, 15], btype='bandpass', fs=fs)
