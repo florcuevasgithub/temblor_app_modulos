@@ -17,12 +17,9 @@ from io import BytesIO, StringIO
 
 
 # --------- Funciones compartidas ----------
-def filtrar_temblor(senal, fs, lowcut=3, highcut=12, order=4):
-            nyq = 0.5 * fs
-            low = lowcut / nyq
-            high = highcut / nyq
-            b, a = butter(order, [low, high], btype='band')
-            return filtfilt(b, a, senal)
+def filtrar_temblor(signal, fs=200):
+           b, a = butter(N=4, Wn=[3, 12], btype='bandpass', fs=fs)
+           return filtfilt(b, a, signal)
 
 def analizar_temblor_por_ventanas_resultante(df, fs=200, ventana_seg=2):
             df = df[['Acel_X', 'Acel_Y', 'Acel_Z']].dropna()
