@@ -37,17 +37,21 @@ div[data-testid="stFileUploader"] > div {
     justify-content: flex-end;
     align-items: center;
 }
-/* Ocultar texto original del drag and drop */
-div[data-testid="stFileUploader"] div[class*="uploadDropzone"] > span {
-    display: none;
+/* Cambiar el texto "Drag and drop file here" */
+div[data-testid="stFileUploaderDropzoneInstructions"] > div > span {
+    visibility: hidden;
+    position: relative;
 }
-/* Texto nuevo para drag and drop */
-div[data-testid="stFileUploader"] div[class*="uploadDropzone"]::before {
-    content: "Arrastrar archivos aquí";
-    display: block;
+
+div[data-testid="stFileUploaderDropzoneInstructions"] > div > span::before {
+    content: "Arrastrar archivo aquí";
+    visibility: visible;
+    position: absolute;
+    left: 0;
     font-weight: bold;
     font-size: 16px;
     color: #444;
+}
 }
 </style>
 """, unsafe_allow_html=True)
