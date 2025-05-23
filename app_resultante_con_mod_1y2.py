@@ -14,7 +14,6 @@ import io
 from io import BytesIO, StringIO
 import streamlit as st
 
-# Cambios visuales del file_uploader
 st.markdown("""
     <style>
     /* Cambiar etiquetas de encabezado para Reposo, Postural, Acción */
@@ -24,7 +23,8 @@ st.markdown("""
         font-weight: bold;
         margin-top: 1em;
     }
-    /* Cambiar texto del botón "Browse files" */
+
+    /* Cambiar texto del botón "Browse files" SOLO DENTRO DEL UPLOADER */
     span[class^="uploadDropzone"] button[kind="secondary"] {
         visibility: hidden;
     }
@@ -52,7 +52,6 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
 # --------- Funciones compartidas ----------
 def filtrar_temblor(signal, fs=100):
            b, a = butter(N=4, Wn=[1, 15], btype='bandpass', fs=fs)
