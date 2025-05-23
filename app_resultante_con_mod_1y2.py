@@ -14,37 +14,31 @@ import io
 from io import BytesIO, StringIO
 import streamlit as st
 
-# Cambios visuales del file_uploader
-st.markdown("""
-    <style>
-    /* Cambiar texto del botón "Browse files" */
-    span[class^="uploadDropzone"] button[kind="secondary"] {
-        visibility: hidden;
-    }
-    span[class^="uploadDropzone"] button[kind="secondary"]::before {
-        content: "Cargar archivos";
-        visibility: visible;
-        display: inline-block;
-        background-color: #0e1617;
-        color: white;
-        padding: 0.5em 1em;
-        border-radius: 6px;
-    }
+/* Aplica solo a botones secundarios que estén dentro del file uploader */
+div[data-testid="stFileUploader"] button[kind="secondary"] {
+    visibility: hidden;
+}
+div[data-testid="stFileUploader"] button[kind="secondary"]::before {
+    content: "Cargar archivos";
+    visibility: visible;
+    display: inline-block;
+    background-color: #0e1617;
+    color: white;
+    padding: 0.5em 1em;
+    border-radius: 6px;
+}
 
-    /* Cambiar texto principal del uploader */
-    span[class^="uploadDropzone"]::before {
-        content: "Arrastrar archivos aquí";
-        display: block;
-        font-weight: bold;
-        font-size: 16px;
-        color: #444;
-    }
-
-    span[class^="uploadDropzone"] > span {
-        display: none;
-    }
-    </style>
-""", unsafe_allow_html=True)
+/* Cambiar texto principal del uploader */
+div[data-testid="stFileUploader"] span[class^="uploadDropzone"]::before {
+    content: "Arrastrar archivos aquí";
+    display: block;
+    font-weight: bold;
+    font-size: 16px;
+    color: #444;
+}
+div[data-testid="stFileUploader"] span[class^="uploadDropzone"] > span {
+    display: none;
+}
 # --------- Funciones compartidas ----------
 def filtrar_temblor(signal, fs=100):
            b, a = butter(N=4, Wn=[1, 15], btype='bandpass', fs=fs)
