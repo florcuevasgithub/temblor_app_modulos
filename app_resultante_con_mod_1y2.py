@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # app_temblor.py
 
-import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,6 +12,44 @@ from scipy.fft import fft, fftfreq
 import unicodedata
 import io
 from io import BytesIO, StringIO
+import streamlit as st
+# CSS personalizado para traducir el file_uploader
+st.markdown("""
+    <style>
+    /* Cambiar texto del área de arrastrar archivos */
+    div[data-testid="stFileUploaderDropzone"] > div:first-child {
+        visibility: hidden;
+        position: relative;
+        height: 40px;
+    }
+
+    div[data-testid="stFileUploaderDropzone"] > div:first-child::before {
+        content: "Arrastrar archivos aquí";
+        visibility: visible;
+        position: absolute;
+        top: 0;
+        left: 0;
+        font-weight: bold;
+        font-size: 16px;
+        color: #444;
+    }
+
+    /* Cambiar texto del botón */
+    button[kind="primary"] {
+        position: relative;
+        color: transparent !important;
+    }
+
+    button[kind="primary"]::after {
+        content: "Cargar archivos";
+        color: white;
+        position: absolute;
+        left: 16px;
+        top: 0;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 
 
 
