@@ -17,19 +17,11 @@ import streamlit as st
 # Cambios visuales del file_uploader
 st.markdown("""
     <style>
-    /* Cambiar etiquetas de encabezado para Reposo, Postural, Acción */
-    .prueba-titulo {
-        font-size: 20px;
-        color: #0a84ff;
-        font-weight: bold;
-        margin-top: 1em;
-    }
-
     /* Cambiar texto del botón "Browse files" */
-    button[kind="secondary"] {
+    span[class^="uploadDropzone"] button[kind="secondary"] {
         visibility: hidden;
     }
-    button[kind="secondary"]::before {
+    span[class^="uploadDropzone"] button[kind="secondary"]::before {
         content: "Cargar archivos";
         visibility: visible;
         display: inline-block;
