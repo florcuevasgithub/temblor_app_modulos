@@ -329,10 +329,7 @@ def reset_archivos():
                 del st.session_state.resultados_globales
             st.experimental_rerun()
 
-def reset_archivos():
-    for key in ["reposo_file", "postural_file", "accion_file"]:
-        if key in st.session_state:
-            del st.session_state[key]
+
 
 elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
     st.title("📊 Comparar dos configuraciones de estimulación")
