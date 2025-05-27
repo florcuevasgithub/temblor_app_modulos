@@ -23,6 +23,10 @@ def limpiar_archivos_subidos():
         if clave in st.session_state:
             del st.session_state[clave]
 
+if "reiniciar" in st.session_state:
+    del st.session_state["reiniciar"]
+    st.experimental_rerun()
+
 st.markdown("""
     <style>
     /* Oculta el texto 'Limit 200MB per file • CSV' */
@@ -103,10 +107,9 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
 
 st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos configuraciones de estimulación"])
-if st.sidebar.button("🔄 Nuevo análisis"):
+if st.button("🔄 Nuevo análisis"):
     limpiar_archivos_subidos()
-    st.session_state.clear()
-    st.experimental_rerun()
+    st.session_state["reiniciar"] = True
 if opcion == "1️⃣ Análisis de una medición":
         st.title("📈​ Análisis de una medición")
         # -*- coding: utf-8 -*-
