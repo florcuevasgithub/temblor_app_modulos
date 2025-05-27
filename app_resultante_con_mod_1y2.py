@@ -22,15 +22,6 @@ def limpiar_archivos_subidos():
     for clave in claves_a_borrar:
         if clave in st.session_state:
             del st.session_state[clave]
-# Inicializar una variable en el estado de sesión para controlar el reinicio
-if "reiniciar" not in st.session_state:
-    st.session_state.reiniciar = False
-
-# Si se activó el reinicio, forzamos un rerun
-if st.session_state.reiniciar:
-    limpiar_archivos_subidos()
-    st.session_state.clear()
-    st.experimental_rerun()
 
 st.markdown("""
     <style>
@@ -113,7 +104,9 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
 st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos configuraciones de estimulación"])
 if st.sidebar.button("🔄 Nuevo análisis"):
-    st.session_state.reiniciar = True
+    limpiar_archivos_subidos()
+    st.session_state.clear()
+    st.experimental_rerun()
 if opcion == "1️⃣ Análisis de una medición":
         st.title("📈​ Análisis de una medición")
         # -*- coding: utf-8 -*-
@@ -325,10 +318,7 @@ if opcion == "1️⃣ Análisis de una medición":
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
-    if st.button("🔄 Nuevo análisis"):
-        limpiar_archivos_subidos()
-        st.session_state.clear()
-        st.experimental_rerun()
+
 
 
 elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
