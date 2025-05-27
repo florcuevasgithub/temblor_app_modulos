@@ -216,24 +216,33 @@ if opcion == "1️⃣ Análisis de una medición":
 
         
 
+        # Inicializa el estado de sesión de forma segura
+        def inicializar_estado():
+            for key in [
+                "reposo_file", "postural_file", "accion_file",
+                "reposo_file_2", "postural_file_2", "accion_file_2"
+        ]:
+            if key not in st.session_state:
+                st.session_state[key] = None
+
+        inicializar_estado()
+
+        # Interfaz de carga de archivos
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
-        #reposo_file = st.file_uploader("", type=["csv"], key="reposo")
-        reposo_file = st.file_uploader("", type=["csv"], key="reposo_file")
+        st.session_state.reposo_file = st.file_uploader("", type=["csv"], key="reposo_file")
+
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba POSTURAL</div>', unsafe_allow_html=True)
-        #postural_file = st.file_uploader("", type=["csv"], key="postural")
-        postural_file = st.file_uploader("", type=["csv"], key="postural_file")
+        st.session_state.postural_file = st.file_uploader("", type=["csv"], key="postural_file")
+
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
-        #accion_file = st.file_uploader("", type=["csv"], key="accion")
-        accion_file = st.file_uploader("", type=["csv"], key="accion_file")
-        
+        st.session_state.accion_file = st.file_uploader("", type=["csv"], key="accion_file")
+
+        # Estilo para los file uploader
         st.markdown("""
             <style>
-            /* Ocultar el texto original de "Drag and drop file here" */
             div[data-testid="stFileUploaderDropzoneInstructions"] span {
-                display: none !important;
+            display: none !important;
             }
-            
-            /* Añadir nuestro propio texto arriba del botón */
             div[data-testid="stFileUploaderDropzoneInstructions"]::before {
                 content: "Arrastrar archivo aquí";
                 font-weight: bold;
@@ -245,28 +254,15 @@ if opcion == "1️⃣ Análisis de una medición":
             </style>
         """, unsafe_allow_html=True)
 
-        if "reposo_file" not in st.session_state:
-            st.session_state.reposo_file = None
-        if "postural_file" not in st.session_state:
-            st.session_state.postural_file = None
-        if "accion_file" not in st.session_state:
-            st.session_state.accion_file = None
-
-    
-        #uploaded_files = {
-          #  "Reposo": reposo_file,
-         #   "Postural": postural_file,
-        #    "Acción": accion_file,
-       # }
-
+        # Cargar archivos desde session_state de forma segura
         uploaded_files = {
-            "Reposo": st.session_state.reposo_file,
-            "Postural": st.session_state.postural_file,
-            "Acción": st.session_state.accion_file,
+            "Reposo": st.session_state.get("reposo_file"),
+            "Postural": st.session_state.get("postural_file"),
+            "Acción": st.session_state.get("accion_file"),
         }
-        
-    
-        if st.button("▶️ Iniciar análisis"):
+
+        # Botón para iniciar análisis
+            if st.button("▶️ Iniciar análisis"):
             resultados_globales = []
             mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
             datos_personales = None
@@ -275,7 +271,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 df_ventana = analizar_temblor_por_ventanas_resultante(datos, fs=100)
 
                 if datos_personales is None:
-                    datos_personales = datos.iloc[0].to_frame().T
+                datos_personales = datos.iloc[0].to_frame().T
 
                 if not df_ventana.empty:
                     prom = df_ventana.mean(numeric_only=True)
@@ -291,9 +287,7 @@ if opcion == "1️⃣ Análisis de una medición":
                         'Amplitud Temblor (cm)': round(amp_cm, 2)
                     })
 
-
             if resultados_globales:
-
                 nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
                 apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
                 edad = datos_personales.iloc[0].get("Edad", "No especificado")
@@ -305,6 +299,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 df_resultados = pd.DataFrame(resultados_globales)
                 st.subheader("Resultados Promediados por Test")
                 st.dataframe(df_resultados)
+
                 diagnostico = diagnosticar(df_resultados)
                 st.subheader("Diagnóstico")
                 st.write(diagnostico)
@@ -320,14 +315,21 @@ if opcion == "1️⃣ Análisis de una medición":
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
-        if st.button("🔄 Nuevo análisis"):
+# Función para reiniciar archivos
+        def reset_archivos():
             st.session_state.reposo_file = None
             st.session_state.postural_file = None
             st.session_state.accion_file = None
-        # Limpiar también resultados o variables si tienes
+            st.session_state.reposo_file_2 = None
+            st.session_state.postural_file_2 = None
+            st.session_state.accion_file_2 = None
+
+# Botón de reinicio
+        if st.button("🔄 Nuevo análisis"):
+        reset_archivos()
         if "resultados_globales" in st.session_state:
             del st.session_state.resultados_globales
-            st.experimental_rerun()  # Recarga la app para reflejar el cambio
+        st.experimental_rerun()
 
 
 
