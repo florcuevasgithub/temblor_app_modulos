@@ -357,8 +357,9 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                     prom = df_ventana.mean(numeric_only=True)
                     freq = prom['Frecuencia Dominante (Hz)']
                     amp_g = prom['Amplitud Temblor (g)']
-                    amp_cm = (amp_g * 981) / ((2 * np.pi * freq) ** 2) if freq > 0 else 0.0
-
+                    #amp_cm = (amp_g * 981) / ((2 * np.pi * freq) ** 2) if freq > 0 else 0.0
+                    amp_cm = prom['Amplitud Temblor (cm)']
+                    
                     resultados.append({
                         'Test': test,
                         'Frecuencia Dominante (Hz)': round(freq, 2),
