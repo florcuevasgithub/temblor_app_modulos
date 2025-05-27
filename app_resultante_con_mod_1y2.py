@@ -225,7 +225,7 @@ if opcion == "1️⃣ Análisis de una medición":
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
         accion_file = st.file_uploader("", type=["csv"], key="accion")
 
-       
+       # aca el 1
             
 
         if st.button("Iniciar análisis"):
@@ -302,24 +302,8 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
         "Acción": st.file_uploader("Archivo de ACCION configuracion 2", type="csv", key="accion2")
     }
 
-    st.markdown("""
-    <style>
-    /* Ocultar el texto original de "Drag and drop file here" */
-    div[data-testid="stFileUploaderDropzoneInstructions"] span {
-        display: none !important;
-    }
-    
-    /* Añadir nuestro propio texto arriba del botón */
-    div[data-testid="stFileUploaderDropzoneInstructions"]::before {
-        content: "Arrastrar archivo aquí";
-        font-weight: bold;
-        font-size: 16px;
-        color: #444;
-        display: block;
-        margin-bottom: 0.5rem;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+
+    # aca el 2
 
     def analizar_configuracion(archivos, fs=100):
         resultados = []
