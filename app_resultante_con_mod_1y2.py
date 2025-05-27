@@ -15,40 +15,40 @@ from io import BytesIO, StringIO
 import streamlit as st
 
 st.markdown("""
-<style>
-/* Oculta el texto 'Limit 200MB per file • CSV' */
-div[data-testid="stFileUploaderDropzoneInstructions"] {
-    display: none !important;
-}
-
-div[data-testid="stFileUploader"] button[kind="secondary"] {
-    visibility: hidden;
-}
-div[data-testid="stFileUploader"] button[kind="secondary"]::before {
-    float: right;
-    margin-right: 0;
-    content: "Cargar archivos";
-    visibility: visible;
-    display: inline-block;
-    background-color: #FF5722;
-    color: white;
-    padding: 0.5em 1em;
-    border-radius: 6px;
-    border: 2px solid white;
-    cursor: pointer;
-}
-/* Alinea todo a la derecha */
-div[data-testid="stFileUploader"] > div:first-child {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-}
-div[data-testid="stFileUploader"] > div {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-}
-</style>
+    <style>
+    /* Oculta el texto 'Limit 200MB per file • CSV' */
+    div[data-testid="stFileUploaderDropzoneInstructions"] {
+        display: none !important;
+    }
+    
+    div[data-testid="stFileUploader"] button[kind="secondary"] {
+        visibility: hidden;
+    }
+    div[data-testid="stFileUploader"] button[kind="secondary"]::before {
+        float: right;
+        margin-right: 0;
+        content: "Cargar archivos";
+        visibility: visible;
+        display: inline-block;
+        background-color: #FF5722;
+        color: white;
+        padding: 0.5em 1em;
+        border-radius: 6px;
+        border: 2px solid white;
+        cursor: pointer;
+    }
+    /* Alinea todo a la derecha */
+    div[data-testid="stFileUploader"] > div:first-child {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+    div[data-testid="stFileUploader"] > div {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+    </style>
 """, unsafe_allow_html=True)
 # --------- Funciones compartidas ----------
 def filtrar_temblor(signal, fs=100):
@@ -226,22 +226,22 @@ if opcion == "1️⃣ Análisis de una medición":
         accion_file = st.file_uploader("", type=["csv"], key="accion")
 
        st.markdown("""
-        <style>
-        /* Ocultar el texto original de "Drag and drop file here" */
-        div[data-testid="stFileUploaderDropzoneInstructions"] span {
-            display: none !important;
-        }
-        
-        /* Añadir nuestro propio texto arriba del botón */
-        div[data-testid="stFileUploaderDropzoneInstructions"]::before {
-            content: "Arrastrar archivo aquí";
-            font-weight: bold;
-            font-size: 16px;
-            color: #444;
-            display: block;
-            margin-bottom: 0.5rem;
-        }
-        </style>
+            <style>
+            /* Ocultar el texto original de "Drag and drop file here" */
+            div[data-testid="stFileUploaderDropzoneInstructions"] span {
+                display: none !important;
+            }
+            
+            /* Añadir nuestro propio texto arriba del botón */
+            div[data-testid="stFileUploaderDropzoneInstructions"]::before {
+                content: "Arrastrar archivo aquí";
+                font-weight: bold;
+                font-size: 16px;
+                color: #444;
+                display: block;
+                margin-bottom: 0.5rem;
+            }
+            </style>
         """, unsafe_allow_html=True)
 
     
@@ -327,22 +327,22 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
     }
 
     st.markdown("""
-    <style>
-    /* Ocultar el texto original de "Drag and drop file here" */
-    div[data-testid="stFileUploaderDropzoneInstructions"] span {
-        display: none !important;
-    }
-    
-    /* Añadir nuestro propio texto arriba del botón */
-    div[data-testid="stFileUploaderDropzoneInstructions"]::before {
-        content: "Arrastrar archivo aquí";
-        font-weight: bold;
-        font-size: 16px;
-        color: #444;
-        display: block;
-        margin-bottom: 0.5rem;
-    }
-    </style>
+        <style>
+        /* Ocultar el texto original de "Drag and drop file here" */
+        div[data-testid="stFileUploaderDropzoneInstructions"] span {
+            display: none !important;
+        }
+        
+        /* Añadir nuestro propio texto arriba del botón */
+        div[data-testid="stFileUploaderDropzoneInstructions"]::before {
+            content: "Arrastrar archivo aquí";
+            font-weight: bold;
+            font-size: 16px;
+            color: #444;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        </style>
     """, unsafe_allow_html=True)
 
     def analizar_configuracion(archivos, fs=100):
