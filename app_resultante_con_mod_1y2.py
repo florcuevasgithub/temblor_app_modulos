@@ -15,6 +15,7 @@ from io import BytesIO, StringIO
 import streamlit as st
 
 st.markdown("""
+<style>
 /* Oculta el texto 'Limit 200MB per file • CSV' */
 div[data-testid="stFileUploaderDropzoneInstructions"] {
     display: none !important;
