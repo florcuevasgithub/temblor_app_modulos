@@ -16,24 +16,15 @@ import os
 import glob
 import streamlit as st
 
-def limpiar_estado_y_archivos():
-    claves_csv = ["reposo_file", "postural_file", "accion_file", 
-                  "reposo_file_conf2", "postural_file_conf2", "accion_file_conf2"]
+# Inicializar una variable en el estado de sesión para controlar el reinicio
+if "reiniciar" not in st.session_state:
+    st.session_state.reiniciar = False
 
-    for clave in claves_csv:
-        if clave in st.session_state:
-            del st.session_state[clave]
-
-    # Limpia otros datos que uses (por ejemplo, resultados previos)
-    for clave in ["resultados_mod1", "resultados_mod2", "diagnostico", "pdf_generado"]:
-        if clave in st.session_state:
-            del st.session_state[clave]
-
-    # Marca que se debe reiniciar
-    st.session_state["reiniciar"] = True
-if "reiniciar" in st.session_state:
-    del st.session_state["reiniciar"]
+# Si se activó el reinicio, forzamos un rerun
+if st.session_state.reiniciar:
+    st.session_state.clear()
     st.experimental_rerun()
+    
 st.markdown("""
     <style>
     /* Oculta el texto 'Limit 200MB per file • CSV' */
@@ -114,9 +105,8 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
 
 st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos configuraciones de estimulación"])
-if st.button("🔄 Nuevo análisis"):
-    limpiar_estado_y_archivos()
-    st.session_state["reiniciar"] = True
+if st.sidebar.button("🔄 Nuevo análisis"):
+    st.session_state.reiniciar = True
 if opcion == "1️⃣ Análisis de una medición":
         st.title("📈​ Análisis de una medición")
         # -*- coding: utf-8 -*-
