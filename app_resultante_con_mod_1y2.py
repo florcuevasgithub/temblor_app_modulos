@@ -16,19 +16,19 @@ import os
 import glob
 import streamlit as st
 
-def borrar_archivos_temporales():
-    for archivo in glob.glob("*.csv"):
-        try:
-            os.remove(archivo)
-        except:
-            pass
+def limpiar_archivos_subidos():
+    claves_a_borrar = ["reposo_file", "postural_file", "accion_file", 
+                       "reposo_file_conf2", "postural_file_conf2", "accion_file_conf2"]
+    for clave in claves_a_borrar:
+        if clave in st.session_state:
+            del st.session_state[clave]
 # Inicializar una variable en el estado de sesión para controlar el reinicio
 if "reiniciar" not in st.session_state:
     st.session_state.reiniciar = False
 
 # Si se activó el reinicio, forzamos un rerun
 if st.session_state.reiniciar:
-    borrar_archivos_temporales()
+    limpiar_archivos_subidos()
     st.session_state.clear()
     st.experimental_rerun()
 
