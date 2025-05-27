@@ -320,12 +320,12 @@ if opcion == "1️⃣ Análisis de una medición":
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
-       if st.button("🔄 Nuevo análisis"):
+        if st.button("🔄 Nuevo análisis"):
             st.session_state.reposo_file = None
             st.session_state.postural_file = None
             st.session_state.accion_file = None
         # Limpiar también resultados o variables si tienes
-       if "resultados_globales" in st.session_state:
+        if "resultados_globales" in st.session_state:
             del st.session_state.resultados_globales
             st.experimental_rerun()  # Recarga la app para reflejar el cambio
 
