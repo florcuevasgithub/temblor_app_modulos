@@ -325,7 +325,10 @@ if opcion == "1️⃣ Análisis de una medición":
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
-
+    if st.button("🔄 Nuevo análisis"):
+        limpiar_archivos_subidos()
+        st.session_state.clear()
+        st.experimental_rerun()
 
 
 elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
