@@ -271,7 +271,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 df_ventana = analizar_temblor_por_ventanas_resultante(datos, fs=100)
 
                 if datos_personales is None:
-                datos_personales = datos.iloc[0].to_frame().T
+                    datos_personales = datos.iloc[0].to_frame().T
 
                 if not df_ventana.empty:
                     prom = df_ventana.mean(numeric_only=True)
