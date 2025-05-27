@@ -317,7 +317,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
 # Función para reiniciar archivos
-        def reset_archivos():
+    def reset_archivos():
                 for key in [
                         "reposo_file", "postural_file", "accion_file",
                         "reposo_file_1", "postural_file_1", "accion_file_1",
