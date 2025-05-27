@@ -17,9 +17,10 @@ import streamlit as st
 st.markdown("""
 <style>
 /* Oculta el texto de "Limit 200MB per file • CSV" */
-div[data-testid="stFileUploader"] > div > span {
+div[data-testid="stFileUploader"] span {
     display: none !important;
 }
+
 div[data-testid="stFileUploader"] button[kind="secondary"] {
     visibility: hidden;
 }
