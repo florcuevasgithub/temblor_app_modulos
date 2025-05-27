@@ -229,14 +229,15 @@ if opcion == "1️⃣ Análisis de una medición":
 
         # Interfaz de carga de archivos
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
-        st.session_state.reposo_file = st.file_uploader("", type=["csv"], key="reposo_file")
-
+        #st.session_state.reposo_file = st.file_uploader("", type=["csv"], key="reposo_file")
+        st.file_uploader("", type=["csv"], key="reposo_file")
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba POSTURAL</div>', unsafe_allow_html=True)
-        st.session_state.postural_file = st.file_uploader("", type=["csv"], key="postural_file")
-
+        #st.session_state.postural_file = st.file_uploader("", type=["csv"], key="postural_file")
+        st.file_uploader("", type=["csv"], key="postural_file")
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
-        st.session_state.accion_file = st.file_uploader("", type=["csv"], key="accion_file")
-
+        #st.session_state.accion_file = st.file_uploader("", type=["csv"], key="accion_file")
+        st.file_uploader("", type=["csv"], key="accion_file")
+    
         # Estilo para los file uploader
         st.markdown("""
             <style>
