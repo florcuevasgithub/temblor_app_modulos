@@ -225,7 +225,31 @@ if opcion == "1️⃣ Análisis de una medición":
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
         accion_file = st.file_uploader("", type=["csv"], key="accion")
 
-       # aca el 1
+       st.markdown("""
+        <style>
+        /* Ocultar el texto original de "Drag and drop file here" */
+        div[data-testid="stFileUploaderDropzoneInstructions"] span {
+            display: none !important;
+        }
+        
+        /* Añadir nuestro propio texto arriba del botón */
+        div[data-testid="stFileUploaderDropzoneInstructions"]::before {
+            content: "Arrastrar archivo aquí";
+            font-weight: bold;
+            font-size: 16px;
+            color: #444;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+    
+        uploaded_files = {
+            "Reposo": reposo_file,
+            "Postural": postural_file,
+            "Acción": accion_file,
+        }
             
 
         if st.button("Iniciar análisis"):
@@ -302,8 +326,24 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
         "Acción": st.file_uploader("Archivo de ACCION configuracion 2", type="csv", key="accion2")
     }
 
-
-    # aca el 2
+    st.markdown("""
+    <style>
+    /* Ocultar el texto original de "Drag and drop file here" */
+    div[data-testid="stFileUploaderDropzoneInstructions"] span {
+        display: none !important;
+    }
+    
+    /* Añadir nuestro propio texto arriba del botón */
+    div[data-testid="stFileUploaderDropzoneInstructions"]::before {
+        content: "Arrastrar archivo aquí";
+        font-weight: bold;
+        font-size: 16px;
+        color: #444;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
     def analizar_configuracion(archivos, fs=100):
         resultados = []
