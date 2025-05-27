@@ -217,14 +217,15 @@ if opcion == "1️⃣ Análisis de una medición":
         
 
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
-        reposo_file = st.file_uploader("", type=["csv"], key="reposo")
-
+        #reposo_file = st.file_uploader("", type=["csv"], key="reposo")
+        reposo_file = st.file_uploader("Archivo REPOSO", type=["csv"], key="reposo_file")
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba POSTURAL</div>', unsafe_allow_html=True)
-        postural_file = st.file_uploader("", type=["csv"], key="postural")
-
+        #postural_file = st.file_uploader("", type=["csv"], key="postural")
+        postural_file = st.file_uploader("Archivo POSTURAL", type=["csv"], key="postural_file")
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
-        accion_file = st.file_uploader("", type=["csv"], key="accion")
-
+        #accion_file = st.file_uploader("", type=["csv"], key="accion")
+        accion_file = st.file_uploader("Archivo ACCIÓN", type=["csv"], key="accion_file")
+        
         st.markdown("""
             <style>
             /* Ocultar el texto original de "Drag and drop file here" */
@@ -244,14 +245,34 @@ if opcion == "1️⃣ Análisis de una medición":
             </style>
         """, unsafe_allow_html=True)
 
-    
-        uploaded_files = {
-            "Reposo": reposo_file,
-            "Postural": postural_file,
-            "Acción": accion_file,
-        }
-            
+        if "reposo_file" not in st.session_state:
+        st.session_state.reposo_file = None
+        if "postural_file" not in st.session_state:
+        st.session_state.postural_file = None
+        if "accion_file" not in st.session_state:
+        st.session_state.accion_file = None
 
+    
+        #uploaded_files = {
+          #  "Reposo": reposo_file,
+         #   "Postural": postural_file,
+        #    "Acción": accion_file,
+       # }
+
+        uploaded_files = {
+            "Reposo": st.session_state.reposo_file,
+            "Postural": st.session_state.postural_file,
+            "Acción": st.session_state.accion_file,
+        }
+        if st.button("🔄 Nuevo análisis"):
+        st.session_state.reposo_file = None
+        st.session_state.postural_file = None
+        st.session_state.accion_file = None
+        # Limpiar también resultados o variables si tienes
+        if "resultados_globales" in st.session_state:
+        del st.session_state.resultados_globales
+        st.experimental_rerun()  # Recarga la app para reflejar el cambio
+    
         if st.button("Iniciar análisis"):
             resultados_globales = []
             mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
