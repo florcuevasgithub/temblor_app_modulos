@@ -317,13 +317,10 @@ if opcion == "1️⃣ Análisis de una medición":
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
 # Función para reiniciar archivos
-        def reset_archivos():
-            st.session_state.reposo_file = None
-            st.session_state.postural_file = None
-            st.session_state.accion_file = None
-            st.session_state.reposo_file_2 = None
-            st.session_state.postural_file_2 = None
-            st.session_state.accion_file_2 = None
+def reset_archivos():
+    for key in ["reposo_file", "postural_file", "accion_file"]:
+        if key in st.session_state:
+            del st.session_state[key]
 
 # Botón de reinicio
         if st.button("🔄 Nuevo análisis"):
@@ -332,7 +329,10 @@ if opcion == "1️⃣ Análisis de una medición":
                 del st.session_state.resultados_globales
             st.experimental_rerun()
 
-
+def reset_archivos():
+    for key in ["reposo_file", "postural_file", "accion_file"]:
+        if key in st.session_state:
+            del st.session_state[key]
 
 elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
     st.title("📊 Comparar dos configuraciones de estimulación")
