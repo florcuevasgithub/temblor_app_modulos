@@ -246,11 +246,11 @@ if opcion == "1️⃣ Análisis de una medición":
         """, unsafe_allow_html=True)
 
         if "reposo_file" not in st.session_state:
-        st.session_state.reposo_file = None
+            st.session_state.reposo_file = None
         if "postural_file" not in st.session_state:
-        st.session_state.postural_file = None
+            st.session_state.postural_file = None
         if "accion_file" not in st.session_state:
-        st.session_state.accion_file = None
+            st.session_state.accion_file = None
 
     
         #uploaded_files = {
