@@ -14,6 +14,15 @@ import io
 from io import BytesIO, StringIO
 import streamlit as st
 
+# Inicializar una variable en el estado de sesión para controlar el reinicio
+if "reiniciar" not in st.session_state:
+    st.session_state.reiniciar = False
+
+# Si se activó el reinicio, forzamos un rerun
+if st.session_state.reiniciar:
+    st.session_state.clear()
+    st.experimental_rerun()
+
 st.markdown("""
     <style>
     /* Oculta el texto 'Limit 200MB per file • CSV' */
@@ -94,7 +103,8 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
 
 st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos configuraciones de estimulación"])
-
+if st.sidebar.button("🔄 Nuevo análisis"):
+    st.session_state.reiniciar = True
 if opcion == "1️⃣ Análisis de una medición":
         st.title("📈​ Análisis de una medición")
         # -*- coding: utf-8 -*-
