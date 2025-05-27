@@ -218,13 +218,13 @@ if opcion == "1️⃣ Análisis de una medición":
 
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
         #reposo_file = st.file_uploader("", type=["csv"], key="reposo")
-        reposo_file = st.file_uploader("Archivo REPOSO", type=["csv"], key="reposo_file")
+        reposo_file = st.file_uploader("", type=["csv"], key="reposo_file")
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba POSTURAL</div>', unsafe_allow_html=True)
         #postural_file = st.file_uploader("", type=["csv"], key="postural")
-        postural_file = st.file_uploader("Archivo POSTURAL", type=["csv"], key="postural_file")
+        postural_file = st.file_uploader("", type=["csv"], key="postural_file")
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
         #accion_file = st.file_uploader("", type=["csv"], key="accion")
-        accion_file = st.file_uploader("Archivo ACCIÓN", type=["csv"], key="accion_file")
+        accion_file = st.file_uploader("", type=["csv"], key="accion_file")
         
         st.markdown("""
             <style>
@@ -264,14 +264,7 @@ if opcion == "1️⃣ Análisis de una medición":
             "Postural": st.session_state.postural_file,
             "Acción": st.session_state.accion_file,
         }
-        if st.button("🔄 Nuevo análisis"):
-            st.session_state.reposo_file = None
-            st.session_state.postural_file = None
-            st.session_state.accion_file = None
-        # Limpiar también resultados o variables si tienes
-        if "resultados_globales" in st.session_state:
-            del st.session_state.resultados_globales
-            st.experimental_rerun()  # Recarga la app para reflejar el cambio
+        
     
         if st.button("Iniciar análisis"):
             resultados_globales = []
@@ -327,6 +320,14 @@ if opcion == "1️⃣ Análisis de una medición":
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
+       if st.button("🔄 Nuevo análisis"):
+            st.session_state.reposo_file = None
+            st.session_state.postural_file = None
+            st.session_state.accion_file = None
+        # Limpiar también resultados o variables si tienes
+       if "resultados_globales" in st.session_state:
+            del st.session_state.resultados_globales
+            st.experimental_rerun()  # Recarga la app para reflejar el cambio
 
 
 
