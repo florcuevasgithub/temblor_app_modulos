@@ -326,10 +326,10 @@ if opcion == "1️⃣ Análisis de una medición":
 
 # Botón de reinicio
         if st.button("🔄 Nuevo análisis"):
-        reset_archivos()
-        if "resultados_globales" in st.session_state:
-            del st.session_state.resultados_globales
-        st.experimental_rerun()
+            reset_archivos()
+            if "resultados_globales" in st.session_state:
+                del st.session_state.resultados_globales
+            st.experimental_rerun()
 
 
 
