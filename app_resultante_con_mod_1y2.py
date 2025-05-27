@@ -262,7 +262,7 @@ if opcion == "1️⃣ Análisis de una medición":
         }
 
         # Botón para iniciar análisis
-            if st.button("▶️ Iniciar análisis"):
+        if st.button("▶️ Iniciar análisis"):
             resultados_globales = []
             mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
             datos_personales = None
