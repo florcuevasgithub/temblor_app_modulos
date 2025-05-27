@@ -37,6 +37,12 @@ div[data-testid="stFileUploader"] button[kind="secondary"]::before {
     border: 2px solid white;
     cursor: pointer;
 }
+/* Alinea todo a la derecha */
+div[data-testid="stFileUploader"] > div:first-child {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
 div[data-testid="stFileUploader"] > div {
     display: flex;
     justify-content: flex-end;
