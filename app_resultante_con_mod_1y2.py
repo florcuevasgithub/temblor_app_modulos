@@ -222,8 +222,8 @@ if opcion == "1️⃣ Análisis de una medición":
                 "reposo_file", "postural_file", "accion_file",
                 "reposo_file_2", "postural_file_2", "accion_file_2"
         ]:
-            if key not in st.session_state:
-                st.session_state[key] = None
+                if key not in st.session_state:
+                    st.session_state[key] = None
 
         inicializar_estado()
 
