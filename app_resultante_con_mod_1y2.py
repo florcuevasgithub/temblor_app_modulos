@@ -51,11 +51,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 # --------- Funciones compartidas ----------
-def filtrar_temblor(signal, fs=100):
-           b, a = butter(N=4, Wn=[1, 15], btype='bandpass', fs=fs)
+def filtrar_temblor(signal, fs=200):
+           b, a = butter(N=4, Wn=[1, 20], btype='bandpass', fs=fs)
            return filtfilt(b, a, signal)
 
-def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
+def analizar_temblor_por_ventanas_resultante(df, fs=200, ventana_seg=2):
             df = df[['Acel_X', 'Acel_Y', 'Acel_Z']].dropna()
             ax = df['Acel_X'].to_numpy()
             ay = df['Acel_Y'].to_numpy()
@@ -345,7 +345,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
         </style>
     """, unsafe_allow_html=True)
 
-    def analizar_configuracion(archivos, fs=100):
+    def analizar_configuracion(archivos, fs=200):
         resultados = []
         for test, archivo in archivos.items():
             #st.write(f"Archivo para test '{test}': tipo -> {type(archivo)}")
