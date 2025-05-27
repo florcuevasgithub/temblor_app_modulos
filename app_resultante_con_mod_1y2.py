@@ -20,11 +20,6 @@ import streamlit as st
 if "reiniciar" not in st.session_state:
     st.session_state.reiniciar = False
 
-# Si se activó el reinicio, forzamos un rerun
-if st.session_state.reiniciar:
-    st.session_state.clear()
-    st.experimental_rerun()
-    
 st.markdown("""
     <style>
     /* Oculta el texto 'Limit 200MB per file • CSV' */
@@ -100,13 +95,26 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
 
             return pd.DataFrame(resultados)
 
+def manejar_reinicio():
+    if st.session_state.get("reiniciar", False):
+        # Borramos los archivos CSV en el directorio actual (solo si querés esto)
+        for file in os.listdir():
+            if file.endswith(".csv"):
+                try:
+                    os.remove(file)
+                except Exception as e:
+                    st.warning(f"No se pudo borrar {file}: {e}")
+        
+        st.session_state.clear()
+        st.experimental_rerun()
+
 
 # ------------------ Modo principal --------------------
 
 st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos configuraciones de estimulación"])
 if st.sidebar.button("🔄 Nuevo análisis"):
-    st.session_state.reiniciar = True
+    manejar_reinicio()
 if opcion == "1️⃣ Análisis de una medición":
         st.title("📈​ Análisis de una medición")
         # -*- coding: utf-8 -*-
