@@ -317,10 +317,10 @@ if opcion == "1️⃣ Análisis de una medición":
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
 # Función para reiniciar archivos
-def reset_archivos():
-    for key in ["reposo_file", "postural_file", "accion_file"]:
-        if key in st.session_state:
-            del st.session_state[key]
+        def reset_archivos():
+            for key in ["reposo_file", "postural_file", "accion_file"]:
+                if key in st.session_state:
+                    del st.session_state[key]
 
 # Botón de reinicio
         if st.button("🔄 Nuevo análisis"):
