@@ -12,14 +12,23 @@ from scipy.fft import fft, fftfreq
 import unicodedata
 import io
 from io import BytesIO, StringIO
+import os
+import glob
 import streamlit as st
 
+def borrar_archivos_temporales():
+    for archivo in glob.glob("*.csv"):
+        try:
+            os.remove(archivo)
+        except:
+            pass
 # Inicializar una variable en el estado de sesión para controlar el reinicio
 if "reiniciar" not in st.session_state:
     st.session_state.reiniciar = False
 
 # Si se activó el reinicio, forzamos un rerun
 if st.session_state.reiniciar:
+    borrar_archivos_temporales()
     st.session_state.clear()
     st.experimental_rerun()
 
