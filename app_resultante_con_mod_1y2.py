@@ -14,7 +14,7 @@ import io
 from io import BytesIO, StringIO
 import streamlit as st
 
-st.markdown("""
+    st.markdown("""
     <style>
     /* Oculta el texto 'Limit 200MB per file • CSV' */
     div[data-testid="stFileUploaderDropzoneInstructions"] {
@@ -49,7 +49,7 @@ st.markdown("""
         align-items: center;
     }
     </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 # --------- Funciones compartidas ----------
 def filtrar_temblor(signal, fs=100):
            b, a = butter(N=4, Wn=[1, 15], btype='bandpass', fs=fs)
@@ -225,7 +225,7 @@ if opcion == "1️⃣ Análisis de una medición":
         st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
         accion_file = st.file_uploader("", type=["csv"], key="accion")
 
-       st.markdown("""
+        st.markdown("""
             <style>
             /* Ocultar el texto original de "Drag and drop file here" */
             div[data-testid="stFileUploaderDropzoneInstructions"] span {
