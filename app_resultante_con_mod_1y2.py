@@ -66,12 +66,9 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
             ax = df['Acel_X'].to_numpy()
             ay = df['Acel_Y'].to_numpy()
             az = df['Acel_Z'].to_numpy()
-
-            # Opción 3: Remover la gravedad
             resultante = np.sqrt(ax**2 + ay**2 + az**2)
-            movimiento = resultante - 9.81  # Aceleración sin gravedad
-
-            señal_filtrada = filtrar_temblor(movimiento, fs)
+            
+            señal_filtrada = filtrar_temblor(resultante, fs)
 
             tamaño_ventana = int(fs * ventana_seg)
             num_ventanas = len(señal_filtrada) // tamaño_ventana
@@ -81,17 +78,12 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
                 segmento = señal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
                 if len(segmento) < tamaño_ventana:
                     continue
-                segmento = segmento - np.mean(segmento)
                 f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
                 freq_dominante = f[np.argmax(Pxx)]
                 varianza = np.var(segmento)
                 rms = np.sqrt(np.mean(segmento**2))
                 amp_g = np.max(segmento) - np.min(segmento)
-                if freq_dominante > 2.5:
-                    amp_cm = (amp_g * 981) / ((2 * np.pi * freq_dominante) ** 2)
-                else:
-                    amp_cm = 0.0  # o np.nan
-                # amp_cm = (amp_g * 981) / ((2 * np.pi * freq_dominante) ** 2) if freq_dominante > 0 else 0.0
+                amp_cm = (amp_g * 981) / ((2 * np.pi * freq_dominante) ** 2) if freq_dominante > 0 else 0.0
 
                 resultados.append({
                     'Frecuencia Dominante (Hz)': freq_dominante,
