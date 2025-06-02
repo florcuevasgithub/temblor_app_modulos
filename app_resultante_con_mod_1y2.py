@@ -66,7 +66,10 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
             ax = df['Acel_X'].to_numpy()
             ay = df['Acel_Y'].to_numpy()
             az = df['Acel_Z'].to_numpy()
+
+            # Opción 3: Remover la gravedad
             resultante = np.sqrt(ax**2 + ay**2 + az**2)
+            resultante = resultante - 9.81  # Aceleración sin gravedad
 
             señal_filtrada = filtrar_temblor(resultante, fs)
 
