@@ -22,7 +22,6 @@ import unicodedata
 import io
 from io import BytesIO, StringIO
 from ahrs.filters import Mahony
-from ahrs.common.orientation import q_to_matrix
 import os
 import glob
 import streamlit as st
@@ -71,6 +70,14 @@ st.markdown("""
 def filtrar_temblor(signal, fs=100):
            b, a = butter(N=4, Wn=[1, 15], btype='bandpass', fs=fs)
            return filtfilt(b, a, signal)
+
+def q_to_matrix(q):
+    w, x, y, z = q
+    return np.array([
+        [1 - 2*(y**2 + z**2),     2*(x*y - z*w),         2*(x*z + y*w)],
+        [2*(x*y + z*w),           1 - 2*(x**2 + z**2),   2*(y*z - x*w)],
+        [2*(x*z - y*w),           2*(y*z + x*w),         1 - 2*(x**2 + y**2)]
+    ])
 
 def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
             required_cols = ['Acel_X', 'Acel_Y', 'Acel_Z', 'GyroX', 'GyroY', 'GyroZ']
