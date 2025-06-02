@@ -69,9 +69,9 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
 
             # Opción 3: Remover la gravedad
             resultante = np.sqrt(ax**2 + ay**2 + az**2)
-            resultante = resultante - 9.81  # Aceleración sin gravedad
+            movimiento = resultante - 9.81  # Aceleración sin gravedad
 
-            señal_filtrada = filtrar_temblor(resultante, fs)
+            señal_filtrada = filtrar_temblor(movimiento, fs)
 
             tamaño_ventana = int(fs * ventana_seg)
             num_ventanas = len(señal_filtrada) // tamaño_ventana
