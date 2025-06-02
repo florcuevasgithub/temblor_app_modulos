@@ -116,18 +116,18 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
               # Conversión de amplitud de aceleración a desplazamiento (cm)
               # Esta fórmula asume un movimiento armónico simple.
               # `amp_g` está en m/s^2. Multiplicamos por 981 para convertir a cm/s^2.
-              if freq_dominante > 2.5: # Evitar divisiones por cero o valores muy bajos de frecuencia
+              if freq_dominante > 1.5: # Evitar divisiones por cero o valores muy bajos de frecuencia
                 amp_cm = (amp_g * 981) / ((2 * np.pi * freq_dominante) ** 2)
               else:
                 amp_cm = 0.0
 
-             resultados.append({
+            resultados.append({
                'Frecuencia Dominante (Hz)': freq_dominante,
                'Varianza (m2/s4)': varianza,
                'RMS (m/s2)': rms,
                'Amplitud Temblor (g)': amp_g, # Nota: esta es la amplitud en m/s^2, no en unidades 'g' de 9.81.
                'Amplitud Temblor (cm)': amp_cm
-             })
+            })
 
             return pd.DataFrame(resultados)
 
