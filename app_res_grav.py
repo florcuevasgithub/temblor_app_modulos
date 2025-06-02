@@ -80,10 +80,10 @@ def q_to_matrix(q):
     ])
 
 def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
-            required_cols = ['Acel_X', 'Acel_Y', 'Acel_Z', 'GyroX', 'GyroY', 'GyroZ']
+            required_cols = ['Acel_X', 'Acel_Y', 'Acel_Z', 'GiroX', 'GiroY', 'GiroZ']
             df = df[required_cols].dropna()
             acc = df[['Acel_X', 'Acel_Y', 'Acel_Z']].to_numpy()
-            gyr = np.radians(df[['GyroX', 'GyroY', 'GyroZ']].to_numpy())
+            gyr = np.radians(df[['GiroX', 'GiroY', 'GiroZ']].to_numpy())
             mahony = Mahony(gyr=gyr, acc=acc, frequency=fs)
             Q = mahony.update()
             linear_accelerations_magnitude = []
