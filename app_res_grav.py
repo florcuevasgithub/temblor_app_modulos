@@ -85,7 +85,9 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
             acc = df[['Acel_X', 'Acel_Y', 'Acel_Z']].to_numpy()
             gyr = np.radians(df[['GiroX', 'GiroY', 'GiroZ']].to_numpy())
             mahony = Mahony(gyr=gyr, acc=acc, frequency=fs)
-            Q = mahony.update()
+            Q = mahony.Q
+            st.write("Shape de Q:", Q.shape)
+            st.write("Primer cuaternión:", Q[0])
             linear_accelerations_magnitude = []
             g_world_vector = np.array([0.0, 0.0, 9.81])
 
