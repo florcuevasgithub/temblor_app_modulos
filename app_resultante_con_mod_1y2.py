@@ -81,6 +81,7 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
                 segmento = señal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
                 if len(segmento) < tamaño_ventana:
                     continue
+                segmento = segmento - np.mean(segmento)
                 f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
                 freq_dominante = f[np.argmax(Pxx)]
                 varianza = np.var(segmento)
@@ -90,6 +91,7 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
                     amp_cm = (amp_g * 981) / ((2 * np.pi * freq_dominante) ** 2)
                 else:
                     amp_cm = 0.0  # o np.nan
+                # amp_cm = (amp_g * 981) / ((2 * np.pi * freq_dominante) ** 2) if freq_dominante > 0 else 0.0
 
                 resultados.append({
                     'Frecuencia Dominante (Hz)': freq_dominante,
