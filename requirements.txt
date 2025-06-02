@@ -4,4 +4,4 @@ numpy
 matplotlib
 scipy
 fpdf
-
+ahrs
