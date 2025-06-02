@@ -4,4 +4,4 @@ numpy
 matplotlib
 scipy
 fpdf
-ahrs
+ahrs==0.2.15
