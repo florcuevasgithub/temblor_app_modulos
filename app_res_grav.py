@@ -120,13 +120,13 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
               # Métricas de temblor
               varianza = np.var(segmento)
               rms = np.sqrt(np.mean(segmento**2))
-              amp_g = np.max(segmento) - np.min(segmento) # Amplitud pico a pico
+              amp_g = (np.max(segmento) - np.min(segmento))/2 # Amplitud pico en m/s2
 
               # Conversión de amplitud de aceleración a desplazamiento (cm)
               # Esta fórmula asume un movimiento armónico simple.
-              # `amp_g` está en m/s^2. Multiplicamos por 981 para convertir a cm/s^2.
+              # `amp_g` está en m/s^2. Multiplicamos por 100 para convertir a cm/s^2.
               if freq_dominante > 1.5: # Evitar divisiones por cero o valores muy bajos de frecuencia
-                amp_cm = (amp_g * 981) / ((2 * np.pi * freq_dominante) ** 2)
+                amp_cm = ((amp_g * 100) / ((2 * np.pi * freq_dominante) ** 2))*2 #amplitud total pico a pico
               else:
                 amp_cm = 0.0
 
