@@ -653,6 +653,11 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                 else:
                     st.warning(f"Faltan archivos para el test {test} en al menos una Medición.")
 
+
+            # --- AGREGAR LA CONCLUSIÓN A STREAMLIT ---
+            st.subheader("Conclusión del Análisis Comparativo")
+            st.write(conclusion) # Muestra la conclusión en la interfaz
+
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(0, 10, "Conclusión", ln=True)
             pdf.set_font("Arial", size=10)
