@@ -567,7 +567,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                     df2_promedio, df2_ventanas = analizar_temblor_por_ventanas_resultante(df2, fs=100)
 
                     if not df1_ventanas.empty and not df2_ventanas.empty:
-                        fig, ax = plt.subplots()
+                        fig, ax = plt.subplots(figsize=(10, 5)) # Added figsize for better control
                         ax.plot(df1_ventanas["Ventana"], df1_ventanas["Amplitud Temblor (cm)"], label="Configuración 1", color="blue")
                         ax.plot(df2_ventanas["Ventana"], df2_ventanas["Amplitud Temblor (cm)"], label="Configuración 2", color="orange")
                         ax.set_title(f"Amplitud por Ventana - {test}")
@@ -577,12 +577,25 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                         ax.grid(True)
                         st.pyplot(fig)
 
-                        img_buffer = BytesIO()
-                        fig.savefig(img_buffer, format='png', bbox_inches='tight')
-                        img_buffer.seek(0)
-                        pdf.image(img_buffer, x=15, w=180)
+                        # --- Corrected Image Saving for PDF ---
+                        # Use tempfile to save the image to a temporary file,
+                        # and then pass the path to pdf.image()
+                        import tempfile
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
+                            fig.savefig(tmp_img.name, format='png', bbox_inches='tight')
+                            image_path_for_pdf = tmp_img.name
+
+                        try:
+                            pdf.image(image_path_for_pdf, x=15, w=180)
+                        finally:
+                            os.remove(image_path_for_pdf) # Clean up the temporary file
+
                         pdf.ln(10)
-                        plt.close(fig)
+                        plt.close(fig) # Close the figure to free up memory
+                    else:
+                        st.warning(f"No hay suficientes datos de ventanas para graficar el test: {test}")
+                else:
+                    st.warning(f"Faltan archivos para el test {test} en al menos una configuración.")
 
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(0, 10, "Conclusión", ln=True)
@@ -590,14 +603,15 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             pdf.multi_cell(0, 10, conclusion)
 
             pdf_output = BytesIO()
-            pdf_bytes = pdf.output(dest='S').encode('latin1')
+            # It's better to explicitly output to a BytesIO object directly
+            # and then get its value.
+            pdf_bytes = pdf.output(dest='S').encode('latin1') # Output to string, then encode
             pdf_output.write(pdf_bytes)
-            pdf_output.seek(0)
+            pdf_output.seek(0) # Rewind the buffer to the beginning
 
             st.download_button(
                 label="Descargar Informe PDF",
-                data=pdf_output,
-                file_name="informe_temblor.pdf",
+                data=pdf_output.getvalue(), # Use .getvalue() when passing BytesIO content to download_button
+                file_name="informe_comparativo_temblor.pdf", # Changed filename for clarity
                 mime="application/pdf"
             )
-
