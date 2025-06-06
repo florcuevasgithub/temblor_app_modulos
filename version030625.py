@@ -101,11 +101,11 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
             movimiento_lineal = np.array(linear_accelerations_magnitude)
             señal_filtrada = filtrar_temblor(movimiento_lineal, fs)
 
-            resultados_por_ventana = []
+            resultados_por_ventana = [] # Usamos esta lista para todos los resultados
 
             tamaño_ventana = int(fs * ventana_seg)
             num_ventanas = len(señal_filtrada) // tamaño_ventana
-            resultados = []
+            #resultados = []
 
             for i in range(num_ventanas):
               segmento = señal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
@@ -130,14 +130,14 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
               else:
                 amp_cm = 0.0
 
-            resultados.append({
+              resultados.append({
                'Ventana': i,
                'Frecuencia Dominante (Hz)': freq_dominante,
                'Varianza (m2/s4)': varianza,
                'RMS (m/s2)': rms,
                'Amplitud Temblor (g)': amp_g, # Nota: esta es la amplitud en m/s^2, no en unidades 'g' de 9.81.
                'Amplitud Temblor (cm)': amp_cm
-            })
+              })
 
             df_por_ventana = pd.DataFrame(resultados_por_ventana)
 
