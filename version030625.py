@@ -56,7 +56,11 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-# --------- Funciones compartidas (ya en estado original) ----------
+# --- Configuración global de la duración de la ventana ---
+# Asegúrate de que este valor coincida con el 'ventana_seg' en analizar_temblor_por_ventanas_resultante
+ventana_duracion_seg = 2
+
+# --------- Funciones compartidas ----------
 def filtrar_temblor(signal, fs=100):
     b, a = butter(N=4, Wn=[1, 15], btype='bandpass', fs=fs)
     return filtfilt(b, a, signal)
@@ -69,9 +73,9 @@ def q_to_matrix(q):
         [2*(x*z - y*w),              2*(y*z + x*w),           1 - 2*(x**2 + y**2)]
     ])
 
-def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
+def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_duracion_seg):
     required_cols = ['Acel_X', 'Acel_Y', 'Acel_Z', 'GiroX', 'GiroY', 'GiroZ']
-    df = df[required_cols].dropna()
+    df = df[required_cols].dropna() # Dropping NaNs here might reduce the total length
     acc = df[['Acel_X', 'Acel_Y', 'Acel_Z']].to_numpy()
     gyr = np.radians(df[['GiroX', 'GiroY', 'GiroZ']].to_numpy())
     mahony = Mahony(gyr=gyr, acc=acc, frequency=fs)
@@ -98,12 +102,12 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
         # st.warning("La señal es demasiado corta para crear al menos una ventana.")
         return pd.DataFrame(), pd.DataFrame()
 
-    num_ventanas = len(señal_filtrada) // tamaño_ventana
+    num_ventanas = len(señal_filtrada) // tamaño_ventana # Integer division might be why you see 4 not 5 windows
 
     for i in range(num_ventanas):
         segmento = señal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
-        if len(segmento) < tamaño_ventana: # Esto ya lo debería filtrar num_ventanas, pero por seguridad
-            continue
+        # if len(segmento) < tamaño_ventana: # This check is redundant due to integer division
+        #     continue
         segmento = segmento - np.mean(segmento)
 
         f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
@@ -314,13 +318,13 @@ if opcion == "1️⃣ Análisis de una medición":
 
     if st.button("Iniciar análisis"):
         mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
-        
+
         if not mediciones_tests:
             st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
         else:
             for test, datos in mediciones_tests.items():
                 df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(datos, fs=100)
-                
+
                 if datos_personales is None:
                     if not datos.empty:
                         datos_personales_temp = {}
@@ -349,7 +353,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 # Ahora, al graficar, truncamos si es necesario, solo para la visualización
                 for df in ventanas_para_grafico:
                     test_name = df["Test"].iloc[0]
-                    
+
                     if min_ventanas_count != float('inf') and len(df) > min_ventanas_count:
                         df_to_plot = df.iloc[:min_ventanas_count].copy()
                         # Si quieres el mensaje de info, puedes volver a ponerlo aquí,
@@ -357,11 +361,13 @@ if opcion == "1️⃣ Análisis de una medición":
                         # st.info(f"El gráfico del test '{test_name}' ha sido truncado a la duración del test más corto para una comparación visual equitativa.")
                     else:
                         df_to_plot = df.copy() # Usar el DataFrame completo si es el más corto o no se necesita truncar
-                    
-                    ax.plot(df_to_plot["Ventana"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
+
+                    # --- CAMBIO AQUÍ: Calcular tiempo en segundos para el eje X ---
+                    df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * ventana_duracion_seg
+                    ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
 
                 ax.set_title("Amplitud de Temblor por Ventana de Tiempo (Comparación Visual)")
-                ax.set_xlabel("Ventana de tiempo")
+                ax.set_xlabel("Tiempo (segundos)") # --- CAMBIO AQUÍ: Etiqueta del eje X ---
                 ax.set_ylabel("Amplitud (cm)")
                 ax.legend()
                 ax.grid(True)
@@ -613,10 +619,15 @@ elif opcion == "2️⃣ Comparar dos mediciones":
 
                     if not df1_ventanas.empty and not df2_ventanas.empty:
                         fig, ax = plt.subplots(figsize=(10, 5)) # Added figsize for better control
-                        ax.plot(df1_ventanas["Ventana"], df1_ventanas["Amplitud Temblor (cm)"], label="Configuración 1", color="blue")
-                        ax.plot(df2_ventanas["Ventana"], df2_ventanas["Amplitud Temblor (cm)"], label="Configuración 2", color="orange")
+
+                        # --- CAMBIO AQUÍ: Calcular tiempo en segundos para el eje X ---
+                        df1_ventanas["Tiempo (segundos)"] = df1_ventanas["Ventana"] * ventana_duracion_seg
+                        df2_ventanas["Tiempo (segundos)"] = df2_ventanas["Ventana"] * ventana_duracion_seg
+
+                        ax.plot(df1_ventanas["Tiempo (segundos)"], df1_ventanas["Amplitud Temblor (cm)"], label="Configuración 1", color="blue")
+                        ax.plot(df2_ventanas["Tiempo (segundos)"], df2_ventanas["Amplitud Temblor (cm)"], label="Configuración 2", color="orange")
                         ax.set_title(f"Amplitud por Ventana - {test}")
-                        ax.set_xlabel("Ventana")
+                        ax.set_xlabel("Tiempo (segundos)") # --- CAMBIO AQUÍ: Etiqueta del eje X ---
                         ax.set_ylabel("Amplitud (cm)")
                         ax.legend()
                         ax.grid(True)
@@ -657,7 +668,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             st.download_button(
                 label="Descargar Informe PDF",
                 data=pdf_output.getvalue(), # Use .getvalue() when passing BytesIO content to download_button
-                file_name="informe_comparativo_temblor.pdf", 
+                file_name="informe_comparativo_temblor.pdf",
                 mime="application/pdf"
             )
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
