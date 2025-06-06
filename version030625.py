@@ -130,7 +130,7 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
               else:
                 amp_cm = 0.0
 
-              resultados.append({
+              resultados_por_ventana.append({
                'Ventana': i,
                'Frecuencia Dominante (Hz)': freq_dominante,
                'Varianza (m2/s4)': varianza,
