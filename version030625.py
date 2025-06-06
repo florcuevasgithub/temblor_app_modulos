@@ -198,7 +198,7 @@ if opcion == "1️⃣ Análisis de una medición":
             else:
                 return "Temblor dentro de parámetros normales"
 
-        def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo,df, nombre_archivo="informe_temblor.pdf", diagnostico=""):
+        def generar_pdf(nombre_paciente, apellido_paciente, edad, sexo, diag_clinico, mano, dedo, df, nombre_archivo="informe_temblor.pdf", diagnostico="", fig=None):
 
             texto_clinico = diag_clinico if pd.notna(diag_clinico) and str(diag_clinico).strip() != "" else "Sin diagnóstico previo"
             fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
@@ -284,6 +284,13 @@ if opcion == "1️⃣ Análisis de una medición":
             #         pdf.multi_cell(0, 10, diagnostico)
             #         pdf.set_font("Arial", "", 10)
             #         pdf.cell(0, 10, "La clasificacion automatica es orientativa y debe ser evaluada por un profesional.", ln=True)
+
+            if fig is not None:
+                import tempfile
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+                    fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
+                    pdf.image(tmpfile.name, x=15, w=180)
+                    os.remove(tmpfile.name)
 
             pdf.output(nombre_archivo)
 
@@ -375,31 +382,30 @@ if opcion == "1️⃣ Análisis de una medición":
                 # Eliminar imagen temporal
                 os.remove(temp_image_path)
 
-            if resultados_globales:
+                if resultados_globales:
+                    nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
+                    apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
+                    edad = datos_personales.iloc[0].get("Edad", "No especificado")
+                    sexo = datos_personales.iloc[0].get("Sexo", "No especificado")
+                    diag_clinico = datos_personales.iloc[0].get("Diagnostico", "Sin diagnóstico")
+                    mano = datos_personales.iloc[0].get("Mano", "No especificado")
+                    dedo = datos_personales.iloc[0].get("Dedo", "No especificado")
 
-                nombre = datos_personales.iloc[0].get("Nombre", "No especificado")
-                apellido = datos_personales.iloc[0].get("Apellido", "No especificado")
-                edad = datos_personales.iloc[0].get("Edad", "No especificado")
-                sexo = datos_personales.iloc[0].get("Sexo", "No especificado")
-                diag_clinico = datos_personales.iloc[0].get("Diagnostico", "No disponible")
-                mano = datos_personales.iloc[0].get("Mano", "No disponible")
-                dedo = datos_personales.iloc[0].get("Dedo", "No disponible")
+                    df_resultados_final = pd.DataFrame(resultados_globales)
+                    diagnostico_auto = diagnosticar(df_resultados_final)
 
-                df_resultados = pd.DataFrame(resultados_globales)
-                st.subheader("Resultados Promediados por Test")
-                st.dataframe(df_resultados)
-                diagnostico = diagnosticar(df_resultados)
-                st.subheader("Diagnóstico")
-                st.write(diagnostico)
-
-                generar_pdf(nombre, apellido, edad, sexo, diag_clinico, mano, dedo, df_resultados, diagnostico=diagnostico)
-                with open("informe_temblor.pdf", "rb") as file:
-                    st.download_button(
-                        label="📄 Descargar Informe PDF",
-                        data=file,
-                        file_name="informe_temblor.pdf",
-                        mime="application/pdf"
+                    # Generar PDF incluyendo el gráfico
+                    generar_pdf(
+                        nombre, apellido, edad, sexo,
+                        diag_clinico, mano, dedo,
+                        df_resultados_final,
+                        nombre_archivo="informe_temblor.pdf",
+                        diagnostico=diagnostico_auto,
+                        fig=fig  # 👈 PASAR LA FIGURA
                     )
+
+                    with open("informe_temblor.pdf", "rb") as f:
+                        st.download_button("📄 Descargar informe PDF", f, file_name="informe_temblor.pdf")
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
