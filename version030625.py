@@ -433,7 +433,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                         resultados.append({
                             'Test': test,
                             'Frecuencia Dominante (Hz)': round(freq, 2),
-                            'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
+                            #'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
                             'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
                             'Amplitud Temblor (cm)': round(amp_cm, 2)
                         })
@@ -543,17 +543,30 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             imprimir_resultados(pdf, df_resultados_config1, "Resultados Medición 1")
             imprimir_resultados(pdf, df_resultados_config2, "Resultados Medición 2")
 
-            prom_config1 = df_resultados_config1.mean(numeric_only=True)
-            prom_config2 = df_resultados_config2.mean(numeric_only=True)
-            puntaje1 = prom_config1.sum()
-            puntaje2 = prom_config2.sum()
+            amp_avg_config1 = df_resultados_config1['Amplitud Temblor (cm)'].mean()
+            amp_avg_config2 = df_resultados_config2['Amplitud Temblor (cm)'].mean()
 
-            if puntaje1 < puntaje2:
-                conclusion = "La Medición 1 muestra una reducción mayor del temblor."
-            elif puntaje2 < puntaje1:
-                conclusion = "La Medición 2 muestra una reducción mayor del temblor."
+            rms_avg_config1 = df_resultados_config1['RMS (m/s2)'].mean()
+            rms_avg_config2 = df_resultados_config2['RMS (m/s2)'].mean()
+
+            conclusion = ""
+            if amp_avg_config1 < amp_avg_config2:
+                conclusion = (
+                    f"La Medición 1 muestra una amplitud de temblor promedio ({amp_avg_config1:.2f} cm) "
+                    f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor "
+                    f"en la Medición 1. (RMS promedio: M1={rms_avg_config1:.4f} m/s², M2={rms_avg_config2:.4f} m/s²)."
+                )
+            elif amp_avg_config2 < amp_avg_config1:
+                conclusion = (
+                    f"La Medición 2 muestra una amplitud de temblor promedio ({amp_avg_config2:.2f} cm) "
+                    f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor "
+                    f"en la Medición 2. (RMS promedio: M1={rms_avg_config1:.4f} m/s², M2={rms_avg_config2:.4f} m/s²)."
+                )
             else:
-                conclusion = "Ambas mediciones muestran resultados similares."
+                conclusion = (
+                    f"Ambas mediciones muestran amplitudes de temblor promedio muy similares ({amp_avg_config1:.2f} cm). "
+                    f"(RMS promedio: M1={rms_avg_config1:.4f} m/s², M2={rms_avg_config2:.4f} m/s²)."
+                )
 
             st.subheader("Resultados Medición 1")
             st.dataframe(df_resultados_config1)
