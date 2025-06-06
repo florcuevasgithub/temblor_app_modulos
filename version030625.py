@@ -116,7 +116,7 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
         resultados_por_ventana.append({
            'Ventana': i,
            'Frecuencia Dominante (Hz)': freq_dominante,
-           'Varianza (m2/s4)': varianza,
+           #'Varianza (m2/s4)': varianza,
            'RMS (m/s2)': rms,
            'Amplitud Temblor (g)': amp_g,
            'Amplitud Temblor (cm)': amp_cm
@@ -128,7 +128,7 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
         promedio = df_por_ventana.mean(numeric_only=True).to_dict()
         df_promedio = pd.DataFrame([{
             'Frecuencia Dominante (Hz)': promedio['Frecuencia Dominante (Hz)'],
-            'Varianza (m2/s4)': promedio['Varianza (m2/s4)'],
+            #'Varianza (m2/s4)': promedio['Varianza (m2/s4)'],
             'RMS (m/s2)': promedio['RMS (m/s2)'],
             'Amplitud Temblor (cm)': promedio['Amplitud Temblor (cm)']
         }])
