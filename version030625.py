@@ -56,7 +56,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-# --------- Funciones compartidas ----------
+# --------- Funciones compartidas (ya en estado original) ----------
 def filtrar_temblor(signal, fs=100):
     b, a = butter(N=4, Wn=[1, 15], btype='bandpass', fs=fs)
     return filtfilt(b, a, signal)
@@ -64,9 +64,9 @@ def filtrar_temblor(signal, fs=100):
 def q_to_matrix(q):
     w, x, y, z = q
     return np.array([
-        [1 - 2*(y**2 + z**2),       2*(x*y - z*w),          2*(x*z + y*w)],
-        [2*(x*y + z*w),             1 - 2*(x**2 + z**2),    2*(y*z - x*w)],
-        [2*(x*z - y*w),             2*(y*z + x*w),          1 - 2*(x**2 + y**2)]
+        [1 - 2*(y**2 + z**2),        2*(x*y - z*w),           2*(x*z + y*w)],
+        [2*(x*y + z*w),              1 - 2*(x**2 + z**2),     2*(y*z - x*w)],
+        [2*(x*z - y*w),              2*(y*z + x*w),           1 - 2*(x**2 + y**2)]
     ])
 
 def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
@@ -93,16 +93,25 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
     resultados_por_ventana = []
 
     tamaño_ventana = int(fs * ventana_seg)
+    # Asegurarse de que haya suficientes muestras para al menos una ventana
+    if len(señal_filtrada) < tamaño_ventana:
+        # st.warning("La señal es demasiado corta para crear al menos una ventana.")
+        return pd.DataFrame(), pd.DataFrame()
+
     num_ventanas = len(señal_filtrada) // tamaño_ventana
 
     for i in range(num_ventanas):
         segmento = señal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
-        if len(segmento) < tamaño_ventana:
+        if len(segmento) < tamaño_ventana: # Esto ya lo debería filtrar num_ventanas, pero por seguridad
             continue
         segmento = segmento - np.mean(segmento)
 
         f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
-        freq_dominante = f[np.argmax(Pxx)]
+        # Asegurarse de que Pxx no esté vacío antes de buscar el máximo
+        if len(Pxx) > 0:
+            freq_dominante = f[np.argmax(Pxx)]
+        else:
+            freq_dominante = 0.0 # O NaN, dependiendo de cómo quieras manejarlo
 
         varianza = np.var(segmento)
         rms = np.sqrt(np.mean(segmento**2))
@@ -136,7 +145,6 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=2):
         df_promedio = pd.DataFrame()
 
     return df_promedio, df_por_ventana
-
 
 def manejar_reinicio():
     if st.session_state.get("reiniciar", False):
@@ -296,28 +304,30 @@ if opcion == "1️⃣ Análisis de una medición":
         "Acción": accion_file,
     }
 
+    # Inicializa estas variables FUERA del bloque del botón.
+    # Esto asegura que siempre estén definidas, incluso si el botón no se ha presionado.
+    resultados_globales = []
+    datos_personales = None
+    ventanas_para_grafico = []
+    min_ventanas_count = float('inf')
+    fig = None # Inicializa fig también, por si no se genera ningún gráfico
 
     if st.button("Iniciar análisis"):
-        resultados_globales = []
         mediciones_tests = {test: pd.read_csv(file) for test, file in uploaded_files.items() if file is not None}
-        datos_personales = None
-        ventanas_por_test = []
-
+        
         if not mediciones_tests:
             st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
         else:
             for test, datos in mediciones_tests.items():
                 df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(datos, fs=100)
+                
                 if datos_personales is None:
-                    # Intenta obtener datos personales del primer archivo cargado.
-                    # Asegúrate de que las columnas existan antes de intentar acceder.
                     if not datos.empty:
                         datos_personales_temp = {}
                         for col in ["Nombre", "Apellido", "Edad", "Sexo", "Diagnostico", "Mano", "Dedo"]:
                             if col in datos.columns and not pd.isna(datos.iloc[0].get(col)):
                                 datos_personales_temp[col] = datos.iloc[0][col]
                         datos_personales = pd.DataFrame([datos_personales_temp])
-
 
                 if not df_promedio.empty:
                     fila = df_promedio.iloc[0].to_dict()
@@ -332,18 +342,19 @@ if opcion == "1️⃣ Análisis de una medición":
                     if len(df_ventanas_copy) < min_ventanas_count:
                         min_ventanas_count = len(df_ventanas_copy)
 
-            fig = None
+            # Lógica de graficado y PDF (movida aquí)
             if ventanas_para_grafico:
                 fig, ax = plt.subplots(figsize=(10, 6))
 
                 # Ahora, al graficar, truncamos si es necesario, solo para la visualización
                 for df in ventanas_para_grafico:
                     test_name = df["Test"].iloc[0]
-                    # Truncar solo si es necesario para el gráfico y si la longitud del DataFrame
-                    # es mayor que la mínima de todas las series.
-                    if len(df) > min_ventanas_count and min_ventanas_count != float('inf'):
+                    
+                    if min_ventanas_count != float('inf') and len(df) > min_ventanas_count:
                         df_to_plot = df.iloc[:min_ventanas_count].copy()
-                        st.info(f"El gráfico del test '{test_name}' ha sido truncado a la duración del test más corto para una comparación visual equitativa.")
+                        # Si quieres el mensaje de info, puedes volver a ponerlo aquí,
+                        # pero considera que aparecerá cada vez que se trunque un test.
+                        # st.info(f"El gráfico del test '{test_name}' ha sido truncado a la duración del test más corto para una comparación visual equitativa.")
                     else:
                         df_to_plot = df.copy() # Usar el DataFrame completo si es el más corto o no se necesita truncar
                     
@@ -355,6 +366,8 @@ if opcion == "1️⃣ Análisis de una medición":
                 ax.legend()
                 ax.grid(True)
                 st.pyplot(fig)
+            else:
+                st.warning("No se generaron datos de ventanas para el gráfico.")
 
 
             if resultados_globales:
@@ -396,8 +409,6 @@ if opcion == "1️⃣ Análisis de una medición":
                     st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
-
-
 
 elif opcion == "2️⃣ Comparar dos mediciones":
     st.title("📊 Comparar dos mediciones")
@@ -444,11 +455,11 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                     if prom is not None:
                         freq = prom['Frecuencia Dominante (Hz)']
                         amp_cm = prom['Amplitud Temblor (cm)']
+                        rms = prom['RMS (m/s2)'] # Asegúrate de que RMS se extrae
                         resultados.append({
                             'Test': test,
                             'Frecuencia Dominante (Hz)': round(freq, 2),
-                            #'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
-                            'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
+                            'RMS (m/s2)': round(rms, 4), # Asegúrate de redondear RMS
                             'Amplitud Temblor (cm)': round(amp_cm, 2)
                         })
         return pd.DataFrame(resultados)
@@ -512,7 +523,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                 for key, value in parametros.items():
                     if value is not None and str(value).strip() != "":
                         if key == "Duración":
-                             pdf.cell(0, 8, f"{key}: {value} ms", ln=True) # Assuming ms
+                               pdf.cell(0, 8, f"{key}: {value} ms", ln=True) # Assuming ms
                         elif key == "Pulso":
                             pdf.cell(0, 8, f"{key}: {value} µs", ln=True) # Assuming µs
                         elif key == "Corriente":
@@ -531,7 +542,6 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(30, 10, "Test", 1)
                 pdf.cell(40, 10, "Frecuencia (Hz)", 1)
-                #pdf.cell(30, 10, "Varianza", 1)
                 pdf.cell(30, 10, "RMS", 1)
                 pdf.cell(50, 10, "Amplitud (cm)", 1)
                 pdf.ln(10)
@@ -540,7 +550,6 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                 for _, row in df.iterrows():
                     pdf.cell(30, 10, row['Test'], 1)
                     pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
-                    #pdf.cell(30, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
                     pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
                     pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
                     pdf.ln(10)
