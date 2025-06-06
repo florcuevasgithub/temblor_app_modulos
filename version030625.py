@@ -555,13 +555,11 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                 conclusion = (
                     f"La Medición 1 muestra una amplitud de temblor promedio ({amp_avg_config1:.2f} cm) "
                     f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor "
-                    f"en la Medición 1. (RMS promedio: M1={rms_avg_config1:.4f} m/s², M2={rms_avg_config2:.4f} m/s²)."
                 )
             elif amp_avg_config2 < amp_avg_config1:
                 conclusion = (
                     f"La Medición 2 muestra una amplitud de temblor promedio ({amp_avg_config2:.2f} cm) "
                     f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor "
-                    f"en la Medición 2. (RMS promedio: M1={rms_avg_config1:.4f} m/s², M2={rms_avg_config2:.4f} m/s²)."
                 )
             else:
                 conclusion = (
