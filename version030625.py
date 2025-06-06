@@ -347,9 +347,12 @@ if opcion == "1️⃣ Análisis de una medición":
                   df_ventanas["Test"] = test  # Añadir columna para identificar el origen
                   ventanas_por_test.append(df_ventanas)
 
-             # Mostrar gráfico único si hay datos
+            # Mostrar gráfico único si hay datos
             if ventanas_por_test:
                 import matplotlib.pyplot as plt
+                import tempfile
+                import os
+
                 fig, ax = plt.subplots()
 
                 for df in ventanas_por_test:
@@ -360,16 +363,17 @@ if opcion == "1️⃣ Análisis de una medición":
                 ax.set_xlabel("Ventana")
                 ax.set_ylabel("Amplitud (cm)")
                 ax.legend()
+                ax.grid(True)
                 st.pyplot(fig)
-                # Guardar la figura en un buffer
-                img_buffer = BytesIO()
-                fig.savefig(img_buffer, format='png', bbox_inches='tight')
-                img_buffer.seek(0)
 
-                # Insertar imagen en el PDF, con un ancho máximo (ejemplo: 180mm ancho)
-                pdf.image(img_buffer, x=15, w=180)
-                pdf.ln(10)  # Separación después del gráfico en el PDF
-                plt.close(fig)
+                # Guardar imagen en archivo temporal y agregar al PDF
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+                    fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
+                    pdf.image(tmpfile.name, x=15, w=180)
+                    temp_image_path = tmpfile.name
+
+                # Eliminar imagen temporal
+                os.remove(temp_image_path)
 
             if resultados_globales:
 
