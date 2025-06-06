@@ -325,18 +325,31 @@ if opcion == "1️⃣ Análisis de una medición":
                     resultados_globales.append(fila)
 
                 if not df_ventanas.empty:
-                    df_ventanas["Test"] = test
-                    ventanas_por_test.append(df_ventanas)
+                    df_ventanas_copy = df_ventanas.copy() # Hacemos una copia para el gráfico
+                    df_ventanas_copy["Test"] = test
+                    ventanas_para_grafico.append(df_ventanas_copy)
+                    # Actualizar la longitud mínima de ventanas
+                    if len(df_ventanas_copy) < min_ventanas_count:
+                        min_ventanas_count = len(df_ventanas_copy)
 
             fig = None
-            if ventanas_por_test:
+            if ventanas_para_grafico:
                 fig, ax = plt.subplots(figsize=(10, 6))
 
-                for df in ventanas_por_test:
+                # Ahora, al graficar, truncamos si es necesario, solo para la visualización
+                for df in ventanas_para_grafico:
                     test_name = df["Test"].iloc[0]
-                    ax.plot(df["Ventana"], df["Amplitud Temblor (cm)"], label=f"{test_name}")
+                    # Truncar solo si es necesario para el gráfico y si la longitud del DataFrame
+                    # es mayor que la mínima de todas las series.
+                    if len(df) > min_ventanas_count and min_ventanas_count != float('inf'):
+                        df_to_plot = df.iloc[:min_ventanas_count].copy()
+                        st.info(f"El gráfico del test '{test_name}' ha sido truncado a la duración del test más corto para una comparación visual equitativa.")
+                    else:
+                        df_to_plot = df.copy() # Usar el DataFrame completo si es el más corto o no se necesita truncar
+                    
+                    ax.plot(df_to_plot["Ventana"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
 
-                ax.set_title("Amplitud de Temblor ")
+                ax.set_title("Amplitud de Temblor por Ventana de Tiempo (Comparación Visual)")
                 ax.set_xlabel("Ventana de tiempo")
                 ax.set_ylabel("Amplitud (cm)")
                 ax.legend()
