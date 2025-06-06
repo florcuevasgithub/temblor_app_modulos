@@ -496,7 +496,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                 pdf.cell(0, 10, titulo, ln=True)
                 pdf.set_font("Arial", size=12)
                 for key, value in parametros.items():
-                   if key == "Duración":
+                        if key == "Duración":
                              pdf.cell(0, 8, f"{key}: {value} ms", ln=True) # Assuming ms
                         elif key == "Pulso":
                             pdf.cell(0, 8, f"{key}: {value} µs", ln=True) # Assuming µs
