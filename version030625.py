@@ -361,21 +361,15 @@ if opcion == "1️⃣ Análisis de una medición":
                 ax.set_ylabel("Amplitud (cm)")
                 ax.legend()
                 st.pyplot(fig)
+                # Guardar la figura en un buffer
+                img_buffer = BytesIO()
+                fig.savefig(img_buffer, format='png', bbox_inches='tight')
+                img_buffer.seek(0)
 
-                # if not df_ventana.empty:
-                #     prom = df_ventana.mean(numeric_only=True)
-                #     freq = prom['Frecuencia Dominante (Hz)']
-                #     amp_g = prom['Amplitud Temblor (g)']
-                #     amp_cm = prom['Amplitud Temblor (cm)']
-
-                #     resultados_globales.append({
-                #         'Test': test,
-                #         'Frecuencia Dominante (Hz)': round(freq, 2),
-                #         'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
-                #         'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
-                #         'Amplitud Temblor (cm)': round(amp_cm, 2)
-                #   })
-
+                # Insertar imagen en el PDF, con un ancho máximo (ejemplo: 180mm ancho)
+                pdf.image(img_buffer, x=15, w=180)
+                pdf.ln(10)  # Separación después del gráfico en el PDF
+                plt.close(fig)
 
             if resultados_globales:
 
@@ -425,12 +419,9 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
 
     st.markdown("""
         <style>
-        /* Ocultar el texto original de "Drag and drop file here" */
         div[data-testid="stFileUploaderDropzoneInstructions"] span {
             display: none !important;
         }
-
-        /* Añadir nuestro propio texto arriba del botón */
         div[data-testid="stFileUploaderDropzoneInstructions"]::before {
             content: "Arrastrar archivo aquí";
             font-weight: bold;
@@ -491,7 +482,6 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             parametros_config1 = limpiar_campos(df_config1_reposo, campos_estim)
             parametros_config2 = limpiar_campos(df_config2_reposo, campos_estim)
 
-            # Convertir edad a entero si es posible
             try:
                 if datos_personales["Edad"] is not None:
                     edad_int = int(float(datos_personales["Edad"]))
@@ -502,63 +492,20 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             df_resultados_config1 = analizar_configuracion(config1_archivos)
             df_resultados_config2 = analizar_configuracion(config2_archivos)
 
-            st.subheader("Resultados Configuración 1")
-            st.dataframe(df_resultados_config1)
+            # Inicializar PDF antes de graficar
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True, align="C")
 
-            st.subheader("Resultados Configuración 2")
-            st.dataframe(df_resultados_config2)
+            pdf.set_font("Arial", size=10)
+            pdf.ln(10)
+            pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
 
-            prom_config1 = df_resultados_config1.mean(numeric_only=True)
-            prom_config2 = df_resultados_config2.mean(numeric_only=True)
-
-            puntaje1 = prom_config1.sum()
-            puntaje2 = prom_config2.sum()
-
-            if puntaje1 < puntaje2:
-                conclusion = "La Configuración 1 muestra una reducción mayor del temblor."
-            elif puntaje2 < puntaje1:
-                conclusion = "La Configuración 2 muestra una reducción mayor del temblor."
-            else:
-                conclusion = "Ambas configuraciones muestran resultados similares."
-
-            st.subheader("Conclusión")
-            st.write(conclusion)
-
-            st.subheader("Comparación Gráfica de Amplitud por Ventana")
-
-            nombres_test = ["Reposo", "Acción", "Postural"]
-
-            for test in nombres_test:
-                archivo1 = config1_archivos[test]
-                archivo2 = config2_archivos[test]
-
-                if archivo1 is not None and archivo2 is not None:
-                    archivo1.seek(0)
-                    archivo2.seek(0)
-                    df1 = pd.read_csv(archivo1)
-                    df2 = pd.read_csv(archivo2)
-
-                    df1_promedio, df1_ventanas = analizar_temblor_por_ventanas_resultante(df1, fs=100)
-                    df2_promedio, df2_ventanas = analizar_temblor_por_ventanas_resultante(df2, fs=100)
-
-                    if isinstance(df1_ventanas, pd.DataFrame) and not df1_ventanas.empty and \
-                       isinstance(df2_ventanas, pd.DataFrame) and not df2_ventanas.empty:
-                        fig, ax = plt.subplots()
-                        ax.plot(df1_ventanas["Ventana"], df1_ventanas["Amplitud Temblor (cm)"], label="Configuración 1", color="blue")
-                        ax.plot(df2_ventanas["Ventana"], df2_ventanas["Amplitud Temblor (cm)"], label="Configuración 2", color="orange")
-                        ax.set_title(f"Amplitud por Ventana - {test}")
-                        ax.set_xlabel("Ventana")
-                        ax.set_ylabel("Amplitud (cm)")
-                        ax.legend()
-                        ax.grid(True)
-                        st.pyplot(fig)
-
-            # Función para imprimir campo solo si es válido
             def imprimir_campo_si_valido(pdf, etiqueta, valor):
                 if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
                     pdf.cell(0, 10, f"{etiqueta}: {valor}", ln=True)
 
-            # Función para imprimir parámetros, omitiendo vacíos o inválidos
             def imprimir_parametros(pdf, parametros, titulo):
                 pdf.set_font("Arial", 'B', 14)
                 pdf.cell(0, 10, titulo, ln=True)
@@ -589,16 +536,6 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                     pdf.ln(10)
                 pdf.ln(5)
 
-            # Generar PDF
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True, align="C")
-
-            pdf.set_font("Arial", size=10)
-            pdf.ln(10)
-            pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
-
             imprimir_campo_si_valido(pdf, "Nombre", datos_personales.get("Nombre"))
             imprimir_campo_si_valido(pdf, "Apellido", datos_personales.get("Apellido"))
             imprimir_campo_si_valido(pdf, "Edad", datos_personales.get("Edad"))
@@ -609,6 +546,58 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             imprimir_parametros(pdf, parametros_config2, "Parámetros Configuración 2")
             imprimir_resultados(pdf, df_resultados_config1, "Resultados Configuración 1")
             imprimir_resultados(pdf, df_resultados_config2, "Resultados Configuración 2")
+
+            prom_config1 = df_resultados_config1.mean(numeric_only=True)
+            prom_config2 = df_resultados_config2.mean(numeric_only=True)
+            puntaje1 = prom_config1.sum()
+            puntaje2 = prom_config2.sum()
+
+            if puntaje1 < puntaje2:
+                conclusion = "La Configuración 1 muestra una reducción mayor del temblor."
+            elif puntaje2 < puntaje1:
+                conclusion = "La Configuración 2 muestra una reducción mayor del temblor."
+            else:
+                conclusion = "Ambas configuraciones muestran resultados similares."
+
+            st.subheader("Resultados Configuración 1")
+            st.dataframe(df_resultados_config1)
+
+            st.subheader("Resultados Configuración 2")
+            st.dataframe(df_resultados_config2)
+
+            st.subheader("Comparación Gráfica de Amplitud por Ventana")
+            nombres_test = ["Reposo", "Acción", "Postural"]
+
+            for test in nombres_test:
+                archivo1 = config1_archivos[test]
+                archivo2 = config2_archivos[test]
+
+                if archivo1 is not None and archivo2 is not None:
+                    archivo1.seek(0)
+                    archivo2.seek(0)
+                    df1 = pd.read_csv(archivo1)
+                    df2 = pd.read_csv(archivo2)
+
+                    df1_promedio, df1_ventanas = analizar_temblor_por_ventanas_resultante(df1, fs=100)
+                    df2_promedio, df2_ventanas = analizar_temblor_por_ventanas_resultante(df2, fs=100)
+
+                    if not df1_ventanas.empty and not df2_ventanas.empty:
+                        fig, ax = plt.subplots()
+                        ax.plot(df1_ventanas["Ventana"], df1_ventanas["Amplitud Temblor (cm)"], label="Configuración 1", color="blue")
+                        ax.plot(df2_ventanas["Ventana"], df2_ventanas["Amplitud Temblor (cm)"], label="Configuración 2", color="orange")
+                        ax.set_title(f"Amplitud por Ventana - {test}")
+                        ax.set_xlabel("Ventana")
+                        ax.set_ylabel("Amplitud (cm)")
+                        ax.legend()
+                        ax.grid(True)
+                        st.pyplot(fig)
+
+                        img_buffer = BytesIO()
+                        fig.savefig(img_buffer, format='png', bbox_inches='tight')
+                        img_buffer.seek(0)
+                        pdf.image(img_buffer, x=15, w=180)
+                        pdf.ln(10)
+                        plt.close(fig)
 
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(0, 10, "Conclusión", ln=True)
