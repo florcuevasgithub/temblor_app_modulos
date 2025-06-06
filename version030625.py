@@ -154,7 +154,7 @@ def manejar_reinicio():
 # ------------------ Modo principal --------------------
 
 st.title("🧠 Análisis de Temblor")
-opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos configuraciones de estimulación"])
+opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos mediciones"])
 if st.sidebar.button("🔄 Nuevo análisis"):
     manejar_reinicio()
 
@@ -199,7 +199,7 @@ if opcion == "1️⃣ Análisis de una medición":
             edad_str = "No especificado"
         pdf.cell(200, 10, f"Edad: {edad_str}", ln=True)
         pdf.cell(200, 10, f"Sexo: {sexo}", ln=True)
-        pdf.cell(200, 10, f"Diagnóstico clínico: {texto_clinico}", ln=True)
+        #pdf.cell(200, 10, f"Diagnóstico clínico: {texto_clinico}", ln=True)
         pdf.cell(200, 10, f"Mano: {mano}", ln=True)
         pdf.cell(200, 10, f"Dedo: {dedo}", ln=True)
         pdf.cell(200, 10, f"Fecha y hora: {fecha_hora}", ln=True)
@@ -336,8 +336,8 @@ if opcion == "1️⃣ Análisis de una medición":
                     test_name = df["Test"].iloc[0]
                     ax.plot(df["Ventana"], df["Amplitud Temblor (cm)"], label=f"{test_name}")
 
-                ax.set_title("Amplitud de Temblor por Ventana")
-                ax.set_xlabel("Ventana")
+                ax.set_title("Amplitud de Temblor ")
+                ax.set_xlabel("Ventana de tiempo")
                 ax.set_ylabel("Amplitud (cm)")
                 ax.legend()
                 ax.grid(True)
@@ -385,21 +385,21 @@ if opcion == "1️⃣ Análisis de una medición":
 
 
 
-elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
-    st.title("📊 Comparar dos configuraciones de estimulación")
+elif opcion == "2️⃣ Comparar dos mediciones":
+    st.title("📊 Comparar dos mediciones")
 
-    st.markdown("### Cargar archivos de la **Configuración 1**")
+    st.markdown("### Cargar archivos de la **medición 1**")
     config1_archivos = {
-        "Reposo": st.file_uploader("Archivo de REPOSO configuracion 1", type="csv", key="reposo1"),
-        "Postural": st.file_uploader("Archivo de POSTURAL configuracion 1", type="csv", key="postural1"),
-        "Acción": st.file_uploader("Archivo de ACCION configuracion 1", type="csv", key="accion1")
+        "Reposo": st.file_uploader("Archivo de REPOSO medición 1", type="csv", key="reposo1"),
+        "Postural": st.file_uploader("Archivo de POSTURAL medición 1", type="csv", key="postural1"),
+        "Acción": st.file_uploader("Archivo de ACCION medición 1", type="csv", key="accion1")
     }
 
-    st.markdown("### Cargar archivos de la **Configuración 2**")
+    st.markdown("### Cargar archivos de la **medición 2**")
     config2_archivos = {
-        "Reposo": st.file_uploader("Archivo de REPOSO configuracion 2", type="csv", key="reposo2"),
-        "Postural": st.file_uploader("Archivo de POSTURAL configuracion 2", type="csv", key="postural2"),
-        "Acción": st.file_uploader("Archivo de ACCION configuracion 2", type="csv", key="accion2")
+        "Reposo": st.file_uploader("Archivo de REPOSO medición 2", type="csv", key="reposo2"),
+        "Postural": st.file_uploader("Archivo de POSTURAL medición 2", type="csv", key="postural2"),
+        "Acción": st.file_uploader("Archivo de ACCION medición 2", type="csv", key="accion2")
     }
 
     st.markdown("""
@@ -439,14 +439,14 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                         })
         return pd.DataFrame(resultados)
 
-    if st.button("Comparar configuraciones"):
+    if st.button("Comparar Mediciones"):
         archivos_cargados = all([
             config1_archivos[test] is not None and config2_archivos[test] is not None
             for test in ["Reposo", "Postural", "Acción"]
         ])
 
         if not archivos_cargados:
-            st.warning("Por favor, cargue los 3 archivos CSV para ambas configuraciones.")
+            st.warning("Por favor, cargue los 3 archivos para ambas mediciones.")
         else:
             df_config1_reposo = pd.read_csv(config1_archivos["Reposo"])
             df_config2_reposo = pd.read_csv(config2_archivos["Reposo"])
@@ -461,7 +461,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                 return resultado
 
             campos_personales = ["Nombre", "Apellido", "Edad", "Sexo"]
-            campos_estim = ["ECP", "GPI", "NST", "Polaridad", "Duración", "Pulso", "Corriente", "Voltaje", "Frecuencia"]
+            campos_estim = ["ECP", "GPI", "NST", "Polaridad", "Duración", "Pulso", "Corriente", "Voltaje", "Frecuencia", "Mano", "Dedo"]
 
             datos_personales = limpiar_campos(df_config1_reposo, campos_personales)
             parametros_config1 = limpiar_campos(df_config1_reposo, campos_estim)
@@ -481,7 +481,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, "Informe Comparativo de Configuraciones de Estimulación", ln=True, align="C")
+            pdf.cell(0, 10, "Informe Comparativo de Mediciones", ln=True, align="C")
 
             pdf.set_font("Arial", size=10)
             pdf.ln(10)
@@ -496,8 +496,18 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                 pdf.cell(0, 10, titulo, ln=True)
                 pdf.set_font("Arial", size=12)
                 for key, value in parametros.items():
-                    if value is not None and str(value).strip() != "":
-                        pdf.cell(0, 8, f"{key}: {value}", ln=True)
+                   if key == "Duración":
+                             pdf.cell(0, 8, f"{key}: {value} ms", ln=True) # Assuming ms
+                        elif key == "Pulso":
+                            pdf.cell(0, 8, f"{key}: {value} µs", ln=True) # Assuming µs
+                        elif key == "Corriente":
+                            pdf.cell(0, 8, f"{key}: {value} mA", ln=True) # Assuming mA
+                        elif key == "Voltaje":
+                            pdf.cell(0, 8, f"{key}: {value} V", ln=True) # Assuming Volts
+                        elif key == "Frecuencia" and key in campos_estim: # This refers to stimulation frequency, not tremor
+                            pdf.cell(0, 8, f"{key}: {value} Hz", ln=True)
+                        else:
+                            pdf.cell(0, 8, f"{key}: {value}", ln=True)
                 pdf.ln(5)
 
             def imprimir_resultados(pdf, df, titulo):
@@ -506,7 +516,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(30, 10, "Test", 1)
                 pdf.cell(40, 10, "Frecuencia (Hz)", 1)
-                pdf.cell(30, 10, "Varianza", 1)
+                #pdf.cell(30, 10, "Varianza", 1)
                 pdf.cell(30, 10, "RMS", 1)
                 pdf.cell(50, 10, "Amplitud (cm)", 1)
                 pdf.ln(10)
@@ -515,7 +525,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                 for _, row in df.iterrows():
                     pdf.cell(30, 10, row['Test'], 1)
                     pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
-                    pdf.cell(30, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
+                    #pdf.cell(30, 10, f"{row['Varianza (m2/s4)']:.4f}", 1)
                     pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
                     pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
                     pdf.ln(10)
@@ -525,12 +535,13 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             imprimir_campo_si_valido(pdf, "Apellido", datos_personales.get("Apellido"))
             imprimir_campo_si_valido(pdf, "Edad", datos_personales.get("Edad"))
             imprimir_campo_si_valido(pdf, "Sexo", datos_personales.get("Sexo"))
+
             pdf.ln(5)
 
-            imprimir_parametros(pdf, parametros_config1, "Parámetros Configuración 1")
-            imprimir_parametros(pdf, parametros_config2, "Parámetros Configuración 2")
-            imprimir_resultados(pdf, df_resultados_config1, "Resultados Configuración 1")
-            imprimir_resultados(pdf, df_resultados_config2, "Resultados Configuración 2")
+            imprimir_parametros(pdf, parametros_config1, "Parámetros Medición 1")
+            imprimir_parametros(pdf, parametros_config2, "Parámetros Medición 2")
+            imprimir_resultados(pdf, df_resultados_config1, "Resultados Medición 1")
+            imprimir_resultados(pdf, df_resultados_config2, "Resultados Medición 2")
 
             prom_config1 = df_resultados_config1.mean(numeric_only=True)
             prom_config2 = df_resultados_config2.mean(numeric_only=True)
@@ -538,16 +549,16 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             puntaje2 = prom_config2.sum()
 
             if puntaje1 < puntaje2:
-                conclusion = "La Configuración 1 muestra una reducción mayor del temblor."
+                conclusion = "La Medición 1 muestra una reducción mayor del temblor."
             elif puntaje2 < puntaje1:
-                conclusion = "La Configuración 2 muestra una reducción mayor del temblor."
+                conclusion = "La Medición 2 muestra una reducción mayor del temblor."
             else:
-                conclusion = "Ambas configuraciones muestran resultados similares."
+                conclusion = "Ambas mediciones muestran resultados similares."
 
-            st.subheader("Resultados Configuración 1")
+            st.subheader("Resultados Medición 1")
             st.dataframe(df_resultados_config1)
 
-            st.subheader("Resultados Configuración 2")
+            st.subheader("Resultados Medición 2")
             st.dataframe(df_resultados_config2)
 
             st.subheader("Comparación Gráfica de Amplitud por Ventana")
@@ -595,7 +606,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                     else:
                         st.warning(f"No hay suficientes datos de ventanas para graficar el test: {test}")
                 else:
-                    st.warning(f"Faltan archivos para el test {test} en al menos una configuración.")
+                    st.warning(f"Faltan archivos para el test {test} en al menos una Medición.")
 
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(0, 10, "Conclusión", ln=True)
@@ -612,6 +623,7 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             st.download_button(
                 label="Descargar Informe PDF",
                 data=pdf_output.getvalue(), # Use .getvalue() when passing BytesIO content to download_button
-                file_name="informe_comparativo_temblor.pdf", # Changed filename for clarity
+                file_name="informe_comparativo_temblor.pdf", 
                 mime="application/pdf"
             )
+            st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
