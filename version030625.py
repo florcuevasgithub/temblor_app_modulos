@@ -328,9 +328,9 @@ if opcion == "1️⃣ Análisis de una medición":
                     df_ventanas["Test"] = test
                     ventanas_por_test.append(df_ventanas)
 
-            fig = None # Initialize fig to None
+            fig = None
             if ventanas_por_test:
-                fig, ax = plt.subplots(figsize=(10, 6)) # Define fig and ax here
+                fig, ax = plt.subplots(figsize=(10, 6))
 
                 for df in ventanas_por_test:
                     test_name = df["Test"].iloc[0]
@@ -345,7 +345,6 @@ if opcion == "1️⃣ Análisis de una medición":
 
 
             if resultados_globales:
-                # Default values in case datos_personales is still None or columns are missing
                 nombre = "No especificado"
                 apellido = "No especificado"
                 edad = "No especificado"
@@ -365,6 +364,10 @@ if opcion == "1️⃣ Análisis de una medición":
 
                 df_resultados_final = pd.DataFrame(resultados_globales)
                 diagnostico_auto = diagnosticar(df_resultados_final)
+
+                # --- Mostrar la tabla en Streamlit ---
+                st.subheader("Resultados del Análisis de Temblor")
+                st.dataframe(df_resultados_final.set_index('Test')) # Display the DataFrame
 
                 generar_pdf(
                     nombre, apellido, edad, sexo,
