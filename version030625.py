@@ -380,6 +380,7 @@ if opcion == "1️⃣ Análisis de una medición":
 
                 with open("informe_temblor.pdf", "rb") as f:
                     st.download_button("📄 Descargar informe PDF", f, file_name="informe_temblor.pdf")
+                    st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
