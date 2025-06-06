@@ -406,8 +406,6 @@ if opcion == "1️⃣ Análisis de una medición":
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
 
-
-
 elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
     st.title("📊 Comparar dos configuraciones de estimulación")
 
@@ -447,29 +445,25 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
     def analizar_configuracion(archivos, fs=100):
         resultados = []
         for test, archivo in archivos.items():
-            #st.write(f"Archivo para test '{test}': tipo -> {type(archivo)}")
             if archivo is not None:
                 archivo.seek(0)
                 df = pd.read_csv(archivo)
-                df_ventana = analizar_temblor_por_ventanas_resultante(df, fs=fs)
-                if not df_ventana.empty:
-                    prom = df_ventana.mean(numeric_only=True)
-                    freq = prom['Frecuencia Dominante (Hz)']
-                    amp_g = prom['Amplitud Temblor (g)']
-                    #amp_cm = (amp_g * 981) / ((2 * np.pi * freq) ** 2) if freq > 0 else 0.0
-                    amp_cm = prom['Amplitud Temblor (cm)']
-
-                    resultados.append({
-                        'Test': test,
-                        'Frecuencia Dominante (Hz)': round(freq, 2),
-                        'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
-                        'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
-                        'Amplitud Temblor (cm)': round(amp_cm, 2)
-                    })
+                df_promedio, df_ventana = analizar_temblor_por_ventanas_resultante(df, fs=fs)
+                if isinstance(df_ventana, pd.DataFrame) and not df_ventana.empty:
+                    prom = df_promedio.iloc[0] if not df_promedio.empty else None
+                    if prom is not None:
+                        freq = prom['Frecuencia Dominante (Hz)']
+                        amp_cm = prom['Amplitud Temblor (cm)']
+                        resultados.append({
+                            'Test': test,
+                            'Frecuencia Dominante (Hz)': round(freq, 2),
+                            'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
+                            'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
+                            'Amplitud Temblor (cm)': round(amp_cm, 2)
+                        })
         return pd.DataFrame(resultados)
 
     if st.button("Comparar configuraciones"):
-        # Validar que los 6 archivos estén cargados
         archivos_cargados = all([
             config1_archivos[test] is not None and config2_archivos[test] is not None
             for test in ["Reposo", "Postural", "Acción"]
@@ -517,8 +511,8 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             prom_config1 = df_resultados_config1.mean(numeric_only=True)
             prom_config2 = df_resultados_config2.mean(numeric_only=True)
 
-            puntaje1 = prom_config1['Frecuencia Dominante (Hz)'] + prom_config1['Varianza (m2/s4)'] + prom_config1['RMS (m/s2)'] + prom_config1['Amplitud Temblor (cm)']
-            puntaje2 = prom_config2['Frecuencia Dominante (Hz)'] + prom_config2['Varianza (m2/s4)'] + prom_config2['RMS (m/s2)'] + prom_config2['Amplitud Temblor (cm)']
+            puntaje1 = prom_config1.sum()
+            puntaje2 = prom_config2.sum()
 
             if puntaje1 < puntaje2:
                 conclusion = "La Configuración 1 muestra una reducción mayor del temblor."
@@ -530,7 +524,6 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
             st.subheader("Conclusión")
             st.write(conclusion)
 
-
             st.subheader("Comparación Gráfica de Amplitud por Ventana")
 
             nombres_test = ["Reposo", "Acción", "Postural"]
@@ -540,13 +533,16 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                 archivo2 = config2_archivos[test]
 
                 if archivo1 is not None and archivo2 is not None:
-                      df1 = pd.read_csv(archivo1)
-                      df2 = pd.read_csv(archivo2)
+                    archivo1.seek(0)
+                    archivo2.seek(0)
+                    df1 = pd.read_csv(archivo1)
+                    df2 = pd.read_csv(archivo2)
 
-                      df1_ventanas = analizar_temblor_por_ventanas_resultante(df1, fs=100)
-                      df2_ventanas = analizar_temblor_por_ventanas_resultante(df2, fs=100)
+                    df1_promedio, df1_ventanas = analizar_temblor_por_ventanas_resultante(df1, fs=100)
+                    df2_promedio, df2_ventanas = analizar_temblor_por_ventanas_resultante(df2, fs=100)
 
-                      if not df1_ventanas.empty and not df2_ventanas.empty:
+                    if isinstance(df1_ventanas, pd.DataFrame) and not df1_ventanas.empty and \
+                       isinstance(df2_ventanas, pd.DataFrame) and not df2_ventanas.empty:
                         fig, ax = plt.subplots()
                         ax.plot(df1_ventanas["Ventana"], df1_ventanas["Amplitud Temblor (cm)"], label="Configuración 1", color="blue")
                         ax.plot(df2_ventanas["Ventana"], df2_ventanas["Amplitud Temblor (cm)"], label="Configuración 2", color="orange")
@@ -630,3 +626,4 @@ elif opcion == "2️⃣ Comparar dos configuraciones de estimulación":
                 file_name="informe_temblor.pdf",
                 mime="application/pdf"
             )
+
