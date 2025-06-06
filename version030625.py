@@ -565,7 +565,6 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             else:
                 conclusion = (
                     f"Ambas mediciones muestran amplitudes de temblor promedio muy similares ({amp_avg_config1:.2f} cm). "
-                    f"(RMS promedio: M1={rms_avg_config1:.4f} m/s², M2={rms_avg_config2:.4f} m/s²)."
                 )
 
             st.subheader("Resultados Medición 1")
