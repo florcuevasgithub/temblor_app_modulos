@@ -374,7 +374,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 #         'Varianza (m2/s4)': round(prom['Varianza (m2/s4)'], 4),
                 #         'RMS (m/s2)': round(prom['RMS (m/s2)'], 4),
                 #         'Amplitud Temblor (cm)': round(amp_cm, 2)
-                    })
+                #   })
 
 
             if resultados_globales:
