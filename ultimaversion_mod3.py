@@ -1,4 +1,11 @@
-# -*- coding: utf-8 -*-
+Entendido. El error StreamlitSetPageConfigMustBeFirstCommandError es muy específico de Streamlit y significa que la función st.set_page_config() debe ser la primera función de Streamlit que se llama en el script, antes de cualquier otro comando de Streamlit (como st.markdown, st.title, st.sidebar, st.file_uploader, etc.) e incluso antes de manipular st.session_state o st.experimental_rerun().
+
+Actualmente, está ubicada después de algunas importaciones, el CSS Styling y la función manejar_reinicio(). Para solucionarlo, moveremos st.set_page_config() justo después de las importaciones.
+
+Aquí tienes el código corregido. Por favor, reemplaza todo el contenido de tu archivo con este:
+
+Python
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -13,6 +20,17 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib import colors
 import os
 import tempfile # Para guardar gráficos temporalmente para el PDF
+
+# Importar ahrs - Es crucial que esté instalado para el análisis avanzado
+try:
+    from ahrs.filters import Mahony
+except ImportError:
+    st.error("Error: La librería 'ahrs' no está instalada. Por favor, instala ejecutando: pip install ahrs")
+    st.stop() # Detiene la ejecución si no está instalada, ya que es fundamental.
+
+# --- Streamlit Page Configuration (MUST BE THE FIRST STREAMLIT COMMAND) ---
+st.set_page_config(layout="wide", page_title="Análisis y Predicción de Temblor")
+
 
 # --- Configuración global de la duración de la ventana ---
 ventana_duracion_seg = 2
@@ -79,7 +97,7 @@ def q_to_matrix(q):
     w, x, y, z = q
     return np.array([
         [1 - 2*(y**2 + z**2),         2*(x*y - z*w),           2*(x*z + y*w)],
-        [2*(x*y + z*w),               1 - 2*(x**2 + z**2),      2*(y*z + x*w)], # Corregido 2*(y*z - x*w) -> 2*(y*z + x*w) (típico para q_to_matrix)
+        [2*(x*y + z*w),               1 - 2*(x**2 + z**2),      2*(y*z + x*w)],
         [2*(x*z - y*w),               2*(y*z + x*w),           1 - 2*(x**2 + y**2)]
     ])
 
@@ -117,7 +135,7 @@ def analizar_temblor_por_ventanas_avanzado(df_input, fs=100, ventana_seg=ventana
 
     # Combinar columnas necesarias y eliminar NaNs
     df = df_input[acc_cols + quat_cols].dropna()
-
+    
     if df.empty:
         st.warning("El DataFrame está vacío después de eliminar NaNs para el análisis avanzado.")
         return pd.DataFrame(), pd.DataFrame()
@@ -135,35 +153,18 @@ def analizar_temblor_por_ventanas_avanzado(df_input, fs=100, ventana_seg=ventana
     for i in range(len(acc)):
         q = Q[i]
         acc_measured = acc[i]
-
-        # Rotar el vector de gravedad del mundo al marco del sensor
-        # Esto es equivalente a R_S_W @ g_W donde R_S_W es la rotación de mundo a sensor
-        # Si 'q' es la rotación del sensor al mundo (q_S_W), entonces la rotación del mundo al sensor es q_S_W.inverse()
-        # Usamos q_to_matrix(q).T para obtener R_W_S (World to Sensor) si q es S_W (Sensor to World)
-        # O si q_to_matrix(q) ya es R_S_W, entonces es directa. Asumo q_to_matrix(q) es R_W_S (Sensor to World)
-        # Si q es el cuaternión de WORLD a BODY, entonces R_W_B @ g_W
-        # Lo más común es que el cuaternión represente la orientación del cuerpo con respecto al mundo.
-        # Entonces acc_measured (en el marco del cuerpo) = acc_linear_body + gravity_body
-        # gravity_body = R_B_W @ g_W. Donde R_B_W es la matriz de rotación del cuerpo al mundo.
-        # R_B_W se obtiene de q (si q es de Mundo a Cuerpo).
-
-        # Aquí asumimos que `q` es la rotación de Mundo a Cuerpo (World to Body).
-        # Para compensar la gravedad, necesitamos el vector de gravedad en el marco del cuerpo.
-        # gravity_in_body_frame = R_W_B @ g_world_vector (si R_W_B es Body to World)
-        # O: gravity_in_body_frame = R_B_W @ g_world_vector (si R_B_W es World to Body)
-        # q_to_matrix(q) generalmente da la matriz de rotación del mundo al cuerpo (R_B_W).
-
+        
         R_W_B = q_to_matrix(q) # Asumiendo que esta matriz rota de World a Body
         gravity_in_sensor_frame = R_W_B @ g_world_vector
         linear_acc_sensor_frame = acc_measured - gravity_in_sensor_frame
         linear_accelerations_magnitude.append(np.linalg.norm(linear_acc_sensor_frame))
 
     movimiento_lineal = np.array(linear_accelerations_magnitude)
-
+    
     if movimiento_lineal.size == 0:
         st.warning("La señal de aceleración lineal es vacía después de la compensación de gravedad.")
         return pd.DataFrame(), pd.DataFrame()
-
+        
     señal_filtrada = filtrar_temblor_avanzado(movimiento_lineal, fs)
 
     resultados_por_ventana = []
@@ -172,7 +173,7 @@ def analizar_temblor_por_ventanas_avanzado(df_input, fs=100, ventana_seg=ventana
     if tamaño_ventana <= 0:
         st.warning("El tamaño de ventana es cero o negativo.")
         return pd.DataFrame(), pd.DataFrame()
-
+    
     noverlap = int(tamaño_ventana * 0.5) # 50% de solapamiento
 
     # Asegurarse de que haya al menos una ventana completa para el análisis
@@ -181,12 +182,12 @@ def analizar_temblor_por_ventanas_avanzado(df_input, fs=100, ventana_seg=ventana
         segmento = señal_filtrada
         if segmento.size == 0:
             return pd.DataFrame(), pd.DataFrame()
-
+        
         segmento = segmento - np.mean(segmento)
         # Asegurar nperseg > 0 para welch
         nperseg_val = len(segmento) if len(segmento) > 0 else 1 # Para evitar error con welch si segmento es muy corto
         f, Pxx = welch(segmento, fs=fs, nperseg=nperseg_val) # Asegurar nperseg adecuado
-
+        
         freq_dominante = f[np.argmax(Pxx)] if len(Pxx) > 0 else 0.0
         rms = np.sqrt(np.mean(segmento**2)) if segmento.size > 0 else 0.0
         amp_g = (np.max(segmento) - np.min(segmento)) / 2 if segmento.size > 0 else 0.0
@@ -199,7 +200,7 @@ def analizar_temblor_por_ventanas_avanzado(df_input, fs=100, ventana_seg=ventana
             amp_cm = ((amp_g * 9.81 * 100) / ((2 * np.pi * freq_dominante) ** 2))
         else:
             amp_cm = 0.0 # Si la frecuencia dominante es muy baja, la amplitud se vuelve irrealmente grande.
-
+            
         resultados_por_ventana.append({
             'Ventana': 0,
             'Frecuencia Dominante (Hz)': freq_dominante,
@@ -286,7 +287,7 @@ def generar_pdf(opcion_seleccionada, data_to_pdf, pdf_buffer):
         title = "Informe de Análisis de Una Medición de Temblor"
         df_promedios = data_to_pdf['df_promedios']
         df_resultados_ventanas = data_to_pdf['df_resultados_ventanas']
-
+        
         story.append(Paragraph(title, styles['TitleStyle']))
         story.append(Spacer(1, 0.2 * inch))
 
@@ -342,7 +343,7 @@ def generar_pdf(opcion_seleccionada, data_to_pdf, pdf_buffer):
         ]))
         story.append(table_comp)
         story.append(Spacer(1, 0.2 * inch))
-
+        
         if fig_path:
             story.append(Paragraph("<b>Comparación Visual de Frecuencia Dominante:</b>", styles['SubtitleStyle']))
             img = RImage(fig_path, width=5.5*inch, height=3.5*inch)
@@ -371,7 +372,7 @@ def generar_pdf(opcion_seleccionada, data_to_pdf, pdf_buffer):
             paciente_data.append([Paragraph("<b>Mano Medida:</b>", styles['Bold']), Paragraph(str(datos_paciente['mano_medida']), styles['Normal'])])
         if datos_paciente.get('dedo_medido') is not None and datos_paciente.get('dedo_medido') != "No especificado":
             paciente_data.append([Paragraph("<b>Dedo Medido:</b>", styles['Bold']), Paragraph(str(datos_paciente['dedo_medido']), styles['Normal'])])
-
+        
         if paciente_data:
             paciente_table = Table(paciente_data, colWidths=[1.5 * inch, 4.5 * inch])
             paciente_table.setStyle(TableStyle([
@@ -416,7 +417,7 @@ def generar_pdf(opcion_seleccionada, data_to_pdf, pdf_buffer):
                 round(row['RMS (m/s2)'], 3),
                 round(row['Amplitud Temblor (cm)'], 3)
             ])
-
+        
         table = Table(data_table, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1.5*inch])
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#D3D3D3')),
@@ -449,7 +450,7 @@ def generar_pdf(opcion_seleccionada, data_to_pdf, pdf_buffer):
 
 
 # --- Inicio del script principal de Streamlit ---
-st.set_page_config(layout="wide", page_title="Análisis y Predicción de Temblor")
+# st.set_page_config(layout="wide", page_title="Análisis y Predicción de Temblor") # MOVED TO THE TOP
 
 st.sidebar.title("Menú")
 opcion = st.sidebar.radio("Selecciona una opción:", [
@@ -503,7 +504,7 @@ if opcion == "1️⃣ Análisis de una medición":
                         # Generar PDF para Opción 1
                         st.subheader("Generar Informe PDF")
                         pdf_buffer = io.BytesIO()
-
+                        
                         generar_pdf(
                             "1️⃣ Análisis de una medición",
                             {'df_promedios': promedios, 'df_resultados_ventanas': df_resultados_ventanas},
@@ -586,7 +587,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                         'RMS (Medición 2)': prom_reposo2['RMS (m/s2)'].iloc[0].round(3),
                         'Amplitud (Medición 2)': prom_reposo2['Amplitud Temblor (cm)'].iloc[0].round(3)
                     })
-
+                
                 if not prom_postural1.empty and not prom_postural2.empty:
                     comparacion_data.append({
                         'Test': 'Postural',
@@ -597,7 +598,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                         'RMS (Medición 2)': prom_postural2['RMS (m/s2)'].iloc[0].round(3),
                         'Amplitud (Medición 2)': prom_postural2['Amplitud Temblor (cm)'].iloc[0].round(3)
                     })
-
+                
                 if not prom_accion1.empty and not prom_accion2.empty:
                     comparacion_data.append({
                         'Test': 'Acción',
@@ -608,7 +609,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                         'RMS (Medición 2)': prom_accion2['RMS (m/s2)'].iloc[0].round(3),
                         'Amplitud (Medición 2)': prom_accion2['Amplitud Temblor (cm)'].iloc[0].round(3)
                     })
-
+                
                 if comparacion_data:
                     df_comparacion = pd.DataFrame(comparacion_data)
                     st.subheader("Tabla Comparativa de Métricas de Temblor")
@@ -616,12 +617,12 @@ elif opcion == "2️⃣ Comparar dos mediciones":
 
                     # Visualización (ejemplo para frecuencia dominante)
                     st.subheader("Comparación Visual de Métricas")
-
+                    
                     fig, axes = plt.subplots(1, 3, figsize=(18, 6)) # Un subplot para cada métrica
-
+                    
                     metrics = ['Frecuencia', 'RMS', 'Amplitud']
                     ylabels = ['Frecuencia Dominante (Hz)', 'RMS (m/s2)', 'Amplitud Temblor (cm)']
-
+                    
                     for i, metric in enumerate(metrics):
                         df_plot = df_comparacion.set_index('Test')[[f'{metric} (Medición 1)', f'{metric} (Medición 2)']]
                         df_plot.plot(kind='bar', ax=axes[i], rot=45)
@@ -629,7 +630,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                         axes[i].set_ylabel(ylabels[i])
                         axes[i].legend(title='Medición')
                         axes[i].grid(axis='y', linestyle='--', alpha=0.7)
-
+                    
                     plt.tight_layout()
                     st.pyplot(fig)
                     plt.close(fig) # Cierra la figura para liberar memoria
@@ -642,7 +643,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                     # Generar PDF para Opción 2
                     st.subheader("Generar Informe PDF")
                     pdf_buffer = io.BytesIO()
-
+                    
                     generar_pdf(
                         "2️⃣ Comparar dos mediciones",
                         {'df_comparacion': df_comparacion, 'fig_path': temp_fig_path},
@@ -714,13 +715,13 @@ elif opcion == "3️⃣ Predicción de Diagnóstico":
                     df_accion = pd.read_csv(accion_file, encoding='latin1', decimal=',')
 
                     # Extraer datos demográficos del paciente de uno de los archivos (ej. reposo)
-                    datos_paciente_prediccion = extraer_datos_paciente(df_reposo)
+                    datos_paciente_prediccion = extraer_datos_paciente(df_reposo) 
 
                     # Calcular métricas con la función AVANZADA
                     res_reposo_prom, _ = analizar_temblor_por_ventanas_avanzado(df_reposo, fs_advanced_pred, ventana_duracion_seg)
                     res_postural_prom, _ = analizar_temblor_por_ventanas_avanzado(df_postural, fs_advanced_pred, ventana_duracion_seg)
                     res_accion_prom, _ = analizar_temblor_por_ventanas_avanzado(df_accion, fs_advanced_pred, ventana_duracion_seg)
-
+                    
                     if not (res_reposo_prom.empty or res_postural_prom.empty or res_accion_prom.empty):
                         # Construir el DataFrame de características para la predicción
                         data_para_prediccion = pd.DataFrame([{
@@ -738,7 +739,7 @@ elif opcion == "3️⃣ Predicción de Diagnóstico":
                             'RMS_Accion': res_accion_prom['RMS (m/s2)'].iloc[0],
                             'Amp_Accion': res_accion_prom['Amplitud Temblor (cm)'].iloc[0]
                         }])
-
+                        
                         prediccion_final = model.predict(data_para_prediccion)[0]
 
                         # Guardar resultados detallados para el PDF
@@ -771,7 +772,7 @@ elif opcion == "3️⃣ Predicción de Diagnóstico":
                         # Guardar la figura temporalmente para el PDF
                         temp_fig_path = os.path.join(tempfile.gettempdir(), f"metrica_analisis_prediccion.png")
                         fig.savefig(temp_fig_path, dpi=300, bbox_inches='tight')
-
+                        
                         st.success(f"El modelo predice: **{prediccion_final}**")
                     else:
                         st.warning("No se pudieron obtener datos válidos para la predicción. Asegúrate de que los archivos estén completos y contengan las columnas requeridas (Acc_X/Acel_X, Acc_Y/Acel_Y, Acc_Z/Acel_Z, qW, qX, qY, qZ).")
@@ -780,7 +781,7 @@ elif opcion == "3️⃣ Predicción de Diagnóstico":
                     st.warning("Asegúrate de que las columnas en tus archivos CSV de entrada coincidan con las esperadas (Acc_X/Acel_X, Acc_Y/Acel_Y, Acc_Z/Acel_Z, qW, qX, qY, qZ) y que los datos sean válidos (usando coma decimal).")
             else:
                 st.warning("Por favor, sube los tres archivos (Reposo, Postural, Acción) para realizar la predicción.")
-
+            
             # --- Mostrar Resumen y Botón de Descarga PDF ---
             if prediccion_final is not None and not resultados_analisis.empty:
                 st.subheader("Datos del Paciente y Configuración del Análisis")
@@ -792,7 +793,7 @@ elif opcion == "3️⃣ Predicción de Diagnóstico":
                     st.write("**Mano Medida:**", datos_paciente_prediccion.get('mano_medida'))
                 if datos_paciente_prediccion.get('dedo_medido') and datos_paciente_prediccion.get('dedo_medido') != "No especificado":
                     st.write("**Dedo Medido:**", datos_paciente_prediccion.get('dedo_medido'))
-
+                
                 st.write("**Frecuencia de Muestreo (Hz):**", fs_advanced_pred)
                 st.write("**Duración de Ventana (seg):**", ventana_duracion_seg)
                 st.write("---")
@@ -809,7 +810,7 @@ elif opcion == "3️⃣ Predicción de Diagnóstico":
                 st.write("---")
                 st.subheader("Generar Informe PDF")
                 pdf_buffer = io.BytesIO()
-
+                
                 generar_pdf(
                     "3️⃣ Predicción de Diagnóstico",
                     {
