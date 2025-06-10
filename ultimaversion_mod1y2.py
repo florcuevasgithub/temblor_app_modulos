@@ -143,39 +143,25 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_dur
 
     return df_promedio, df_por_ventana
 
+def manejar_reinicio():
+    if st.session_state.get("reiniciar", False):
+        for file in os.listdir():
+            if file.endswith(".csv"):
+                try:
+                    os.remove(file)
+                except Exception as e:
+                    st.warning(f"No se pudo borrar {file}: {e}")
+
+        st.session_state.clear()
+        st.experimental_rerun()
+
 
 # ------------------ Modo principal --------------------
 
 st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos mediciones"])
-
-# LA CORRECCIÓN CLAVE ESTÁ AQUÍ:
 if st.sidebar.button("🔄 Nuevo análisis"):
-    # Limpia las keys relacionadas con los uploaders en session_state
-    # Esto asegura que los file_uploader se resetearán visualmente.
-    if "reposo" in st.session_state:
-        del st.session_state["reposo"]
-    if "postural" in st.session_state:
-        del st.session_state["postural"]
-    if "accion" in st.session_state:
-        del st.session_state["accion"]
-    # Para la opción 2 de comparación:
-    if "reposo1" in st.session_state:
-        del st.session_state["reposo1"]
-    if "postural1" in st.session_state:
-        del st.session_state["postural1"]
-    if "accion1" in st.session_state:
-        del st.session_state["accion1"]
-    if "reposo2" in st.session_state:
-        del st.session_state["reposo2"]
-    if "postural2" in st.session_state:
-        del st.session_state["postural2"]
-    if "accion2" in st.session_state:
-        del st.session_state["accion2"]
-
-    # FUERZA UN REINICIO COMPLETO DE LA APP
-    # Esta línea DEBE estar aquí, dentro del if del botón.
-    st.experimental_rerun()
+    manejar_reinicio()
 
 if opcion == "1️⃣ Análisis de una medición":
     st.title("📈​ Análisis de una medición")
@@ -252,13 +238,13 @@ if opcion == "1️⃣ Análisis de una medición":
         }
         
         # Verificar si hay al menos un parámetro de estimulación presente para imprimir el título
-        hay_parametros_estimulacion = False
+        hay_parametros_estimulacion = False # Corrected variable name
         for param_key in parametros_estimulacion.keys():
             if datos_paciente_dict.get(param_key) is not None and str(datos_paciente_dict.get(param_key)).strip() != "":
                 hay_parametros_estimulacion = True
                 break
 
-        if hay_parametros_estimulacion:
+        if hay_parametros_estimulacion: # Corrected variable name
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Configuración", ln=True) # Título cambiado a "Configuración"
             pdf.set_font("Arial", size=12)
@@ -327,15 +313,12 @@ if opcion == "1️⃣ Análisis de una medición":
 
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
-    # Añadir keys para st.session_state
     reposo_file = st.file_uploader("", type=["csv"], key="reposo")
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba POSTURAL</div>', unsafe_allow_html=True)
-    # Añadir keys para st.session_state
     postural_file = st.file_uploader("", type=["csv"], key="postural")
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
-    # Añadir keys para st.session_state
     accion_file = st.file_uploader("", type=["csv"], key="accion")
 
     st.markdown("""
@@ -372,7 +355,7 @@ if opcion == "1️⃣ Análisis de una medición":
     fig = None 
 
     if st.button("Iniciar análisis"):
-        # Añadir encoding='latin1' a la lectura del CSV
+        # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
         mediciones_tests = {test: pd.read_csv(file, encoding='latin1') for test, file in uploaded_files.items() if file is not None}
 
         if not mediciones_tests:
@@ -463,7 +446,6 @@ elif opcion == "2️⃣ Comparar dos mediciones":
     st.title("📊 Comparar dos mediciones")
 
     st.markdown("### Cargar archivos de la **medición 1**")
-    # Añadir keys para st.session_state
     config1_archivos = {
         "Reposo": st.file_uploader("Archivo de REPOSO medición 1", type="csv", key="reposo1"),
         "Postural": st.file_uploader("Archivo de POSTURAL medición 1", type="csv", key="postural1"),
@@ -471,7 +453,6 @@ elif opcion == "2️⃣ Comparar dos mediciones":
     }
 
     st.markdown("### Cargar archivos de la **medición 2**")
-    # Añadir keys para st.session_state
     config2_archivos = {
         "Reposo": st.file_uploader("Archivo de REPOSO medición 2", type="csv", key="reposo2"),
         "Postural": st.file_uploader("Archivo de POSTURAL medición 2", type="csv", key="postural2"),
@@ -499,7 +480,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
         for test, archivo in archivos.items():
             if archivo is not None:
                 archivo.seek(0)
-                # Añadir encoding='latin1' a la lectura del CSV
+                # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
                 df = pd.read_csv(archivo, encoding='latin1')
                 df_promedio, df_ventana = analizar_temblor_por_ventanas_resultante(df, fs=fs)
                 if isinstance(df_ventana, pd.DataFrame) and not df_ventana.empty:
@@ -527,7 +508,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
         else:
             # Leer el primer archivo de cada configuración para extraer los metadatos
             # Asumimos que los metadatos son consistentes dentro de cada configuración
-            # Añadir encoding='latin1' a la lectura del CSV
+            # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
             df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
             df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
 
@@ -678,7 +659,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                 if archivo1 is not None and archivo2 is not None:
                     archivo1.seek(0)
                     archivo2.seek(0)
-                    # Añadir encoding='latin1' a la lectura del CSV
+                    # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
                     df1 = pd.read_csv(archivo1, encoding='latin1')
                     df2 = pd.read_csv(archivo2, encoding='latin1')
 
