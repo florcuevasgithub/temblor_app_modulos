@@ -1,11 +1,3 @@
-Entendido. El error StreamlitSetPageConfigMustBeFirstCommandError es muy específico de Streamlit y significa que la función st.set_page_config() debe ser la primera función de Streamlit que se llama en el script, antes de cualquier otro comando de Streamlit (como st.markdown, st.title, st.sidebar, st.file_uploader, etc.) e incluso antes de manipular st.session_state o st.experimental_rerun().
-
-Actualmente, está ubicada después de algunas importaciones, el CSS Styling y la función manejar_reinicio(). Para solucionarlo, moveremos st.set_page_config() justo después de las importaciones.
-
-Aquí tienes el código corregido. Por favor, reemplaza todo el contenido de tu archivo con este:
-
-Python
-
 import streamlit as st
 import pandas as pd
 import numpy as np
