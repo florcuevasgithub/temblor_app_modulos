@@ -149,16 +149,17 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_dur
 st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos mediciones"])
 
-# MODIFICACIÓN: Contenido de manejar_reinicio directamente en el botón
+# LA CORRECCIÓN CLAVE ESTÁ AQUÍ:
 if st.sidebar.button("🔄 Nuevo análisis"):
-    # Limpia solo las keys relacionadas con los uploaders
+    # Limpia las keys relacionadas con los uploaders en session_state
+    # Esto asegura que los file_uploader se resetearán visualmente.
     if "reposo" in st.session_state:
         del st.session_state["reposo"]
     if "postural" in st.session_state:
         del st.session_state["postural"]
     if "accion" in st.session_state:
         del st.session_state["accion"]
-    # Para la opción 2
+    # Para la opción 2 de comparación:
     if "reposo1" in st.session_state:
         del st.session_state["reposo1"]
     if "postural1" in st.session_state:
@@ -172,7 +173,9 @@ if st.sidebar.button("🔄 Nuevo análisis"):
     if "accion2" in st.session_state:
         del st.session_state["accion2"]
 
-    st.experimental_rerun() # Fuerza un reinicio completo de la app
+    # FUERZA UN REINICIO COMPLETO DE LA APP
+    # Esta línea DEBE estar aquí, dentro del if del botón.
+    st.experimental_rerun()
 
 
 if opcion == "1️⃣ Análisis de una medición":
