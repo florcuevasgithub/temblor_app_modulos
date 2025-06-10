@@ -7,4 +7,4 @@ fpdf
 ahrs
 joblib
 reportlab
-scikit-learn
+scikit-learn 1.6.1
