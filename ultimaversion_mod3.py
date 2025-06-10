@@ -1,37 +1,25 @@
-import streamlit as st
+# -*- coding: utf-8 -*-
+
 import pandas as pd
 import numpy as np
-from scipy.signal import welch, butter, filtfilt
-import joblib
-import io
 import matplotlib.pyplot as plt
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RImage
-from reportlab.lib import colors
+from scipy.signal import butter, filtfilt, welch
+from fpdf import FPDF
+from datetime import datetime, timedelta
 import os
-import tempfile # Para guardar gráficos temporalmente para el PDF
+from scipy.fft import fft, fftfreq
+import unicodedata
+import io
+from io import BytesIO, StringIO
+from ahrs.filters import Mahony
+import os
+import glob
+import streamlit as st
 
-# Importar ahrs - Es crucial que esté instalado para el análisis avanzado
-try:
-    from ahrs.filters import Mahony
-except ImportError:
-    st.error("Error: La librería 'ahrs' no está instalada. Por favor, instala ejecutando: pip install ahrs")
-    st.stop() # Detiene la ejecución si no está instalada, ya que es fundamental.
-
-# --- Streamlit Page Configuration (MUST BE THE FIRST STREAMLIT COMMAND) ---
-st.set_page_config(layout="wide", page_title="Análisis y Predicción de Temblor")
-
-
-# --- Configuración global de la duración de la ventana ---
-ventana_duracion_seg = 2
-
-# --- Inicializar una variable en el estado de sesión para controlar el reinicio ---
+# Inicializar una variable en el estado de sesión para controlar el reinicio
 if "reiniciar" not in st.session_state:
     st.session_state.reiniciar = False
 
-# --- CSS Styling ---
 st.markdown("""
     <style>
     /* Oculta el texto 'Limit 200MB per file • CSV' */
@@ -69,160 +57,77 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Función para manejar el reinicio ---
-def manejar_reinicio():
-    if st.session_state.get("reiniciar", False):
-        st.session_state.clear()
-        st.experimental_rerun()
+# --- Configuración global de la duración de la ventana ---
+ventana_duracion_seg = 2
 
-# Llamada a manejar_reinicio al inicio de la aplicación
-manejar_reinicio()
-
-# --- Funciones de Análisis de Temblor - VERSIÓN AVANZADA (Para TODAS las Opciones) ---
-def filtrar_temblor_avanzado(signal, fs=100):
-    """Filtra la señal con un filtro pasa banda (1-15 Hz) para el análisis avanzado."""
+# --------- Funciones compartidas ----------
+def filtrar_temblor(signal, fs=100):
     b, a = butter(N=4, Wn=[1, 15], btype='bandpass', fs=fs)
     return filtfilt(b, a, signal)
 
 def q_to_matrix(q):
-    """Convierte un cuaternión a una matriz de rotación 3x3."""
     w, x, y, z = q
     return np.array([
-        [1 - 2*(y**2 + z**2),         2*(x*y - z*w),           2*(x*z + y*w)],
-        [2*(x*y + z*w),               1 - 2*(x**2 + z**2),      2*(y*z + x*w)],
-        [2*(x*z - y*w),               2*(y*z + x*w),           1 - 2*(x**2 + y**2)]
+        [1 - 2*(y**2 + z**2),        2*(x*y - z*w),           2*(x*z + y*w)],
+        [2*(x*y + z*w),              1 - 2*(x**2 + z**2),     2*(y*z - x*w)],
+        [2*(x*z - y*w),              2*(y*z + x*w),           1 - 2*(x**2 + y**2)]
     ])
 
-def analizar_temblor_por_ventanas_avanzado(df_input, fs=100, ventana_seg=ventana_duracion_seg):
-    """
-    Analiza las métricas de temblor (Frecuencia Dominante, RMS, Amplitud)
-    usando aceleración lineal compensada por gravedad, asumiendo que los
-    cuaterniones (qW, qX, qY, qZ) ya están presentes en df_input.
-    """
-    # Identificar columnas de aceleración
-    acc_cols_candidate = [col for col in ['Acc_X', 'Acc_Y', 'Acc_Z', 'Acel_X', 'Acel_Y', 'Acel_Z'] if col in df_input.columns]
-
-    if len(acc_cols_candidate) >= 3:
-        # Priorizar 'Acc' si existe un conjunto completo
-        if 'Acc_X' in acc_cols_candidate and 'Acc_Y' in acc_cols_candidate and 'Acc_Z' in acc_cols_candidate:
-            acc_cols = ['Acc_X', 'Acc_Y', 'Acc_Z']
-        elif 'Acel_X' in acc_cols_candidate and 'Acel_Y' in acc_cols_candidate and 'Acel_Z' in acc_cols_candidate:
-            acc_cols = ['Acel_X', 'Acel_Y', 'Acel_Z']
-        else: # Not all 3 are present for either Acc or Acel
-            st.error("No se encontraron 3 columnas completas para aceleración (Acc_X/Y/Z o Acel_X/Y/Z).")
-            return pd.DataFrame(), pd.DataFrame()
-    else:
-        st.error("No se encontraron columnas de aceleración (Acc_X/Y/Z o Acel_X/Y/Z).")
-        return pd.DataFrame(), pd.DataFrame()
-
-    # Identificar columnas de cuaterniones
-    quat_cols = [col for col in ['qW', 'qX', 'qY', 'qZ'] if col in df_input.columns]
-
-    if len(quat_cols) == 4:
-        # st.info("Columnas de cuaterniones (qW, qX, qY, qZ) encontradas. Usando cuaterniones pre-calculados.")
-        pass # No mostrar este mensaje en cada llamada para no saturar
-    else:
-        st.error("No se encontraron las columnas de cuaterniones (qW, qX, qY, qZ) en el archivo CSV. La compensación de gravedad no se puede realizar sin ellos. Asegúrate de que tus archivos CSV las contengan.")
-        return pd.DataFrame(), pd.DataFrame()
-
-    # Combinar columnas necesarias y eliminar NaNs
-    df = df_input[acc_cols + quat_cols].dropna()
-    
-    if df.empty:
-        st.warning("El DataFrame está vacío después de eliminar NaNs para el análisis avanzado.")
-        return pd.DataFrame(), pd.DataFrame()
-
-    acc = df[acc_cols].to_numpy()
-    Q = df[quat_cols].to_numpy()
-
-    if acc.shape[1] != 3 or Q.shape[1] != 4:
-        st.error("Los datos de aceleración no tienen 3 ejes o los cuaterniones no tienen 4 componentes.")
-        return pd.DataFrame(), pd.DataFrame()
-
+def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_duracion_seg):
+    required_cols = ['Acel_X', 'Acel_Y', 'Acel_Z', 'GiroX', 'GiroY', 'GiroZ']
+    df = df[required_cols].dropna() # Dropping NaNs here might reduce the total length
+    acc = df[['Acel_X', 'Acel_Y', 'Acel_Z']].to_numpy()
+    gyr = np.radians(df[['GiroX', 'GiroY', 'GiroZ']].to_numpy())
+    mahony = Mahony(gyr=gyr, acc=acc, frequency=fs)
+    Q = mahony.Q
     linear_accelerations_magnitude = []
-    g_world_vector = np.array([0.0, 0.0, 9.81]) # Vector de gravedad en el sistema de coordenadas global
+    g_world_vector = np.array([0.0, 0.0, 9.81])
 
     for i in range(len(acc)):
         q = Q[i]
         acc_measured = acc[i]
-        
-        R_W_B = q_to_matrix(q) # Asumiendo que esta matriz rota de World a Body
+        R_W_B = q_to_matrix(q)
         gravity_in_sensor_frame = R_W_B @ g_world_vector
         linear_acc_sensor_frame = acc_measured - gravity_in_sensor_frame
         linear_accelerations_magnitude.append(np.linalg.norm(linear_acc_sensor_frame))
 
     movimiento_lineal = np.array(linear_accelerations_magnitude)
-    
-    if movimiento_lineal.size == 0:
-        st.warning("La señal de aceleración lineal es vacía después de la compensación de gravedad.")
-        return pd.DataFrame(), pd.DataFrame()
-        
-    señal_filtrada = filtrar_temblor_avanzado(movimiento_lineal, fs)
+    señal_filtrada = filtrar_temblor(movimiento_lineal, fs)
 
     resultados_por_ventana = []
 
     tamaño_ventana = int(fs * ventana_seg)
-    if tamaño_ventana <= 0:
-        st.warning("El tamaño de ventana es cero o negativo.")
-        return pd.DataFrame(), pd.DataFrame()
-    
-    noverlap = int(tamaño_ventana * 0.5) # 50% de solapamiento
-
-    # Asegurarse de que haya al menos una ventana completa para el análisis
     if len(señal_filtrada) < tamaño_ventana:
-        # Si la señal es más corta que la ventana, analiza la señal completa como una única ventana
-        segmento = señal_filtrada
-        if segmento.size == 0:
-            return pd.DataFrame(), pd.DataFrame()
-        
+        return pd.DataFrame(), pd.DataFrame()
+
+    num_ventanas = len(señal_filtrada) // tamaño_ventana
+
+    for i in range(num_ventanas):
+        segmento = señal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
         segmento = segmento - np.mean(segmento)
-        # Asegurar nperseg > 0 para welch
-        nperseg_val = len(segmento) if len(segmento) > 0 else 1 # Para evitar error con welch si segmento es muy corto
-        f, Pxx = welch(segmento, fs=fs, nperseg=nperseg_val) # Asegurar nperseg adecuado
-        
-        freq_dominante = f[np.argmax(Pxx)] if len(Pxx) > 0 else 0.0
-        rms = np.sqrt(np.mean(segmento**2)) if segmento.size > 0 else 0.0
-        amp_g = (np.max(segmento) - np.min(segmento)) / 2 if segmento.size > 0 else 0.0
+
+        f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
+        if len(Pxx) > 0:
+            freq_dominante = f[np.argmax(Pxx)]
+        else:
+            freq_dominante = 0.0
+
+        varianza = np.var(segmento)
+        rms = np.sqrt(np.mean(segmento**2))
+        amp_g = (np.max(segmento) - np.min(segmento))/2
 
         if freq_dominante > 1.5:
-            # Formula de Amplitud (de g a cm) - Esta es una aproximación y puede variar
-            # 1 g = 9.81 m/s^2
-            # Acel = Amplitud_Desplazamiento * (2 * pi * Frecuencia)^2
-            # Amplitud_Desplazamiento (m) = Acel (m/s^2) / (2 * pi * Frecuencia)^2
-            amp_cm = ((amp_g * 9.81 * 100) / ((2 * np.pi * freq_dominante) ** 2))
+            amp_cm = ((amp_g * 100) / ((2 * np.pi * freq_dominante) ** 2))*2
         else:
-            amp_cm = 0.0 # Si la frecuencia dominante es muy baja, la amplitud se vuelve irrealmente grande.
-            
+            amp_cm = 0.0
+
         resultados_por_ventana.append({
-            'Ventana': 0,
-            'Frecuencia Dominante (Hz)': freq_dominante,
-            'RMS (m/s2)': rms,
-            'Amplitud Temblor (g)': amp_g,
-            'Amplitud Temblor (cm)': amp_cm
-        })
-    else:
-        for i in range(0, len(señal_filtrada) - tamaño_ventana + 1, noverlap):
-            segmento = señal_filtrada[i : i + tamaño_ventana]
-            segmento = segmento - np.mean(segmento)
-
-            f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
-            freq_dominante = f[np.argmax(Pxx)] if len(Pxx) > 0 else 0.0
-
-            rms = np.sqrt(np.mean(segmento**2))
-            amp_g = (np.max(segmento) - np.min(segmento)) / 2
-
-            if freq_dominante > 1.5:
-                amp_cm = ((amp_g * 9.81 * 100) / ((2 * np.pi * freq_dominante) ** 2))
-            else:
-                amp_cm = 0.0
-
-            resultados_por_ventana.append({
-                'Ventana': i // noverlap,
-                'Frecuencia Dominante (Hz)': freq_dominante,
-                'RMS (m/s2)': rms,
-                'Amplitud Temblor (g)': amp_g,
-                'Amplitud Temblor (cm)': amp_cm
-            })
+           'Ventana': i,
+           'Frecuencia Dominante (Hz)': freq_dominante,
+           'RMS (m/s2)': rms,
+           'Amplitud Temblor (g)': amp_g,
+           'Amplitud Temblor (cm)': amp_cm
+         })
 
     df_por_ventana = pd.DataFrame(resultados_por_ventana)
 
@@ -238,430 +143,583 @@ def analizar_temblor_por_ventanas_avanzado(df_input, fs=100, ventana_seg=ventana
 
     return df_promedio, df_por_ventana
 
-# --- Función para extraer datos del paciente de un DataFrame ---
-def extraer_datos_paciente(df):
-    datos = {
-        "sexo": "No especificado",
-        "edad": 0,
-        "mano_medida": "No especificada",
-        "dedo_medido": "No especificado"
-    }
-    if not df.empty:
-        # Asegurarse de que las columnas existan y no sean NaN antes de intentar acceder
-        if "sexo" in df.columns and pd.notna(df.iloc[0]["sexo"]):
-            datos["sexo"] = df.iloc[0]["sexo"]
-        if "edad" in df.columns and pd.notna(df.iloc[0]["edad"]):
-            try:
-                # Intenta convertir a int, aceptando coma como decimal
-                datos["edad"] = int(float(str(df.iloc[0]["edad"]).replace(',', '.')))
-            except (ValueError, TypeError):
-                datos["edad"] = 0
-        if "mano_medida" in df.columns and pd.notna(df.iloc[0]["mano_medida"]):
-            datos["mano_medida"] = df.iloc[0]["mano_medida"]
-        if "dedo_medido" in df.columns and pd.notna(df.iloc[0]["dedo_medido"]):
-            datos["dedo_medido"] = df.iloc[0]["dedo_medido"]
-    return datos
+def manejar_reinicio():
+    if st.session_state.get("reiniciar", False):
+        for file in os.listdir():
+            if file.endswith(".csv"):
+                try:
+                    os.remove(file)
+                except Exception as e:
+                    st.warning(f"No se pudo borrar {file}: {e}")
+
+        st.session_state.clear()
+        st.experimental_rerun()
 
 
-# --- Funciones para Generar PDF (Adaptadas para el análisis avanzado y Opción 3) ---
-def generar_pdf(opcion_seleccionada, data_to_pdf, pdf_buffer):
-    doc = SimpleDocTemplate(pdf_buffer, pagesize=letter)
-    styles = getSampleStyleSheet()
-    story = []
+# ------------------ Modo principal --------------------
 
-    styles.add(ParagraphStyle(name='TitleStyle', fontSize=18, leading=22, alignment=1, spaceAfter=12))
-    styles.add(ParagraphStyle(name='SubtitleStyle', fontSize=14, leading=18, alignment=0, spaceAfter=8))
-    styles.add(ParagraphStyle(name='Normal', fontSize=10, leading=12, alignment=0))
-    styles.add(ParagraphStyle(name='Bold', fontSize=10, leading=12, alignment=0, fontName='Helvetica-Bold'))
-    styles.add(ParagraphStyle(name='PredictionStyle', fontSize=16, leading=20, alignment=1, spaceAfter=12, textColor=colors.darkblue, fontName='Helvetica-Bold'))
+st.title("🧠 Análisis de Temblor")
+opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos mediciones", "3️⃣ Predicción de Diagnóstico"])
+if st.sidebar.button("🔄 Nuevo análisis"):
+    manejar_reinicio()
 
-    if opcion_seleccionada == "1️⃣ Análisis de una medición":
-        title = "Informe de Análisis de Una Medición de Temblor"
-        df_promedios = data_to_pdf['df_promedios']
-        df_resultados_ventanas = data_to_pdf['df_resultados_ventanas']
-        
-        story.append(Paragraph(title, styles['TitleStyle']))
-        story.append(Spacer(1, 0.2 * inch))
-
-        story.append(Paragraph("<b>Métricas Promedio de Temblor:</b>", styles['SubtitleStyle']))
-        data_promedios = [df_promedios.columns.tolist()] + df_promedios.values.tolist()
-        table_promedios = Table(data_promedios, colWidths=[2*inch, 1.5*inch, 1.5*inch])
-        table_promedios.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#D3D3D3')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-        story.append(table_promedios)
-        story.append(Spacer(1, 0.2 * inch))
-
-        story.append(Paragraph("<b>Métricas por Ventana:</b>", styles['SubtitleStyle']))
-        data_ventanas = [df_resultados_ventanas.columns.tolist()] + df_resultados_ventanas.values.tolist()
-        table_ventanas = Table(data_ventanas, colWidths=[1*inch, 1.2*inch, 1.2*inch, 1.2*inch, 1.2*inch])
-        table_ventanas.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#D3D3D3')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-        story.append(table_ventanas)
-        story.append(Spacer(1, 0.5 * inch))
-
-    elif opcion_seleccionada == "2️⃣ Comparar dos mediciones":
-        title = "Informe de Comparación de Mediciones de Temblor"
-        df_comparacion = data_to_pdf['df_comparacion']
-        fig_path = data_to_pdf['fig_path']
-
-        story.append(Paragraph(title, styles['TitleStyle']))
-        story.append(Spacer(1, 0.2 * inch))
-
-        story.append(Paragraph("<b>Tabla Comparativa de Métricas de Temblor:</b>", styles['SubtitleStyle']))
-        data_comp_table = [df_comparacion.columns.tolist()] + df_comparacion.values.tolist()
-        table_comp = Table(data_comp_table, colWidths=[1*inch, 1.2*inch, 1.2*inch, 1.2*inch, 1.2*inch, 1.2*inch, 1.2*inch])
-        table_comp.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#D3D3D3')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-        story.append(table_comp)
-        story.append(Spacer(1, 0.2 * inch))
-        
-        if fig_path:
-            story.append(Paragraph("<b>Comparación Visual de Frecuencia Dominante:</b>", styles['SubtitleStyle']))
-            img = RImage(fig_path, width=5.5*inch, height=3.5*inch)
-            story.append(img)
-            story.append(Spacer(1, 0.2 * inch))
-
-
-    elif opcion_seleccionada == "3️⃣ Predicción de Diagnóstico":
-        datos_paciente = data_to_pdf['datos_paciente']
-        resultados_analisis = data_to_pdf['resultados_analisis']
-        prediccion_final = data_to_pdf['prediccion_final']
-        fig_path = data_to_pdf.get('fig_path')
-        fs = data_to_pdf['fs']
-        ventana_duracion_seg_val = data_to_pdf['ventana_duracion_seg']
-
-        story.append(Paragraph("Informe de Predicción de Diagnóstico de Temblor", styles['TitleStyle']))
-        story.append(Spacer(1, 0.2 * inch))
-
-        # Información del Paciente
-        story.append(Paragraph("<b>Datos del Paciente:</b>", styles['SubtitleStyle']))
-        paciente_data = []
-        if datos_paciente.get('sexo') is not None: paciente_data.append([Paragraph("<b>Sexo:</b>", styles['Bold']), Paragraph(str(datos_paciente['sexo']), styles['Normal'])])
-        if datos_paciente.get('edad') is not None: paciente_data.append([Paragraph("<b>Edad:</b>", styles['Bold']), Paragraph(str(datos_paciente['edad']), styles['Normal'])])
-        # Solo mostrar mano_medida si está especificada
-        if datos_paciente.get('mano_medida') is not None and datos_paciente.get('mano_medida') != "No especificada":
-            paciente_data.append([Paragraph("<b>Mano Medida:</b>", styles['Bold']), Paragraph(str(datos_paciente['mano_medida']), styles['Normal'])])
-        if datos_paciente.get('dedo_medido') is not None and datos_paciente.get('dedo_medido') != "No especificado":
-            paciente_data.append([Paragraph("<b>Dedo Medido:</b>", styles['Bold']), Paragraph(str(datos_paciente['dedo_medido']), styles['Normal'])])
-        
-        if paciente_data:
-            paciente_table = Table(paciente_data, colWidths=[1.5 * inch, 4.5 * inch])
-            paciente_table.setStyle(TableStyle([
-                ('ALIGN', (0,0), (-1,-1), 'LEFT'), ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                ('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-            ]))
-            story.append(paciente_table)
-        else:
-            story.append(Paragraph("No se pudieron extraer datos completos del paciente.", styles['Normal']))
-        story.append(Spacer(1, 0.1 * inch))
-
-        # Información de Configuración del Análisis
-        story.append(Paragraph("<b>Configuración del Análisis:</b>", styles['SubtitleStyle']))
-        config_data = [
-            [Paragraph("<b>Frecuencia de Muestreo (Hz):</b>", styles['Bold']), Paragraph(str(fs), styles['Normal'])],
-            [Paragraph("<b>Duración de Ventana (seg):</b>", styles['Bold']), Paragraph(str(ventana_duracion_seg_val), styles['Normal'])]
-        ]
-        config_table = Table(config_data, colWidths=[2.5 * inch, 3.5 * inch])
-        config_table.setStyle(TableStyle([
-            ('ALIGN', (0,0), (-1,-1), 'LEFT'), ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-        ]))
-        story.append(config_table)
-        story.append(Spacer(1, 0.2 * inch))
-
-        # Gráfico de Análisis
-        if fig_path:
-            story.append(Paragraph(f"<b>Métricas Comparativas por Test:</b>", styles['SubtitleStyle']))
-            img = RImage(fig_path, width=6*inch, height=4*inch)
-            story.append(img)
-            story.append(Spacer(1, 0.2 * inch))
-
-        # Resultados de Análisis
-        story.append(Paragraph(f"<b>Resultados del Análisis Detallado:</b>", styles['SubtitleStyle']))
-        data_table = [['Test', 'Frecuencia Dominante (Hz)', 'RMS (m/s2)', 'Amplitud Temblor (cm)']]
-        for idx, row in resultados_analisis.iterrows():
-            data_table.append([
-                row['Test'],
-                round(row['Frecuencia Dominante (Hz)'], 3),
-                round(row['RMS (m/s2)'], 3),
-                round(row['Amplitud Temblor (cm)'], 3)
-            ])
-        
-        table = Table(data_table, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1.5*inch])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#D3D3D3')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-        story.append(table)
-        story.append(Spacer(1, 0.2 * inch))
-
-        # Predicción del Modelo
-        story.append(Paragraph("<b>Predicción del Modelo de Machine Learning:</b>", styles['SubtitleStyle']))
-        if prediccion_final:
-            story.append(Paragraph(f"El modelo predice que el paciente tiene **{prediccion_final}**", styles['PredictionStyle']))
-            story.append(Spacer(1, 0.1 * inch))
-            story.append(Paragraph("<b>Nota:</b> El diagnóstico clínico final debe considerar este resultado y el cuadro general del paciente.", styles['Normal']))
-        else:
-            story.append(Paragraph("No se pudo generar una predicción debido a la falta de datos o errores.", styles['Normal']))
-        story.append(Spacer(1, 0.5 * inch))
-
-    story.append(Paragraph("------------------------------------------------------------------------------------------------------------------------", styles['Normal']))
-    story.append(Paragraph("Este informe ha sido generado automáticamente por la aplicación de análisis de temblor.", styles['Normal']))
-    story.append(Paragraph("Fecha de generación: " + pd.Timestamp.now().strftime("%d/%m/%Y %H:%M"), styles['Normal']))
-
-    doc.build(story)
-    return pdf_buffer
-
-
-# --- Inicio del script principal de Streamlit ---
-# st.set_page_config(layout="wide", page_title="Análisis y Predicción de Temblor") # MOVED TO THE TOP
-
-st.sidebar.title("Menú")
-opcion = st.sidebar.radio("Selecciona una opción:", [
-    "1️⃣ Análisis de una medición",
-    "2️⃣ Comparar dos mediciones",
-    "3️⃣ Predicción de Diagnóstico"
-])
-
-
-# --- Lógica de la Opción 1 (USA ANÁLISIS AVANZADO) ---
 if opcion == "1️⃣ Análisis de una medición":
-    st.title("Análisis de una única medición de temblor")
-    st.markdown("Sube un archivo CSV con los datos de aceleración (Acc_X/Acel_X, Acc_Y/Acel_Y, Acc_Z/Acel_Z) y **cuaterniones (qW, qX, qY, qZ)** para analizar sus métricas de temblor con compensación de gravedad.")
+    st.title("📈​ Análisis de una medición")
 
-    uploaded_file = st.file_uploader("Sube tu archivo CSV de aceleración y cuaterniones", type=["csv"])
+    # --------- Funciones auxiliares ----------
 
-    if uploaded_file is not None:
+    def diagnosticar(df):
+        def max_amp(test):
+            fila = df[df['Test'] == test]
+            return fila['Amplitud Temblor (cm)'].max() if not fila.empty else 0
+
+        def mean_freq(test):
+            fila = df[df['Test'] == test]
+            return fila['Frecuencia Dominante (Hz)'].mean() if not fila.empty else 0
+
+        if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 6.5:
+            return "Probable Parkinson"
+        elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (7.5 <= mean_freq('Postural') <= 12 or 7.5 <= mean_freq('Acción') <= 12):
+            return "Probable Temblor Esencial"
+        else:
+            return "Temblor dentro de parámetros normales"
+
+    # --- Función generar_pdf modificada para aceptar un diccionario de datos del paciente ---
+    def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", diagnostico="", fig=None):
+
+        fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
+
+        pdf.set_font("Arial", size=12)
+        pdf.ln(10)
+
+        # Helper para imprimir campos solo si tienen valor
+        def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
+            if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+                pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Datos del Paciente", ln=True)
+        pdf.set_font("Arial", size=12)
+
+        _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
+        _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
+        
+        # Manejo especial para Edad para asegurar que sea un número si es posible
+        edad_val = datos_paciente_dict.get("Edad")
+        edad_str_to_print = None
         try:
-            df = pd.read_csv(uploaded_file, encoding='latin1', decimal=',')
-            st.success("Archivo cargado exitosamente.")
-            st.dataframe(df.head())
+            if edad_val is not None and str(edad_val).strip() != "":
+                edad_int = int(float(edad_val))
+                edad_str_to_print = str(edad_int)
+        except ValueError:
+            pass # Si falla la conversión, no se imprimirá
 
-            st.subheader("Configuración del Análisis")
-            fs = st.slider("Frecuencia de muestreo (Hz)", min_value=50, max_value=200, value=100, step=10)
-            st.info(f"La duración de la ventana de análisis es fija en {ventana_duracion_seg} segundos (para este análisis).")
+        _imprimir_campo_pdf(pdf, "Edad", edad_str_to_print)
+        _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("Sexo"))
+        _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("Diagnostico"))
+        _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo")) # Agregado "Tipo"
+        _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("Mano"))
+        _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("Dedo"))
+        _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente_dict.get("Antecedente"))
+        _imprimir_campo_pdf(pdf, "Medicación", datos_paciente_dict.get("Medicacion"))
+        
+        pdf.ln(5) # Espacio después de los datos del paciente
+
+        # --- SECCIÓN: Parámetros de Estimulación (Configuración) ---
+        # Definir los parámetros de estimulación y sus unidades
+        parametros_estimulacion = {
+            "ECP": "", "GPI": "", "NST": "", "Polaridad": "",
+            "Duracion": " ms", "Pulso": " µs", "Corriente": " mA",
+            "Voltaje": " V", "Frecuencia": " Hz"
+        }
+        
+        # Verificar si hay al menos un parámetro de estimulación presente para imprimir el título
+        hay_parametros_estimulacion = False # Corrected variable name
+        for param_key in parametros_estimulacion.keys():
+            if datos_paciente_dict.get(param_key) is not None and str(datos_paciente_dict.get(param_key)).strip() != "":
+                hay_parametros_estimulacion = True
+                break
+
+        if hay_parametros_estimulacion: # Corrected variable name
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Configuración", ln=True) # Título cambiado a "Configuración"
+            pdf.set_font("Arial", size=12)
+            for param_key, unit in parametros_estimulacion.items():
+                _imprimir_campo_pdf(pdf, param_key, datos_paciente_dict.get(param_key), unit)
+            pdf.ln(5)
+        # --- FIN SECCIÓN ---
+
+        pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True) # Siempre se imprime la fecha/hora
+
+        pdf.ln(10)
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(30, 10, "Test", 1)
+        pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+        pdf.cell(30, 10, "RMS", 1)
+        pdf.cell(50, 10, "Amplitud (cm)", 1)
+        pdf.ln(10)
+
+        pdf.set_font("Arial", "", 12)
+        for _, row in df.iterrows():
+            pdf.cell(30, 10, row['Test'], 1)
+            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+            pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+            pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+            pdf.ln(10)
 
 
-            if st.button("Analizar Temblor"):
-                with st.spinner('Analizando datos...'):
-                    # Usamos la función de análisis AVANZADO
-                    promedios, df_resultados_ventanas = analizar_temblor_por_ventanas_avanzado(
-                        df, fs, ventana_duracion_seg
-                    )
+        def limpiar_texto_para_pdf(texto):
+            return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
+        pdf.ln(10)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(200, 10, "Interpretación clínica:", ln=True)
+        pdf.set_font("Arial", size=10)
+        texto_original = """
+        Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
 
-                    if not promedios.empty:
-                        st.subheader("Métricas Promedio de Temblor")
-                        st.dataframe(promedios.round(3))
+        Los valores de referencia considerados son:
+          Para las frecuencias (Hz):
+        - Temblor Parkinsoniano: 3-6 Hz en reposo.
+        - Temblor Esencial: 8-10 Hz en acción o postura.
 
-                        st.subheader("Métricas por Ventana")
-                        st.dataframe(df_resultados_ventanas)
+          Para las amplitudes:
+        - Mayores a 0.5 cm pueden ser clínicamente relevantes.
 
-                        st.subheader("Visualización de la Frecuencia Dominante por Ventana")
+          Para el RMS (m/s2):
+        - Normal/sano: menor a 0.5 m/s2.
+        - PK leve: entre 0.5 y 1.5 m/s2.
+        - TE o PK severo: mayor a 2 m/s2.
+
+        Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica.
+
+        """
+
+        texto_limpio = limpiar_texto_para_pdf(texto_original)
+        pdf.multi_cell(0, 8, texto_limpio)
+        pdf.set_font("Arial", 'B', 12)
+
+        if fig is not None:
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+                fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
+                pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+
+        pdf.output(nombre_archivo)
+
+
+    st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
+    reposo_file = st.file_uploader("", type=["csv"], key="reposo")
+
+    st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba POSTURAL</div>', unsafe_allow_html=True)
+    postural_file = st.file_uploader("", type=["csv"], key="postural")
+
+    st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
+    accion_file = st.file_uploader("", type=["csv"], key="accion")
+
+    st.markdown("""
+        <style>
+        /* Ocultar el texto original de "Drag and drop file here" */
+        div[data-testid="stFileUploaderDropzoneInstructions"] span {
+            display: none !important;
+        }
+
+        /* Añadir nuestro propio texto arriba del botón */
+        div[data-testid="stFileUploaderDropzoneInstructions"]::before {
+            content: "Arrastrar archivo aquí";
+            font-weight: bold;
+            font-size: 16px;
+            color: #444;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+
+    uploaded_files = {
+        "Reposo": reposo_file,
+        "Postural": postural_file,
+        "Acción": accion_file,
+    }
+
+    # Inicializa estas variables FUERA del bloque del botón.
+    resultados_globales = []
+    datos_paciente_para_pdf = {} # Cambiado a diccionario para datos del paciente
+    ventanas_para_grafico = []
+    min_ventanas_count = float('inf')
+    fig = None 
+
+    if st.button("Iniciar análisis"):
+        # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
+        mediciones_tests = {test: pd.read_csv(file, encoding='latin1') for test, file in uploaded_files.items() if file is not None}
+
+        if not mediciones_tests:
+            st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
+        else:
+            # Extraer datos del paciente y de estimulación de la primera medición (o de la que se cargue primero)
+            # Asegurarse de que solo se extraigan una vez y de un archivo válido
+            primer_df_cargado = None
+            for test, datos in mediciones_tests.items():
+                if datos is not None and not datos.empty:
+                    primer_df_cargado = datos
+                    break
+
+            if primer_df_cargado is not None:
+                # LISTA COMPLETA DE COLUMNAS A EXTRAER DEL CSV
+                cols_para_extraer = [
+                    "Nombre", "Apellido", "Edad", "Sexo", "Diagnostico", "Mano", "Dedo",
+                    "Antecedente", "Medicacion", "ECP", "GPI", "NST", "Polaridad",
+                    "Duracion", "Pulso", "Corriente", "Voltaje", "Frecuencia", "Tipo" # Agregado "Tipo" si se usa
+                ]
+                for col in cols_para_extraer:
+                    if col in primer_df_cargado.columns:
+                        val = primer_df_cargado.iloc[0].get(col)
+                        # Almacenar solo si no es NaN y no es una cadena vacía
+                        if pd.notna(val) and str(val).strip() != "":
+                            datos_paciente_para_pdf[col] = val
+            
+            # Procesar cada test
+            for test, datos in mediciones_tests.items():
+                df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(datos, fs=100)
+
+                if not df_promedio.empty:
+                    fila = df_promedio.iloc[0].to_dict()
+                    fila['Test'] = test
+                    resultados_globales.append(fila)
+
+                if not df_ventanas.empty:
+                    df_ventanas_copy = df_ventanas.copy()
+                    df_ventanas_copy["Test"] = test
+                    ventanas_para_grafico.append(df_ventanas_copy)
+                    if len(df_ventanas_copy) < min_ventanas_count:
+                        min_ventanas_count = len(df_ventanas_copy)
+
+            if ventanas_para_grafico:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                for df in ventanas_para_grafico:
+                    test_name = df["Test"].iloc[0]
+                    if min_ventanas_count != float('inf') and len(df) > min_ventanas_count:
+                        df_to_plot = df.iloc[:min_ventanas_count].copy()
+                    else:
+                        df_to_plot = df.copy()
+                    
+                    df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * ventana_duracion_seg
+                    ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
+
+                ax.set_title("Amplitud de Temblor por Ventana de Tiempo (Comparación Visual)")
+                ax.set_xlabel("Tiempo (segundos)")
+                ax.set_ylabel("Amplitud (cm)")
+                ax.legend()
+                ax.grid(True)
+                st.pyplot(fig)
+            else:
+                st.warning("No se generaron datos de ventanas para el gráfico.")
+
+            if resultados_globales:
+                df_resultados_final = pd.DataFrame(resultados_globales)
+                diagnostico_auto = diagnosticar(df_resultados_final)
+
+                st.subheader("Resultados del Análisis de Temblor")
+                st.dataframe(df_resultados_final.set_index('Test'))
+
+                # --- Llamada a generar_pdf con el diccionario de datos del paciente ---
+                generar_pdf(
+                    datos_paciente_para_pdf, # Ahora pasamos el diccionario
+                    df_resultados_final,
+                    nombre_archivo="informe_temblor.pdf",
+                    diagnostico=diagnostico_auto,
+                    fig=fig
+                )
+
+                with open("informe_temblor.pdf", "rb") as f:
+                    st.download_button("📄 Descargar informe PDF", f, file_name="informe_temblor.pdf")
+                    st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
+            else:
+                st.warning("No se encontraron datos suficientes para el análisis.")
+
+elif opcion == "2️⃣ Comparar dos mediciones":
+    st.title("📊 Comparar dos mediciones")
+
+    st.markdown("### Cargar archivos de la **medición 1**")
+    config1_archivos = {
+        "Reposo": st.file_uploader("Archivo de REPOSO medición 1", type="csv", key="reposo1"),
+        "Postural": st.file_uploader("Archivo de POSTURAL medición 1", type="csv", key="postural1"),
+        "Acción": st.file_uploader("Archivo de ACCION medición 1", type="csv", key="accion1")
+    }
+
+    st.markdown("### Cargar archivos de la **medición 2**")
+    config2_archivos = {
+        "Reposo": st.file_uploader("Archivo de REPOSO medición 2", type="csv", key="reposo2"),
+        "Postural": st.file_uploader("Archivo de POSTURAL medición 2", type="csv", key="postural2"),
+        "Acción": st.file_uploader("Archivo de ACCION medición 2", type="csv", key="accion2")
+    }
+
+    st.markdown("""
+        <style>
+        div[data-testid="stFileUploaderDropzoneInstructions"] span {
+            display: none !important;
+        }
+        div[data-testid="stFileUploaderDropzoneInstructions"]::before {
+            content: "Arrastrar archivo aquí";
+            font-weight: bold;
+            font-size: 16px;
+            color: #444;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    def analizar_configuracion(archivos, fs=100):
+        resultados = []
+        for test, archivo in archivos.items():
+            if archivo is not None:
+                archivo.seek(0)
+                # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
+                df = pd.read_csv(archivo, encoding='latin1')
+                df_promedio, df_ventana = analizar_temblor_por_ventanas_resultante(df, fs=fs)
+                if isinstance(df_ventana, pd.DataFrame) and not df_ventana.empty:
+                    prom = df_promedio.iloc[0] if not df_promedio.empty else None
+                    if prom is not None:
+                        freq = prom['Frecuencia Dominante (Hz)']
+                        amp = prom['Amplitud Temblor (cm)']
+                        rms = prom['RMS (m/s2)']
+                        resultados.append({
+                            'Test': test,
+                            'Frecuencia Dominante (Hz)': round(freq, 2),
+                            'RMS (m/s2)': round(rms, 4),
+                            'Amplitud Temblor (cm)': round(amp, 2)
+                        })
+        return pd.DataFrame(resultados)
+
+    if st.button("Comparar Mediciones"):
+        archivos_cargados = all([
+            config1_archivos[test] is not None and config2_archivos[test] is not None
+            for test in ["Reposo", "Postural", "Acción"]
+        ])
+
+        if not archivos_cargados:
+            st.warning("Por favor, cargue los 3 archivos para ambas mediciones.")
+        else:
+            # Leer el primer archivo de cada configuración para extraer los metadatos
+            # Asumimos que los metadatos son consistentes dentro de cada configuración
+            # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
+            df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
+            df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
+
+            # Función auxiliar para limpiar y extraer campos
+            def extraer_y_limpiar_campos(df_fuente, campos_lista):
+                resultado = {}
+                for campo in campos_lista:
+                    if campo in df_fuente.columns:
+                        valor = df_fuente.iloc[0].get(campo)
+                        if pd.notna(valor) and str(valor).strip() != "":
+                            resultado[campo] = valor
+                return resultado
+
+            # Definir todos los campos relevantes para extracción
+            # QUITAMOS MANO y DEDO de los personales generales
+            campos_personales_generales = ["Nombre", "Apellido", "Edad", "Sexo", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]
+            # AGREGAMOS MANO y DEDO a los campos de estimulación/configuración
+            campos_estim_y_config = ["Mano", "Dedo", "ECP", "GPI", "NST", "Polaridad", "Duracion", "Pulso", "Corriente", "Voltaje", "Frecuencia"]
+            
+            # Extraer y limpiar datos
+            datos_personales = extraer_y_limpiar_campos(df_config1_meta, campos_personales_generales)
+            parametros_config1 = extraer_y_limpiar_campos(df_config1_meta, campos_estim_y_config)
+            parametros_config2 = extraer_y_limpiar_campos(df_config2_meta, campos_estim_y_config)
+
+            # Manejo especial para Edad (convertir a int si es posible)
+            if "Edad" in datos_personales:
+                try:
+                    edad_int = int(float(datos_personales["Edad"]))
+                    datos_personales["Edad"] = str(edad_int)
+                except Exception:
+                    datos_personales["Edad"] = None # O simplemente eliminar si no se puede convertir
+
+            df_resultados_config1 = analizar_configuracion(config1_archivos)
+            df_resultados_config2 = analizar_configuracion(config2_archivos)
+
+            # Inicializar PDF antes de graficar
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Informe Comparativo de Mediciones", ln=True, align="C")
+
+            pdf.set_font("Arial", size=10)
+            pdf.ln(10)
+            pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
+
+            # Helper para imprimir campo en PDF (reutilizado)
+            def imprimir_campo_si_valido(pdf_obj, etiqueta, valor, unidad=""):
+                if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+                    pdf_obj.cell(0, 8, f"{etiqueta}: {valor}{unidad}", ln=True)
+
+            # Helper para imprimir parámetros de estimulación (reutilizado, solo ajusta unidad)
+            def imprimir_parametros_y_config(pdf_obj, parametros_dict, titulo):
+                pdf_obj.set_font("Arial", 'B', 12)
+                pdf_obj.cell(0, 10, titulo, ln=True)
+                pdf_obj.set_font("Arial", size=10)
+                
+                # Definir los parámetros de configuración y sus unidades
+                # AHORA INCLUYE MANO Y DEDO
+                parametros_a_imprimir_con_unidad = {
+                    "Mano": "", "Dedo": "", # Agregados aquí
+                    "ECP": "", "GPI": "", "NST": "", "Polaridad": "",
+                    "Duracion": " ms", "Pulso": " µs", "Corriente": " mA",
+                    "Voltaje": " V", "Frecuencia": " Hz"
+                }
+
+                for param_key, unit in parametros_a_imprimir_con_unidad.items():
+                    value = parametros_dict.get(param_key)
+                    imprimir_campo_si_valido(pdf_obj, param_key, value, unit)
+                pdf_obj.ln(5)
+
+
+            # Impresión de Datos Personales GENERALES
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Datos del Paciente", ln=True)
+            pdf.set_font("Arial", size=12)
+            imprimir_campo_si_valido(pdf, "Nombre", datos_personales.get("Nombre"))
+            imprimir_campo_si_valido(pdf, "Apellido", datos_personales.get("Apellido"))
+            imprimir_campo_si_valido(pdf, "Edad", datos_personales.get("Edad"))
+            imprimir_campo_si_valido(pdf, "Sexo", datos_personales.get("Sexo"))
+            imprimir_campo_si_valido(pdf, "Diagnóstico", datos_personales.get("Diagnostico"))
+            imprimir_campo_si_valido(pdf, "Tipo", datos_personales.get("Tipo")) 
+            imprimir_campo_si_valido(pdf, "Antecedente", datos_personales.get("Antecedente"))
+            imprimir_campo_si_valido(pdf, "Medicación", datos_personales.get("Medicacion"))
+            pdf.ln(5)
+
+
+            # Impresión de CONFIGURACIÓN (incluyendo Mano y Dedo)
+            imprimir_parametros_y_config(pdf, parametros_config1, "Configuración Medición 1")
+            imprimir_parametros_y_config(pdf, parametros_config2, "Configuración Medición 2")
+
+            def imprimir_resultados(pdf_obj, df_res, titulo):
+                pdf_obj.set_font("Arial", 'B', 14)
+                pdf_obj.cell(0, 10, titulo, ln=True)
+                pdf_obj.set_font("Arial", 'B', 12)
+                pdf_obj.cell(30, 10, "Test", 1)
+                pdf_obj.cell(40, 10, "Frecuencia (Hz)", 1)
+                pdf_obj.cell(30, 10, "RMS", 1)
+                pdf_obj.cell(50, 10, "Amplitud (cm)", 1)
+                pdf_obj.ln(10)
+                pdf_obj.set_font("Arial", "", 10)
+
+                for _, row in df_res.iterrows():
+                    pdf_obj.cell(30, 10, row['Test'], 1)
+                    pdf_obj.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+                    pdf_obj.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+                    pdf_obj.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+                    pdf_obj.ln(10)
+                pdf_obj.ln(5)
+
+            imprimir_resultados(pdf, df_resultados_config1, "Resultados Medición 1")
+            imprimir_resultados(pdf, df_resultados_config2, "Resultados Medición 2")
+
+            amp_avg_config1 = df_resultados_config1['Amplitud Temblor (cm)'].mean()
+            amp_avg_config2 = df_resultados_config2['Amplitud Temblor (cm)'].mean()
+
+            rms_avg_config1 = df_resultados_config1['RMS (m/s2)'].mean()
+            rms_avg_config2 = df_resultados_config2['RMS (m/s2)'].mean()
+
+            conclusion = ""
+            if amp_avg_config1 < amp_avg_config2:
+                conclusion = (
+                    f"La Medición 1 muestra una amplitud de temblor promedio ({amp_avg_config1:.2f} cm) "
+                    f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor "
+                )
+            elif amp_avg_config2 < amp_avg_config1:
+                conclusion = (
+                    f"La Medición 2 muestra una amplitud de temblor promedio ({amp_avg_config2:.2f} cm) "
+                    f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor "
+                )
+            else:
+                conclusion = (
+                    f"Ambas mediciones muestran amplitudes de temblor promedio muy similares ({amp_avg_config1:.2f} cm). "
+                )
+
+            st.subheader("Resultados Medición 1")
+            st.dataframe(df_resultados_config1)
+
+            st.subheader("Resultados Medición 2")
+            st.dataframe(df_resultados_config2)
+
+            st.subheader("Comparación Gráfica de Amplitud por Ventana")
+            nombres_test = ["Reposo", "Acción", "Postural"]
+
+            for test in nombres_test:
+                archivo1 = config1_archivos[test]
+                archivo2 = config2_archivos[test]
+
+                if archivo1 is not None and archivo2 is not None:
+                    archivo1.seek(0)
+                    archivo2.seek(0)
+                    # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
+                    df1 = pd.read_csv(archivo1, encoding='latin1')
+                    df2 = pd.read_csv(archivo2, encoding='latin1')
+
+                    df1_promedio, df1_ventanas = analizar_temblor_por_ventanas_resultante(df1, fs=100)
+                    df2_promedio, df2_ventanas = analizar_temblor_por_ventanas_resultante(df2, fs=100)
+
+                    if not df1_ventanas.empty and not df2_ventanas.empty:
                         fig, ax = plt.subplots(figsize=(10, 5))
-                        ax.plot(df_resultados_ventanas['Ventana'], df_resultados_ventanas['Frecuencia Dominante (Hz)'], marker='o')
-                        ax.set_xlabel("Número de Ventana")
-                        ax.set_ylabel("Frecuencia Dominante (Hz)")
-                        ax.set_title("Frecuencia Dominante del Temblor por Ventana")
+
+                        df1_ventanas["Tiempo (segundos)"] = df1_ventanas["Ventana"] * ventana_duracion_seg
+                        df2_ventanas["Tiempo (segundos)"] = df2_ventanas["Ventana"] * ventana_duracion_seg
+
+                        ax.plot(df1_ventanas["Tiempo (segundos)"], df1_ventanas["Amplitud Temblor (cm)"], label="Configuración 1", color="blue")
+                        ax.plot(df2_ventanas["Tiempo (segundos)"], df2_ventanas["Amplitud Temblor (cm)"], label="Configuración 2", color="orange")
+                        ax.set_title(f"Amplitud por Ventana - {test}")
+                        ax.set_xlabel("Tiempo (segundos)")
+                        ax.set_ylabel("Amplitud (cm)")
+                        ax.legend()
                         ax.grid(True)
                         st.pyplot(fig)
 
-                        # Generar PDF para Opción 1
-                        st.subheader("Generar Informe PDF")
-                        pdf_buffer = io.BytesIO()
-                        
-                        generar_pdf(
-                            "1️⃣ Análisis de una medición",
-                            {'df_promedios': promedios, 'df_resultados_ventanas': df_resultados_ventanas},
-                            pdf_buffer
-                        )
+                        import tempfile
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
+                            fig.savefig(tmp_img.name, format='png', bbox_inches='tight')
+                            image_path_for_pdf = tmp_img.name
 
-                        st.download_button(
-                            label="📄 Descargar Informe de Análisis PDF",
-                            data=pdf_buffer.getvalue(),
-                            file_name="informe_analisis_temblor.pdf",
-                            mime="application/pdf"
-                        )
+                        try:
+                            pdf.image(image_path_for_pdf, x=15, w=180)
+                        finally:
+                            os.remove(image_path_for_pdf)
 
+                        pdf.ln(10)
+                        plt.close(fig)
                     else:
-                        st.warning("No se pudieron calcular las métricas. Revisa tus datos y asegúrate de que contengan columnas de aceleración (Acc_X/Acel_X, Acc_Y/Acel_Y, Acc_Z/Acel_Z) y cuaterniones (qW, qX, qY, qZ) válidas.")
-        except Exception as e:
-            st.error(f"Error al procesar el archivo: {e}")
-            st.warning("Asegúrate de que el archivo CSV contenga las columnas requeridas (Acc_X/Acel_X, Acc_Y/Acel_Y, Acc_Z/Acel_Z, qW, qX, qY, qZ) y que los números usen coma (',') como separador decimal.")
-
-
-# --- Lógica de la Opción 2 (USA ANÁLISIS AVANZADO) ---
-elif opcion == "2️⃣ Comparar dos mediciones":
-    st.title("Comparación de dos mediciones de temblor")
-    st.markdown("Sube dos conjuntos de archivos CSV (Medición 1 y Medición 2) con datos de aceleración y **cuaterniones** para comparar sus métricas de temblor.")
-
-    st.subheader("Medición 1")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        reposo1_file = st.file_uploader("Reposo (Medición 1)", type=["csv"], key="reposo1")
-    with col2:
-        postural1_file = st.file_uploader("Postural (Medición 1)", type=["csv"], key="postural1")
-    with col3:
-        accion1_file = st.file_uploader("Acción (Medición 1)", type=["csv"], key="accion1")
-
-    st.subheader("Medición 2")
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        reposo2_file = st.file_uploader("Reposo (Medición 2)", type=["csv"], key="reposo2")
-    with col5:
-        postural2_file = st.file_uploader("Postural (Medición 2)", type=["csv"], key="postural2")
-    with col6:
-        accion2_file = st.file_uploader("Acción (Medición 2)", type=["csv"], key="accion2")
-
-    fs_comp = st.slider("Frecuencia de muestreo (Hz) para comparación", min_value=50, max_value=200, value=100, step=10, key="fs_comp")
-
-    if st.button("Comparar Mediciones"):
-        if (reposo1_file and postural1_file and accion1_file and
-            reposo2_file and postural2_file and accion2_file):
-            try:
-                # Medicion 1
-                df_reposo1 = pd.read_csv(reposo1_file, encoding='latin1', decimal=',')
-                df_postural1 = pd.read_csv(postural1_file, encoding='latin1', decimal=',')
-                df_accion1 = pd.read_csv(accion1_file, encoding='latin1', decimal=',')
-
-                # Usamos la función de análisis AVANZADO
-                prom_reposo1, _ = analizar_temblor_por_ventanas_avanzado(df_reposo1, fs_comp, ventana_duracion_seg)
-                prom_postural1, _ = analizar_temblor_por_ventanas_avanzado(df_postural1, fs_comp, ventana_duracion_seg)
-                prom_accion1, _ = analizar_temblor_por_ventanas_avanzado(df_accion1, fs_comp, ventana_duracion_seg)
-
-                # Medicion 2
-                df_reposo2 = pd.read_csv(reposo2_file, encoding='latin1', decimal=',')
-                df_postural2 = pd.read_csv(postural2_file, encoding='latin1', decimal=',')
-                df_accion2 = pd.read_csv(accion2_file, encoding='latin1', decimal=',')
-
-                # Usamos la función de análisis AVANZADO
-                prom_reposo2, _ = analizar_temblor_por_ventanas_avanzado(df_reposo2, fs_comp, ventana_duracion_seg)
-                prom_postural2, _ = analizar_temblor_por_ventanas_avanzado(df_postural2, fs_comp, ventana_duracion_seg)
-                prom_accion2, _ = analizar_temblor_por_ventanas_avanzado(df_accion2, fs_comp, ventana_duracion_seg)
-
-                # Crear DataFrame para comparación
-                comparacion_data = []
-
-                if not prom_reposo1.empty and not prom_reposo2.empty:
-                    comparacion_data.append({
-                        'Test': 'Reposo',
-                        'Frecuencia (Medición 1)': prom_reposo1['Frecuencia Dominante (Hz)'].iloc[0].round(3),
-                        'RMS (Medición 1)': prom_reposo1['RMS (m/s2)'].iloc[0].round(3),
-                        'Amplitud (Medición 1)': prom_reposo1['Amplitud Temblor (cm)'].iloc[0].round(3),
-                        'Frecuencia (Medición 2)': prom_reposo2['Frecuencia Dominante (Hz)'].iloc[0].round(3),
-                        'RMS (Medición 2)': prom_reposo2['RMS (m/s2)'].iloc[0].round(3),
-                        'Amplitud (Medición 2)': prom_reposo2['Amplitud Temblor (cm)'].iloc[0].round(3)
-                    })
-                
-                if not prom_postural1.empty and not prom_postural2.empty:
-                    comparacion_data.append({
-                        'Test': 'Postural',
-                        'Frecuencia (Medición 1)': prom_postural1['Frecuencia Dominante (Hz)'].iloc[0].round(3),
-                        'RMS (Medición 1)': prom_postural1['RMS (m/s2)'].iloc[0].round(3),
-                        'Amplitud (Medición 1)': prom_postural1['Amplitud Temblor (cm)'].iloc[0].round(3),
-                        'Frecuencia (Medición 2)': prom_postural2['Frecuencia Dominante (Hz)'].iloc[0].round(3),
-                        'RMS (Medición 2)': prom_postural2['RMS (m/s2)'].iloc[0].round(3),
-                        'Amplitud (Medición 2)': prom_postural2['Amplitud Temblor (cm)'].iloc[0].round(3)
-                    })
-                
-                if not prom_accion1.empty and not prom_accion2.empty:
-                    comparacion_data.append({
-                        'Test': 'Acción',
-                        'Frecuencia (Medición 1)': prom_accion1['Frecuencia Dominante (Hz)'].iloc[0].round(3),
-                        'RMS (Medición 1)': prom_accion1['RMS (m/s2)'].iloc[0].round(3),
-                        'Amplitud (Medición 1)': prom_accion1['Amplitud Temblor (cm)'].iloc[0].round(3),
-                        'Frecuencia (Medición 2)': prom_accion2['Frecuencia Dominante (Hz)'].iloc[0].round(3),
-                        'RMS (Medición 2)': prom_accion2['RMS (m/s2)'].iloc[0].round(3),
-                        'Amplitud (Medición 2)': prom_accion2['Amplitud Temblor (cm)'].iloc[0].round(3)
-                    })
-                
-                if comparacion_data:
-                    df_comparacion = pd.DataFrame(comparacion_data)
-                    st.subheader("Tabla Comparativa de Métricas de Temblor")
-                    st.dataframe(df_comparacion)
-
-                    # Visualización (ejemplo para frecuencia dominante)
-                    st.subheader("Comparación Visual de Métricas")
-                    
-                    fig, axes = plt.subplots(1, 3, figsize=(18, 6)) # Un subplot para cada métrica
-                    
-                    metrics = ['Frecuencia', 'RMS', 'Amplitud']
-                    ylabels = ['Frecuencia Dominante (Hz)', 'RMS (m/s2)', 'Amplitud Temblor (cm)']
-                    
-                    for i, metric in enumerate(metrics):
-                        df_plot = df_comparacion.set_index('Test')[[f'{metric} (Medición 1)', f'{metric} (Medición 2)']]
-                        df_plot.plot(kind='bar', ax=axes[i], rot=45)
-                        axes[i].set_title(f'Comparación de {metric} por Test')
-                        axes[i].set_ylabel(ylabels[i])
-                        axes[i].legend(title='Medición')
-                        axes[i].grid(axis='y', linestyle='--', alpha=0.7)
-                    
-                    plt.tight_layout()
-                    st.pyplot(fig)
-                    plt.close(fig) # Cierra la figura para liberar memoria
-
-                    # Guardar la figura para el PDF
-                    temp_fig_path = os.path.join(tempfile.gettempdir(), "comparacion_metrica.png")
-                    fig.savefig(temp_fig_path, dpi=300, bbox_inches='tight')
-
-
-                    # Generar PDF para Opción 2
-                    st.subheader("Generar Informe PDF")
-                    pdf_buffer = io.BytesIO()
-                    
-                    generar_pdf(
-                        "2️⃣ Comparar dos mediciones",
-                        {'df_comparacion': df_comparacion, 'fig_path': temp_fig_path},
-                        pdf_buffer
-                    )
-
-                    st.download_button(
-                        label="📄 Descargar Informe de Comparación PDF",
-                        data=pdf_buffer.getvalue(),
-                        file_name="informe_comparacion_temblor.pdf",
-                        mime="application/pdf"
-                    )
-                    # Limpiar archivo temporal
-                    os.remove(temp_fig_path)
-
+                        st.warning(f"No hay suficientes datos de ventanas para graficar el test: {test}")
                 else:
-                    st.warning("No se pudieron comparar las mediciones. Asegúrate de que todos los archivos estén cargados y sean válidos (contengan columnas Acc_X/Acel_X, Acc_Y/Acel_Y, Acc_Z/Acel_Z, qW, qX, qY, qZ).")
+                    st.warning(f"Faltan archivos para el test {test} en al menos una Medición.")
+            
+            st.subheader("Conclusión del Análisis Comparativo")
+            st.write(conclusion)
 
-            except Exception as e:
-                st.error(f"Error al procesar los archivos de comparación: {e}")
-                st.warning("Asegúrate de que los archivos CSV contengan las columnas Acc_X/Acel_X, Acc_Y/Acel_Y, Acc_Z/Acel_Z, qW, qX, qY, qZ y que los números usen coma (',') como separador decimal.")
-        else:
-            st.warning("Por favor, sube los seis archivos CSV para realizar la comparación.")
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(0, 10, "Conclusión", ln=True)
+            pdf.set_font("Arial", size=10)
+            pdf.multi_cell(0, 10, conclusion)
 
+            pdf_output = BytesIO()
+            pdf_bytes = pdf.output(dest='S').encode('latin1')
+            pdf_output.write(pdf_bytes)
+            pdf_output.seek(0)
 
-# --- Lógica de la Opción 3: Predicción de Diagnóstico (USA ANÁLISIS AVANZADO) ---
+            st.download_button(
+                label="Descargar Informe PDF",
+                data=pdf_output.getvalue(),
+                file_name="informe_comparativo_temblor.pdf",
+                mime="application/pdf"
+            )
+            st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
+
+    # --- Lógica de la Opción 3: Predicción de Diagnóstico (USA ANÁLISIS AVANZADO) ---
 elif opcion == "3️⃣ Predicción de Diagnóstico":
     st.title("🔮 Predicción de Diagnóstico de Temblor")
     st.markdown("Carga los 3 archivos CSV (Reposo, Postural y Acción) que representan una medición de temblor. El modelo realizará una predicción de diagnóstico basada en este conjunto de datos.")
@@ -717,10 +775,8 @@ elif opcion == "3️⃣ Predicción de Diagnóstico":
                     if not (res_reposo_prom.empty or res_postural_prom.empty or res_accion_prom.empty):
                         # Construir el DataFrame de características para la predicción
                         data_para_prediccion = pd.DataFrame([{
-                            'sexo': datos_paciente_prediccion.get('sexo'),
+                            'sexo': datos_paciente_prediccion.get('sexo'), # Assuming 'sexo' and 'edad' are used by the model
                             'edad': datos_paciente_prediccion.get('edad'),
-                            # 'mano_medida': datos_paciente_prediccion.get('mano_medida'), # No se usa en el modelo
-                            # 'dedo_medido': datos_paciente_prediccion.get('dedo_medido'), # No se usa en el modelo
                             'Frec_Reposo': res_reposo_prom['Frecuencia Dominante (Hz)'].iloc[0],
                             'RMS_Reposo': res_reposo_prom['RMS (m/s2)'].iloc[0],
                             'Amp_Reposo': res_reposo_prom['Amplitud Temblor (cm)'].iloc[0],
@@ -732,7 +788,28 @@ elif opcion == "3️⃣ Predicción de Diagnóstico":
                             'Amp_Accion': res_accion_prom['Amplitud Temblor (cm)'].iloc[0]
                         }])
                         
-                        prediccion_final = model.predict(data_para_prediccion)[0]
+                        # Handle categorical features like 'sexo' if your model was trained with one-hot encoding
+                        # This example assumes 'sexo' was handled by the model itself, or is not directly used, or is binary.
+                        # If 'sexo' needs specific encoding (e.g., one-hot encoding for 'masculino', 'femenino'),
+                        # you'll need to apply the same transformation here as you did during training.
+                        # For simplicity, assuming direct use or binary. If your model uses one-hot encoded 'sexo_masculino',
+                        # you'll need to create that column here:
+                        # data_para_prediccion['sexo_masculino'] = 1 if data_para_prediccion['sexo'].iloc[0] == 'masculino' else 0
+                        # And then drop the original 'sexo' column.
+
+                        # Important: Ensure the order of columns in data_para_prediccion matches the order
+                        # your model expects from its training. If your model is a scikit-learn pipeline,
+                        # it often handles this automatically. If not, explicitly reorder:
+                        # expected_features = ['sexo', 'edad', 'Frec_Reposo', ...] # Replace with your model's exact feature names and order
+                        # data_para_prediccion = data_para_prediccion[expected_features]
+                        
+                        prediccion_raw = model.predict(data_para_prediccion)[0]
+                        # Map raw prediction to human-readable labels
+                        label_map = {0: 'SANO', 1: 'PK', 2: 'TE'} # Adjust these mappings based on your model's output and how you trained it
+                        # For example, if your model outputs string labels directly, you won't need this map.
+                        # If it outputs numerical labels, you need to know which number corresponds to which diagnosis.
+                        prediccion_final = label_map.get(prediccion_raw, "Desconocido")
+
 
                         # Guardar resultados detallados para el PDF
                         resultados_analisis = pd.DataFrame([
