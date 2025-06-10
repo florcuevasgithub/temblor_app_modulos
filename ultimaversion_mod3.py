@@ -966,4 +966,6 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     plt.close(fig)
                 else:
                     st.warning("No hay suficientes datos de ventanas para graficar para los archivos de predicción.")
+                    st.write("Contenido de data_for_model:", data_for_model)
+                    st.write("Keys de data_for_model:", data_for_model.keys())
     
