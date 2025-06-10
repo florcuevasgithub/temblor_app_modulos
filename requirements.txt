@@ -5,3 +5,5 @@ matplotlib
 scipy
 fpdf
 ahrs
+joblib
+reportlab
