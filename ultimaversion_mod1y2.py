@@ -177,7 +177,6 @@ if st.sidebar.button("🔄 Nuevo análisis"):
     # Esta línea DEBE estar aquí, dentro del if del botón.
     st.experimental_rerun()
 
-
 if opcion == "1️⃣ Análisis de una medición":
     st.title("📈​ Análisis de una medición")
 
