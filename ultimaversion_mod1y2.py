@@ -56,6 +56,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
 # --- Configuración global de la duración de la ventana ---
 ventana_duracion_seg = 2
 
@@ -237,13 +238,13 @@ if opcion == "1️⃣ Análisis de una medición":
         }
         
         # Verificar si hay al menos un parámetro de estimulación presente para imprimir el título
-        hay_parametros_estimulacion = False
+        hay_parametros_estimulacion = False # Corrected variable name
         for param_key in parametros_estimulacion.keys():
             if datos_paciente_dict.get(param_key) is not None and str(datos_paciente_dict.get(param_key)).strip() != "":
                 hay_parametros_estimulacion = True
                 break
 
-        if hay_parametros_estimacion:
+        if hay_parametros_estimulacion: # Corrected variable name
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Configuración", ln=True) # Título cambiado a "Configuración"
             pdf.set_font("Arial", size=12)
@@ -486,13 +487,13 @@ elif opcion == "2️⃣ Comparar dos mediciones":
                     prom = df_promedio.iloc[0] if not df_promedio.empty else None
                     if prom is not None:
                         freq = prom['Frecuencia Dominante (Hz)']
-                        amp_cm = prom['Amplitud Temblor (cm)']
+                        amp = prom['Amplitud Temblor (cm)']
                         rms = prom['RMS (m/s2)']
                         resultados.append({
                             'Test': test,
                             'Frecuencia Dominante (Hz)': round(freq, 2),
                             'RMS (m/s2)': round(rms, 4),
-                            'Amplitud Temblor (cm)': round(amp_cm, 2)
+                            'Amplitud Temblor (cm)': round(amp, 2)
                         })
         return pd.DataFrame(resultados)
 
