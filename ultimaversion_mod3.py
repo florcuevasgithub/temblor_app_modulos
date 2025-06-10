@@ -3,7 +3,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from scipy.signal import welch, butter, filtfilt
-from scipy.integrate import simps # Aunque simps no se usa actualmente, se mantuvo del contexto previo
 import joblib
 import io
 import matplotlib.pyplot as plt
