@@ -6,3 +6,4 @@ scipy
 fpdf
 ahrs
 joblib
+reportlab
