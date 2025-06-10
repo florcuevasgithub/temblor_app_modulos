@@ -143,23 +143,37 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_dur
 
     return df_promedio, df_por_ventana
 
+# MODIFICACIÓN: Función manejar_reinicio para resetear st.session_state
 def manejar_reinicio():
-    if st.session_state.get("reiniciar", False):
-        for file in os.listdir():
-            if file.endswith(".csv"):
-                try:
-                    os.remove(file)
-                except Exception as e:
-                    st.warning(f"No se pudo borrar {file}: {e}")
+    # Limpia solo las keys relacionadas con los uploaders si es necesario,
+    # o st.session_state.clear() para un reinicio completo
+    if "reposo" in st.session_state:
+        del st.session_state["reposo"]
+    if "postural" in st.session_state:
+        del st.session_state["postural"]
+    if "accion" in st.session_state:
+        del st.session_state["accion"]
+    # Para la opción 2
+    if "reposo1" in st.session_state:
+        del st.session_state["reposo1"]
+    if "postural1" in st.session_state:
+        del st.session_state["postural1"]
+    if "accion1" in st.session_state:
+        del st.session_state["accion1"]
+    if "reposo2" in st.session_state:
+        del st.session_state["reposo2"]
+    if "postural2" in st.session_state:
+        del st.session_state["postural2"]
+    if "accion2" in st.session_state:
+        del st.session_state["accion2"]
 
-        st.session_state.clear()
-        st.experimental_rerun()
-
+    st.experimental_rerun() # Fuerza un reinicio completo de la app
 
 # ------------------ Modo principal --------------------
 
 st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos mediciones"])
+# MODIFICACIÓN: El botón llama directamente a manejar_reinicio
 if st.sidebar.button("🔄 Nuevo análisis"):
     manejar_reinicio()
 
@@ -238,13 +252,13 @@ if opcion == "1️⃣ Análisis de una medición":
         }
         
         # Verificar si hay al menos un parámetro de estimulación presente para imprimir el título
-        hay_parametros_estimulacion = False # Corrected variable name
+        hay_parametros_estimulacion = False
         for param_key in parametros_estimulacion.keys():
             if datos_paciente_dict.get(param_key) is not None and str(datos_paciente_dict.get(param_key)).strip() != "":
                 hay_parametros_estimulacion = True
                 break
 
-        if hay_parametros_estimulacion: # Corrected variable name
+        if hay_parametros_estimulacion:
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Configuración", ln=True) # Título cambiado a "Configuración"
             pdf.set_font("Arial", size=12)
@@ -313,12 +327,15 @@ if opcion == "1️⃣ Análisis de una medición":
 
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
+    # MODIFICACIÓN: Añadir keys para st.session_state
     reposo_file = st.file_uploader("", type=["csv"], key="reposo")
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba POSTURAL</div>', unsafe_allow_html=True)
+    # MODIFICACIÓN: Añadir keys para st.session_state
     postural_file = st.file_uploader("", type=["csv"], key="postural")
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
+    # MODIFICACIÓN: Añadir keys para st.session_state
     accion_file = st.file_uploader("", type=["csv"], key="accion")
 
     st.markdown("""
@@ -446,6 +463,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
     st.title("📊 Comparar dos mediciones")
 
     st.markdown("### Cargar archivos de la **medición 1**")
+    # MODIFICACIÓN: Añadir keys para st.session_state
     config1_archivos = {
         "Reposo": st.file_uploader("Archivo de REPOSO medición 1", type="csv", key="reposo1"),
         "Postural": st.file_uploader("Archivo de POSTURAL medición 1", type="csv", key="postural1"),
@@ -453,6 +471,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
     }
 
     st.markdown("### Cargar archivos de la **medición 2**")
+    # MODIFICACIÓN: Añadir keys para st.session_state
     config2_archivos = {
         "Reposo": st.file_uploader("Archivo de REPOSO medición 2", type="csv", key="reposo2"),
         "Postural": st.file_uploader("Archivo de POSTURAL medición 2", type="csv", key="postural2"),
