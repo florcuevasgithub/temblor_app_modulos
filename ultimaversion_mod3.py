@@ -879,11 +879,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     data_for_model[f'RMS_{model_feature_prefix}'] = metrics.get('RMS (m/s2)', np.nan)
                     data_for_model[f'Amp_{model_feature_prefix}'] = metrics.get('Amplitud Temblor (cm)', np.nan)
 
-                # --- DEBUGGING: Muestra el contenido y las claves de data_for_model ---
-                st.subheader("Contenido de data_for_model antes de crear el DataFrame:")
-                st.json(data_for_model) # Usamos st.json para una mejor visualización de diccionarios
-                st.write("Claves presentes en data_for_model:", list(data_for_model.keys()))
-                # --- FIN DEBUGGING ---
+                
 
                 # --- START: Define the exact feature list your model expects ---
                 # ESTA LISTA DEBE COINCIDIR EXACTAMENTE CON LAS CARACTERÍSTICAS
