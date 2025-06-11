@@ -902,7 +902,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 st.dataframe(df_for_prediction)
 
                 # --- INTEGRACIÓN DE TU MODELO DE MACHINE LEARNING ---
-                st.info("Cargando y utilizando el modelo de predicción...")
+                #st.info("Cargando y utilizando el modelo de predicción...")
                 
                 # Nombre del archivo de tu modelo Joblib
                 model_filename = 'tremor_prediction_model.joblib'
@@ -910,7 +910,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 try:
                     # Cargar el modelo
                     modelo_cargado = joblib.load(model_filename)
-                    st.success(f"Modelo '{model_filename}' cargado exitosamente.")
+                    #st.success(f"Modelo '{model_filename}' cargado exitosamente.")
                     
                     # Realizar la predicción
                     prediction = modelo_cargado.predict(df_for_prediction)
