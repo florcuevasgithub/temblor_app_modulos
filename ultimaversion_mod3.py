@@ -993,5 +993,4 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     plt.close(fig)
                 else:
                     st.warning("No hay suficientes datos de ventanas para graficar para los archivos de predicción.")
-        else:
-            st.warning("Por favor, sube un archivo CSV para realizar la predicción.")
+       
