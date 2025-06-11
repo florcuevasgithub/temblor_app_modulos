@@ -864,6 +864,21 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 data_for_model['dedo_pulgar'] = 1 if datos_paciente.get('dedo_medido', '').lower() == 'pulgar' else 0
                 data_for_model['dedo_indice'] = 1 if datos_paciente.get('dedo_medido', '').lower() == 'indice' else 0
 
+                # Para 'sexo': OneHotEncoder crea 'sexo_femenino' y 'sexo_masculino'
+                sexo_str = datos_paciente.get('sexo', '').lower()
+                data_for_model['sexo_femenino'] = 1 if sexo_str == 'femenino' else 0
+                data_for_model['sexo_masculino'] = 1 if sexo_str == 'masculino' else 0
+
+                # Para 'mano_medida': OneHotEncoder crea 'mano_medida_derecha' y 'mano_medida_izquierda'
+                mano_str = datos_paciente.get('mano_medida', '').lower()
+                data_for_model['mano_medida_derecha'] = 1 if mano_str == 'derecha' else 0
+                data_for_model['mano_medida_izquierda'] = 1 if mano_str == 'izquierda' else 0
+
+                # Para 'dedo_medido': OneHotEncoder crea 'dedo_medido_indice' y 'dedo_medido_pulgar'
+                dedo_str = datos_paciente.get('dedo_medido', '').lower()
+                data_for_model['dedo_medido_indice'] = 1 if dedo_str == 'indice' else 0
+                data_for_model['dedo_medido_pulgar'] = 1 if dedo_str == 'pulgar' else 0
+
                 # Add average tremor metrics for each test type
                 for test_type in ["Reposo", "Postural", "Acción"]:
                     metrics = avg_tremor_metrics.get(test_type, {})
@@ -875,11 +890,13 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 # ESTA LISTA DEBE COINCIDIR EXACTAMENTE CON LAS CARACTERÍSTICAS
                 # Y EL ORDEN CON EL QUE ENTRENaste TU MODELO 'tremor_prediction_model.joblib'
                 expected_features_for_model = [
-                    'edad', 'sexo_masculino', 'sexo_femenino',
-                    'mano_derecha', 'mano_izquierda', 'dedo_pulgar', 'dedo_indice',
+                    'edad',
                     'Frec_Reposo', 'RMS_Reposo', 'Amp_Reposo',
                     'Frec_Postural', 'RMS_Postural', 'Amp_Postural',
                     'Frec_Accion', 'RMS_Accion', 'Amp_Accion',
+                    'sexo_femenino', 'sexo_masculino',
+                    'mano_medida_derecha', 'mano_medida_izquierda',
+                    'dedo_medido_indice', 'dedo_medido_pulgar'
                     # AÑADE AQUÍ CUALQUIER OTRA CARACTERÍSTICA QUE TU MODELO ESPERE
                     # (ej. 'ECP', 'GPI', etc. si tu modelo fue entrenado con ellas)
                 ]
