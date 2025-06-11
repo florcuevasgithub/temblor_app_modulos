@@ -806,7 +806,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
         else:
             # Initialize a dictionary to store average tremor metrics for each test type
             avg_tremor_metrics = {}
-            datos_paciente = {}
+            datos_paciente = {} # Se inicializa aquí para asegurar que siempre esté disponible
 
             # Process each uploaded file
             for test_type, uploaded_file in prediccion_files.items():
@@ -815,7 +815,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     df_current_test = pd.read_csv(uploaded_file, encoding='latin1')
 
                     # Extract patient data from the first successful file upload
-                    if not datos_paciente: # Only extract once
+                    if not datos_paciente: # Only extract once from the first available file
                         datos_paciente = extraer_datos_paciente(df_current_test)
 
                     df_promedio, _ = analizar_temblor_por_ventanas_resultante(df_current_test, fs=100)
@@ -824,7 +824,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
                         # Store the average tremor metrics for this test type
                         avg_tremor_metrics[test_type] = df_promedio.iloc[0].to_dict()
                     else:
-                        st.warning(f"No se pudieron calcular métricas de temblor para {test_type}.")
+                        st.warning(f"No se pudieron calcular métricas de temblor para {test_type}. Se usarán NaN.")
                         # Initialize with NaNs if no data is found for a specific test type
                         avg_tremor_metrics[test_type] = {
                             'Frecuencia Dominante (Hz)': np.nan,
@@ -833,7 +833,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
                         }
 
             if not avg_tremor_metrics:
-                st.error("No se pudo procesar ningún archivo cargado para la predicción.")
+                st.error("No se pudo procesar ningún archivo cargado para la predicción. Asegúrate de que los archivos contengan datos válidos.")
             else:
                 st.subheader("Datos de Temblor Calculados para la Predicción:")
                 # Display the calculated metrics for user review
@@ -845,39 +845,45 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 # This combines patient data and the calculated tremor metrics
                 # Ensure the column names exactly match what your trained model expects!
 
-                # Example: If your model expects features like:
-                # 'edad', 'sexo_masculino', 'Frec_Reposo', 'RMS_Reposo', 'Amp_Reposo',
-                # 'Frec_Postural', 'RMS_Postural', 'Amp_Postural',
-                # 'Frec_Accion', 'RMS_Accion', 'Amp_Accion', 'mano_medida_derecha', 'dedo_medido_pulgar', ...
-
                 data_for_model = {}
 
                 # Add patient demographic data
-                data_for_model['edad'] = datos_paciente.get('edad', np.nan)
-                # Asegúrate de que estas columnas de 'sexo' y 'mano' coincidan con cómo entrenaste tu modelo
-                # Por ejemplo, si tu modelo solo tiene una columna 'sexo_masculino' y 0 si es femenino
-                data_for_model['sexo_masculino'] = 1 if datos_paciente.get('sexo', '').lower() == 'masculino' else 0
-                data_for_model['sexo_femenino'] = 1 if datos_paciente.get('sexo', '').lower() == 'femenino' else 0
+                # Asegurarse de que 'edad' sea un número, si no, np.nan
+                edad_val = datos_paciente.get('edad', np.nan)
+                try:
+                    data_for_model['edad'] = int(float(edad_val)) if pd.notna(edad_val) else np.nan
+                except (ValueError, TypeError):
+                    data_for_model['edad'] = np.nan
+                
+                # Inicializar todas las columnas One-Hot Encoding a 0
+                # Solo las que el modelo realmente espera, con los prefijos correctos
+                data_for_model['sexo_femenino'] = 0
+                data_for_model['sexo_masculino'] = 0
+                data_for_model['mano_medida_derecha'] = 0
+                data_for_model['mano_medida_izquierda'] = 0
+                data_for_model['dedo_medido_indice'] = 0
+                data_for_model['dedo_medido_pulgar'] = 0
 
-                data_for_model['mano_derecha'] = 1 if datos_paciente.get('mano_medida', '').lower() == 'derecha' else 0
-                data_for_model['mano_izquierda'] = 1 if datos_paciente.get('mano_medida', '').lower() == 'izquierda' else 0
-                data_for_model['dedo_pulgar'] = 1 if datos_paciente.get('dedo_medido', '').lower() == 'pulgar' else 0
-                data_for_model['dedo_indice'] = 1 if datos_paciente.get('dedo_medido', '').lower() == 'indice' else 0
-
-                # Para 'sexo': OneHotEncoder crea 'sexo_femenino' y 'sexo_masculino'
+                # Asignar 1 si la condición se cumple para 'sexo'
                 sexo_str = datos_paciente.get('sexo', '').lower()
-                data_for_model['sexo_femenino'] = 1 if sexo_str == 'femenino' else 0
-                data_for_model['sexo_masculino'] = 1 if sexo_str == 'masculino' else 0
+                if sexo_str == 'femenino':
+                    data_for_model['sexo_femenino'] = 1
+                elif sexo_str == 'masculino':
+                    data_for_model['sexo_masculino'] = 1
 
-                # Para 'mano_medida': OneHotEncoder crea 'mano_medida_derecha' y 'mano_medida_izquierda'
+                # Asignar 1 si la condición se cumple para 'mano_medida'
                 mano_str = datos_paciente.get('mano_medida', '').lower()
-                data_for_model['mano_medida_derecha'] = 1 if mano_str == 'derecha' else 0
-                data_for_model['mano_medida_izquierda'] = 1 if mano_str == 'izquierda' else 0
+                if mano_str == 'derecha':
+                    data_for_model['mano_medida_derecha'] = 1
+                elif mano_str == 'izquierda':
+                    data_for_model['mano_medida_izquierda'] = 1
 
-                # Para 'dedo_medido': OneHotEncoder crea 'dedo_medido_indice' y 'dedo_medido_pulgar'
+                # Asignar 1 si la condición se cumple para 'dedo_medido'
                 dedo_str = datos_paciente.get('dedo_medido', '').lower()
-                data_for_model['dedo_medido_indice'] = 1 if dedo_str == 'indice' else 0
-                data_for_model['dedo_medido_pulgar'] = 1 if dedo_str == 'pulgar' else 0
+                if dedo_str == 'indice':
+                    data_for_model['dedo_medido_indice'] = 1
+                elif dedo_str == 'pulgar':
+                    data_for_model['dedo_medido_pulgar'] = 1
 
                 # Add average tremor metrics for each test type
                 for test_type in ["Reposo", "Postural", "Acción"]:
@@ -885,6 +891,12 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     data_for_model[f'Frec_{test_type}'] = metrics.get('Frecuencia Dominante (Hz)', np.nan)
                     data_for_model[f'RMS_{test_type}'] = metrics.get('RMS (m/s2)', np.nan)
                     data_for_model[f'Amp_{test_type}'] = metrics.get('Amplitud Temblor (cm)', np.nan)
+
+                # --- DEBUGGING: Muestra el contenido y las claves de data_for_model ---
+                st.subheader("Contenido de data_for_model antes de crear el DataFrame:")
+                st.json(data_for_model) # Usamos st.json para una mejor visualización de diccionarios
+                st.write("Claves presentes en data_for_model:", list(data_for_model.keys()))
+                # --- FIN DEBUGGING ---
 
                 # --- START: Define the exact feature list your model expects ---
                 # ESTA LISTA DEBE COINCIDIR EXACTAMENTE CON LAS CARACTERÍSTICAS
@@ -897,22 +909,13 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     'sexo_femenino', 'sexo_masculino',
                     'mano_medida_derecha', 'mano_medida_izquierda',
                     'dedo_medido_indice', 'dedo_medido_pulgar'
-                    # AÑADE AQUÍ CUALQUIER OTRA CARACTERÍSTICA QUE TU MODELO ESPERE
-                    # (ej. 'ECP', 'GPI', etc. si tu modelo fue entrenado con ellas)
                 ]
                 # --- END: Define the exact feature list your model expects ---
-                # Add average tremor metrics for each test type
-                for test_type in ["Reposo", "Postural", "Acción"]:
-                    metrics = avg_tremor_metrics.get(test_type, {})
-                    data_for_model[f'Frec_{test_type}'] = metrics.get('Frecuencia Dominante (Hz)', np.nan)
-                    data_for_model[f'RMS_{test_type}'] = metrics.get('RMS (m/s2)', np.nan)
-                    data_for_model[f'Amp_{test_type}'] = metrics.get('Amplitud Temblor (cm)', np.nan)
 
-                st.subheader("Contenido de data_for_model antes de crear el DataFrame:")
-                st.write(data_for_model)
-                st.write("Claves presentes en data_for_model:", data_for_model.keys())
                 # Create DataFrame ensuring all expected features are present, filling missing with NaN
                 # and ordering them correctly.
+                # Nota: Ahora data_for_model debe contener todas las keys de expected_features_for_model
+                # o el pd.DataFrame([data_for_model]) creará NaNs para las que falten.
                 df_for_prediction = pd.DataFrame([data_for_model])[expected_features_for_model]
                 
                 st.subheader("DataFrame preparado para el Modelo de Predicción:")
@@ -930,21 +933,20 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     st.success(f"Modelo '{model_filename}' cargado exitosamente.")
                     
                     # Realizar la predicción
-                    # Esto asumirá que tu modelo está listo para usar el DataFrame df_for_prediction
                     prediction = modelo_cargado.predict(df_for_prediction)
                     
                     st.subheader("Resultado de la Predicción:")
-                    # Muestra el resultado. Asume que el modelo devuelve una sola predicción.
-                    # El formato de 'prediction[0]' dependerá de lo que prediga tu modelo (ej. 'Parkinson', 'Esencial', 'Normal')
                     st.success(f"La predicción del modelo es: **{prediction[0]}**")
                     
                     # Si tu modelo es un clasificador y puede dar probabilidades, puedes hacer esto:
                     if hasattr(modelo_cargado, 'predict_proba'):
                         probabilities = modelo_cargado.predict_proba(df_for_prediction)
                         st.write("Probabilidades por clase:")
-                        # Asume que modelo_cargado.classes_ te da el orden de las clases
-                        for i, class_label in enumerate(modelo_cargado.classes_):
-                            st.write(f"- **{class_label}**: {probabilities[0][i]*100:.2f}%")
+                        if hasattr(modelo_cargado, 'classes_'):
+                            for i, class_label in enumerate(modelo_cargado.classes_):
+                                st.write(f"- **{class_label}**: {probabilities[0][i]*100:.2f}%")
+                        else:
+                            st.info("El modelo no tiene el atributo 'classes_'. No se pueden mostrar las etiquetas de clase para las probabilidades.")
 
                 except FileNotFoundError:
                     st.error(f"Error: El archivo del modelo '{model_filename}' no se encontró en la misma carpeta que este script.")
@@ -956,7 +958,6 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 # --- FIN DE LA INTEGRACIÓN DEL MODELO ---
 
                 # Opcional: Mostrar gráfico de amplitud por ventana para el archivo de predicción
-                # Need to re-collect all df_ventanas for plotting if user uploaded multiple files
                 all_ventanas_for_plot = []
                 current_min_ventanas = float('inf')
                 for test_type, uploaded_file in prediccion_files.items():
@@ -992,6 +993,5 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     plt.close(fig)
                 else:
                     st.warning("No hay suficientes datos de ventanas para graficar para los archivos de predicción.")
-                    st.write("Contenido de data_for_model:", data_for_model)
-                    st.write("Keys de data_for_model:", data_for_model.keys())
-    
+        else:
+            st.warning("Por favor, sube un archivo CSV para realizar la predicción.")
