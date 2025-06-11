@@ -794,12 +794,20 @@ elif opcion == "3️⃣ Predicción de Temblor":
         # Collect all prediction files
         prediccion_files = {
             "Reposo": prediccion_reposo_file,
+            "Postural": prediccion_accion_file, # OJO: Si el archivo de Accion se llama "prediccion_accion_file" en el uploader, este mapeo es correcto.
+            "Acción": prediccion_accion_file, # Se mantuvo el nombre original "Acción" para el uploader y en avg_tremor_metrics
+        }
+        # CORRECCIÓN IMPORTANTE: Asegúrate de que este diccionario de prediccion_files use las claves correctas para acceder a los uploaders.
+        # Basado en tu código original, deberías usar:
+        prediccion_files_correctas = {
+            "Reposo": prediccion_reposo_file,
             "Postural": prediccion_postural_file,
-            "Acción": prediccion_accion_file,
+            "Acción": prediccion_accion_file # Usamos 'Acción' con tilde para el acceso, pero luego lo mapearemos para el modelo
         }
 
+
         # Check if at least one file is uploaded
-        any_file_uploaded = any(file is not None for file in prediccion_files.values())
+        any_file_uploaded = any(file is not None for file in prediccion_files_correctas.values())
 
         if not any_file_uploaded:
             st.warning("Por favor, sube al menos un archivo CSV para realizar la predicción.")
@@ -809,7 +817,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
             datos_paciente = {} # Se inicializa aquí para asegurar que siempre esté disponible
 
             # Process each uploaded file
-            for test_type, uploaded_file in prediccion_files.items():
+            for test_type, uploaded_file in prediccion_files_correctas.items(): # Usar las claves correctas para iterar
                 if uploaded_file is not None:
                     uploaded_file.seek(0)
                     df_current_test = pd.read_csv(uploaded_file, encoding='latin1')
@@ -842,55 +850,34 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 st.dataframe(df_metrics_display)
 
                 # Now, prepare the single row for your ML model
-                # This combines patient data and the calculated tremor metrics
-                # Ensure the column names exactly match what your trained model expects!
-
                 data_for_model = {}
 
-                # Add patient demographic data
-                # Asegurarse de que 'edad' sea un número, si no, np.nan
+                # 1. Añadir datos demográficos como columnas de texto (el modelo las preprocesa)
                 edad_val = datos_paciente.get('edad', np.nan)
                 try:
                     data_for_model['edad'] = int(float(edad_val)) if pd.notna(edad_val) else np.nan
                 except (ValueError, TypeError):
                     data_for_model['edad'] = np.nan
                 
-                # Inicializar todas las columnas One-Hot Encoding a 0
-                # Solo las que el modelo realmente espera, con los prefijos correctos
-                data_for_model['sexo_femenino'] = 0
-                data_for_model['sexo_masculino'] = 0
-                data_for_model['mano_medida_derecha'] = 0
-                data_for_model['mano_medida_izquierda'] = 0
-                data_for_model['dedo_medido_indice'] = 0
-                data_for_model['dedo_medido_pulgar'] = 0
+                # Asignar los valores originales de texto para sexo, mano_medida, dedo_medido
+                data_for_model['sexo'] = datos_paciente.get('sexo', 'no especificado').lower()
+                data_for_model['mano_medida'] = datos_paciente.get('mano_medida', 'no especificada').lower()
+                data_for_model['dedo_medido'] = datos_paciente.get('dedo_medido', 'no especificado').lower()
 
-                # Asignar 1 si la condición se cumple para 'sexo'
-                sexo_str = datos_paciente.get('sexo', '').lower()
-                if sexo_str == 'femenino':
-                    data_for_model['sexo_femenino'] = 1
-                elif sexo_str == 'masculino':
-                    data_for_model['sexo_masculino'] = 1
+                # 2. Añadir métricas de temblor promedio para cada tipo de prueba
+                # Crear un mapeo para asegurar que 'Acción' se convierta en 'Accion' para el modelo
+                # Esto es CRUCIAL para que los nombres de las columnas coincidan con lo que el modelo espera.
+                feature_name_map = {
+                    "Reposo": "Reposo",
+                    "Postural": "Postural",
+                    "Acción": "Accion" # Mapea 'Acción' (con tilde, como viene de los archivos) a 'Accion' (sin tilde, como el modelo lo espera)
+                }
 
-                # Asignar 1 si la condición se cumple para 'mano_medida'
-                mano_str = datos_paciente.get('mano_medida', '').lower()
-                if mano_str == 'derecha':
-                    data_for_model['mano_medida_derecha'] = 1
-                elif mano_str == 'izquierda':
-                    data_for_model['mano_medida_izquierda'] = 1
-
-                # Asignar 1 si la condición se cumple para 'dedo_medido'
-                dedo_str = datos_paciente.get('dedo_medido', '').lower()
-                if dedo_str == 'indice':
-                    data_for_model['dedo_medido_indice'] = 1
-                elif dedo_str == 'pulgar':
-                    data_for_model['dedo_medido_pulgar'] = 1
-
-                # Add average tremor metrics for each test type
-                for test_type in ["Reposo", "Postural", "Acción"]:
-                    metrics = avg_tremor_metrics.get(test_type, {})
-                    data_for_model[f'Frec_{test_type}'] = metrics.get('Frecuencia Dominante (Hz)', np.nan)
-                    data_for_model[f'RMS_{test_type}'] = metrics.get('RMS (m/s2)', np.nan)
-                    data_for_model[f'Amp_{test_type}'] = metrics.get('Amplitud Temblor (cm)', np.nan)
+                for original_test_type, model_feature_prefix in feature_name_map.items():
+                    metrics = avg_tremor_metrics.get(original_test_type, {}) # Usar la clave original para obtener las métricas
+                    data_for_model[f'Frec_{model_feature_prefix}'] = metrics.get('Frecuencia Dominante (Hz)', np.nan)
+                    data_for_model[f'RMS_{model_feature_prefix}'] = metrics.get('RMS (m/s2)', np.nan)
+                    data_for_model[f'Amp_{model_feature_prefix}'] = metrics.get('Amplitud Temblor (cm)', np.nan)
 
                 # --- DEBUGGING: Muestra el contenido y las claves de data_for_model ---
                 st.subheader("Contenido de data_for_model antes de crear el DataFrame:")
@@ -902,15 +889,17 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 # ESTA LISTA DEBE COINCIDIR EXACTAMENTE CON LAS CARACTERÍSTICAS
                 # Y EL ORDEN CON EL QUE ENTRENaste TU MODELO 'tremor_prediction_model.joblib'
                 expected_features_for_model = [
-                    'edad', 'Frec_Reposo', 'RMS_Reposo', 'Amp_Reposo', 'Frec_Postural', 'RMS_Postural', 'Amp_Postural', 'Frec_Acción', 'RMS_Acción', 'Amp_Acción', 
-                    'sexo_femenino', 'sexo_masculino', 'mano_medida_derecha', 'mano_medida_izquierda', 'dedo_medido_indice', 'dedo_medido_pulgar'
+                    'edad',
+                    'Frec_Reposo', 'RMS_Reposo', 'Amp_Reposo',
+                    'Frec_Postural', 'RMS_Postural', 'Amp_Postural',
+                    'Frec_Accion', 'RMS_Accion', 'Amp_Accion', # SIN TILDE AQUÍ, PARA COINCIDIR CON EL MODELO
+                    'sexo',         # Columna categórica original (el modelo la preprocesa)
+                    'mano_medida',  # Columna categórica original
+                    'dedo_medido'   # Columna categórica original
                 ]
                 # --- END: Define the exact feature list your model expects ---
 
                 # Create DataFrame ensuring all expected features are present, filling missing with NaN
-                # and ordering them correctly.
-                # Nota: Ahora data_for_model debe contener todas las keys de expected_features_for_model
-                # o el pd.DataFrame([data_for_model]) creará NaNs para las que falten.
                 df_for_prediction = pd.DataFrame([data_for_model])[expected_features_for_model]
                 
                 st.subheader("DataFrame preparado para el Modelo de Predicción:")
@@ -955,7 +944,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 # Opcional: Mostrar gráfico de amplitud por ventana para el archivo de predicción
                 all_ventanas_for_plot = []
                 current_min_ventanas = float('inf')
-                for test_type, uploaded_file in prediccion_files.items():
+                for test_type, uploaded_file in prediccion_files_correctas.items():
                     if uploaded_file is not None:
                         uploaded_file.seek(0)
                         df_temp = pd.read_csv(uploaded_file, encoding='latin1')
