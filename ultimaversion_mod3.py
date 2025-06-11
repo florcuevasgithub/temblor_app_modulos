@@ -901,7 +901,16 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     # (ej. 'ECP', 'GPI', etc. si tu modelo fue entrenado con ellas)
                 ]
                 # --- END: Define the exact feature list your model expects ---
+                # Add average tremor metrics for each test type
+                for test_type in ["Reposo", "Postural", "Acción"]:
+                    metrics = avg_tremor_metrics.get(test_type, {})
+                    data_for_model[f'Frec_{test_type}'] = metrics.get('Frecuencia Dominante (Hz)', np.nan)
+                    data_for_model[f'RMS_{test_type}'] = metrics.get('RMS (m/s2)', np.nan)
+                    data_for_model[f'Amp_{test_type}'] = metrics.get('Amplitud Temblor (cm)', np.nan)
 
+                st.subheader("Contenido de data_for_model antes de crear el DataFrame:")
+                st.write(data_for_model)
+                st.write("Claves presentes en data_for_model:", data_for_model.keys())
                 # Create DataFrame ensuring all expected features are present, filling missing with NaN
                 # and ordering them correctly.
                 df_for_prediction = pd.DataFrame([data_for_model])[expected_features_for_model]
