@@ -902,10 +902,10 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 # ESTA LISTA DEBE COINCIDIR EXACTAMENTE CON LAS CARACTERÍSTICAS
                 # Y EL ORDEN CON EL QUE ENTRENaste TU MODELO 'tremor_prediction_model.joblib'
                 expected_features_for_model = [
-                    'edad',
+                    'edad' ,
                     'Frec_Reposo', 'RMS_Reposo', 'Amp_Reposo',
                     'Frec_Postural', 'RMS_Postural', 'Amp_Postural',
-                    'Frec_Acción', 'RMS_Acción', 'Amp_Acción', # <--- CORREGIDO CON TILDE
+                    'Frec_Acción', 'RMS_Acción', 'Amp_Acción', 
                     'sexo_femenino', 'sexo_masculino',
                     'mano_medida_derecha', 'mano_medida_izquierda',
                     'dedo_medido_indice', 'dedo_medido_pulgar'
