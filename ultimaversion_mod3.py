@@ -765,7 +765,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
 
 elif opcion == "3️⃣ Predicción de Temblor":
-    st.title("🤖 Predicción de Temblor")
+    st.title("🔮 Predicción de Temblor")
 
     st.markdown("### Cargar archivos CSV para la Predicción")
     # Using multiple file uploaders for each test type for prediction
