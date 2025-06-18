@@ -791,6 +791,25 @@ elif opcion == "3️⃣ Predicción de Temblor":
 
     if st.button("Realizar Predicción"):
 
+        # --- DEFINICIONES DE VARIABLES GLOBALES DENTRO DE ESTE BLOQUE (si quieres que solo existan aquí) ---
+        # Si estas variables están definidas al inicio del script, puedes borrarlas de aquí.
+        # Pero si quieres que este bloque sea autocontenido, déjalas.
+        FS = 100 # Frecuencia de muestreo (Hz) - AJUSTAR SI ES DIFERENTE EN TUS DATOS
+        VENTANA_DURACION_SEG = 2 # Duración de cada ventana en segundos para el análisis de temblor
+        SOLAPAMIENTO_VENTANA = 0.5 # Solapamiento entre ventanas (ej. 0.5 para 50% de solapamiento)
+        # Características esperadas por tu modelo ML (debe coincidir con el entrenamiento)
+        EXPECTED_FEATURES_FOR_MODEL = [
+            'edad',
+            'Frec_Reposo', 'RMS_Reposo', 'Amp_Reposo',
+            'Frec_Postural', 'RMS_Postural', 'Amp_Postural',
+            'Frec_Accion', 'RMS_Accion', 'Amp_Accion',
+            'sexo',
+            'mano_medida',
+            'dedo_medido'
+        ]
+        # --- FIN DEFINICIONES DE VARIABLES GLOBALES DENTRO DE ESTE BLOQUE ---
+
+
         # Mapeo de nombres de display a los objetos de archivo cargados
         prediccion_files_correctas = {
             "Reposo": prediccion_reposo_file,
@@ -820,6 +839,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
 
                     # --- Lógica de limpieza del DataFrame para el análisis del sensor ---
                     df_current_test = df_raw.copy() # Trabajar en una copia para la limpieza
+                    # Define las columnas del sensor que esperas. ¡AJÚSTALAS SI LOS NOMBRES EN TUS CSVs SON DIFERENTES!
                     sensor_cols = ['AcelX', 'AcelY', 'AcelZ', 'GiroX', 'GiroY', 'GiroZ']
 
                     for col in sensor_cols:
@@ -934,7 +954,8 @@ elif opcion == "3️⃣ Predicción de Temblor":
 
                         # Limpieza para el gráfico (similar a la anterior)
                         df_temp = df_temp_raw.copy()
-                        for col in sensor_cols: # Usar sensor_cols definida anteriormente
+                        # Usa sensor_cols que ahora está definido dentro de este mismo bloque
+                        for col in sensor_cols:
                             if col in df_temp.columns:
                                 df_temp[col] = pd.to_numeric(df_temp[col], errors='coerce')
                             else:
@@ -971,5 +992,4 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     plt.close(fig)
                 else:
                     st.warning("No hay suficientes datos de ventanas para graficar para los archivos de predicción.")
-
    
