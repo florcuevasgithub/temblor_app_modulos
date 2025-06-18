@@ -765,8 +765,6 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
 
 
-Python
-
 elif opcion == "3️⃣ Predicción de Temblor":
     st.title("🔮 Predicción de Temblor")
 
