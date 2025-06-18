@@ -64,15 +64,19 @@ ventana_duracion_seg = 2
 # --------- Funciones compartidas ----------
 # Función para extraer datos del paciente de un DataFrame
 def extraer_datos_paciente(df):
-    # Normalizar nombres de columnas
-    df.columns = df.columns.str.strip().str.lower()
-    
+    """
+    Extrae datos personales del paciente desde un DataFrame,
+    sin modificar las columnas originales del DataFrame.
+    """
+    # Crear un mapeo normalizado de nombres: {columna_lower: columna_original}
+    col_map = {col.lower().strip(): col for col in df.columns}
+
     datos = {
         "sexo": "No especificado",
         "edad": 0,
         "mano_medida": "No especificada",
         "dedo_medido": "No especificado",
-        "Nombre": None, # Añadimos estos para que estén disponibles
+        "Nombre": None,
         "Apellido": None,
         "Diagnostico": None,
         "Antecedente": None,
@@ -82,37 +86,43 @@ def extraer_datos_paciente(df):
         "Duracion": None, "Pulso": None, "Corriente": None,
         "Voltaje": None, "Frecuencia": None
     }
+
     if not df.empty:
-        # Asegurarse de que las columnas existan y no sean NaN antes de intentar acceder
-        if "sexo" in df.columns and pd.notna(df.iloc[0]["sexo"]):
-            datos["sexo"] = str(df.iloc[0]["sexo"])
-        if "edad" in df.columns and pd.notna(df.iloc[0]["edad"]):
+        # Extraer datos personales usando el mapeo
+        if "sexo" in col_map and pd.notna(df.at[0, col_map["sexo"]]):
+            datos["sexo"] = str(df.at[0, col_map["sexo"]]).strip()
+
+        if "edad" in col_map and pd.notna(df.at[0, col_map["edad"]]):
             try:
-                datos["edad"] = int(float(str(df.iloc[0]["edad"]).replace(',', '.')))
+                datos["edad"] = int(float(str(df.at[0, col_map["edad"]]).replace(',', '.')))
             except (ValueError, TypeError):
                 datos["edad"] = 0
-        if "mano" in df.columns and pd.notna(df.iloc[0]["mano"]):
-            datos["mano_medida"] = str(df.iloc[0]["mano"])
-        if "dedo" in df.columns and pd.notna(df.iloc[0]["dedo"]):
-            datos["dedo_medido"] = str(df.iloc[0]["dedo"])
-        
-        # Extracción de otros metadatos generales
-        for col in ["Nombre", "Apellido", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]:
-            if col in df.columns and pd.notna(df.iloc[0][col]):
-                datos[col] = str(df.iloc[0][col])
 
-        # Extracción de metadatos de configuración/estimulación
-        for col in ["ECP", "GPI", "NST", "Polaridad", "Duracion", "Pulso", "Corriente", "Voltaje", "Frecuencia"]:
-             if col in df.columns and pd.notna(df.iloc[0][col]):
+        if "mano" in col_map and pd.notna(df.at[0, col_map["mano"]]):
+            datos["mano_medida"] = str(df.at[0, col_map["mano"]]).strip()
+
+        if "dedo" in col_map and pd.notna(df.at[0, col_map["dedo"]]):
+            datos["dedo_medido"] = str(df.at[0, col_map["dedo"]]).strip()
+
+        # Extraer otros metadatos generales
+        for key in ["Nombre", "Apellido", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]:
+            key_l = key.lower()
+            if key_l in col_map and pd.notna(df.at[0, col_map[key_l]]):
+                datos[key] = str(df.at[0, col_map[key_l]])
+
+        # Extraer campos de estimulación/configuración
+        for key in ["ECP", "GPI", "NST", "Polaridad", "Duracion", "Pulso", "Corriente", "Voltaje", "Frecuencia"]:
+            key_l = key.lower()
+            if key_l in col_map and pd.notna(df.at[0, col_map[key_l]]):
+                val = str(df.at[0, col_map[key_l]]).replace(',', '.')
                 try:
-                    # Intenta convertir a float, luego a int si es posible para algunos campos
-                    val = str(df.iloc[0][col]).replace(',', '.')
-                    if col in ["Duracion", "Pulso", "Corriente", "Voltaje", "Frecuencia"]: # Campos que suelen ser numéricos
-                        datos[col] = float(val)
-                    else: # Otros campos como ECP, GPI, NST, Polaridad pueden ser texto o identificadores
-                        datos[col] = val
+                    if key in ["Duracion", "Pulso", "Corriente", "Voltaje", "Frecuencia"]:
+                        datos[key] = float(val)
+                    else:
+                        datos[key] = val
                 except ValueError:
-                    datos[col] = str(df.iloc[0][col]) # Mantener como string si no se puede convertir a número
+                    datos[key] = val  # Dejar como texto si no es convertible
+
     return datos
 
 def filtrar_temblor(signal, fs=100):
