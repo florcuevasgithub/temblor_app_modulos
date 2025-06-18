@@ -852,7 +852,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     # --- Fin de la lógica de limpieza ---
 
                     # Asegúrate de que FS está accesible aquí (ya sea global o definida justo antes)
-                    df_promedio, _ = analizar_temblor_por_ventanas_resultante(df_current_test, fs=FS) # Usa el DataFrame ya limpio
+                    df_promedio, _ = analizar_temblor_por_ventanas_resultante(df_current_test, fs=100) # Usa el DataFrame ya limpio
 
                     if not df_promedio.empty:
                         # Store the average tremor metrics for this test type
