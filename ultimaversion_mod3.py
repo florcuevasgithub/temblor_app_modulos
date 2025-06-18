@@ -1002,5 +1002,5 @@ elif opcion == "3️⃣ Predicción de Temblor":
                     st.pyplot(fig)
                     plt.close(fig)
                 else:
-                    st.warning("No hay suficientes datos de ventanas para graficar 
+                    st.warning("No hay suficientes datos de ventanas para graficar los archivos de predicción.")
    
