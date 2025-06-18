@@ -883,7 +883,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
 
                 # --- START: Define the exact feature list your model expects ---
                 # ESTA LISTA DEBE COINCIDIR EXACTAMENTE CON LAS CARACTERÍSTICAS
-                # Y EL ORDEN CON EL QUE ENTRENaste TU MODELO 'tremor_prediction_model.joblib'
+                # Y EL ORDEN CON EL QUE ENTRENaste TU MODELO 'tremor_prediction_model_V2.joblib'
                 expected_features_for_model = [
                     'edad',
                     'Frec_Reposo', 'RMS_Reposo', 'Amp_Reposo',
@@ -905,7 +905,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
                 #st.info("Cargando y utilizando el modelo de predicción...")
                 
                 # Nombre del archivo de tu modelo Joblib
-                model_filename = 'tremor_prediction_model.joblib'
+                model_filename = 'tremor_prediction_model_V2.joblib'
                 
                 try:
                     # Cargar el modelo
@@ -930,7 +930,7 @@ elif opcion == "3️⃣ Predicción de Temblor":
 
                 except FileNotFoundError:
                     st.error(f"Error: El archivo del modelo '{model_filename}' no se encontró en la misma carpeta que este script.")
-                    st.error("Por favor, asegúrate de que el archivo 'tremor_prediction_model.joblib' esté en la ubicación correcta.")
+                    st.error("Por favor, asegúrate de que el archivo 'tremor_prediction_model_V2.joblib' esté en la ubicación correcta.")
                 except Exception as e:
                     st.error(f"Ocurrió un error al cargar o usar el modelo: {e}")
                     st.error("Por favor, verifica que el formato del DataFrame `df_for_prediction` (columnas y orden) coincida con lo que espera tu modelo entrenado.")
