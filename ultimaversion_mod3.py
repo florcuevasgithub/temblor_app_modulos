@@ -764,15 +764,6 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             )
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
 
-Entendido, disculpa por la confusión anterior.
-
-Aquí tienes el bloque elif opcion == "3️⃣ Predicción de Temblor": exactamente como lo pasaste, pero con las modificaciones mínimas para asegurar que los datos personales se extraigan del df_raw original antes de cualquier limpieza de columnas de sensor.
-
-También he corregido la definición de prediccion_files (que era prediccion_files_correctas) para que se use correctamente. Y ajusté ventana_duracion_seg en el gráfico al final para usar la variable VENTANA_DURACION_SEG (en mayúsculas) y la fórmula del solapamiento.
-
-Asumo que las variables FS, VENTANA_DURACION_SEG, SOLAPAMIENTO_VENTANA, y EXPECTED_FEATURES_FOR_MODEL (que eran expected_features_for_model dentro de este bloque, pero se recomienda que sean globales) están definidas de forma accesible en tu script completo, probablemente al inicio. Si no lo están, este código las requerirá.
-
-Python
 
 elif opcion == "3️⃣ Predicción de Temblor":
     st.title("🔮 Predicción de Temblor")
