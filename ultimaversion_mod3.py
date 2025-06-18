@@ -765,170 +765,242 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
 
 
-elif opcion == "3️⃣ Predicción de Diagnóstico":
-    st.title("🔮 Predicción de Diagnóstico de Temblor")
-    st.markdown("Carga los 3 archivos CSV (Reposo, Postural y Acción) que representan una medición de temblor. El modelo realizará una predicción de diagnóstico basada en este conjunto de datos.")
-    st.info("Para esta opción, se utilizará el análisis de temblor avanzado que espera **datos de cuaterniones (qW, qX, qY, qZ)** para la compensación de gravedad.")
+Python
 
-    # Cargar el modelo entrenado
-    try:
-        model = joblib.load('tremor_prediction_model_V2.joblib')
-        st.success("Modelo de predicción cargado exitosamente.")
-    except FileNotFoundError:
-        st.error("Error: El archivo 'tremor_prediction_model_V2.joblib' no se encontró. Asegúrate de haber entrenado y guardado el modelo en la misma carpeta que tu script de Streamlit (o la ruta correcta en Colab).")
-        model = None
-    except Exception as e:
-        st.error(f"Error al cargar el modelo: {e}. Asegúrate de que las librerías son compatibles.")
-        model = None
+elif opcion == "3️⃣ Predicción de Temblor":
+    st.title("🔮 Predicción de Temblor")
 
-    # Uploaders para los 3 archivos genéricos (sin distinción de mano)
-    st.markdown("##### Sube tus archivos de medición:")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        reposo_file = st.file_uploader("Archivo de Reposo", type=["csv"], key="reposo_pred")
-    with col2:
-        postural_file = st.file_uploader("Archivo Postural", type=["csv"], key="postural_pred")
-    with col3:
-        accion_file = st.file_uploader("Archivo de Acción", type=["csv"], key="accion_pred")
+    st.markdown("### Cargar archivos CSV para la Predicción")
+    # Using multiple file uploaders for each test type for prediction
+    prediccion_reposo_file = st.file_uploader("Archivo de REPOSO para Predicción", type="csv", key="prediccion_reposo")
+    prediccion_postural_file = st.file_uploader("Archivo de POSTURAL para Predicción", type="csv", key="prediccion_postural")
+    prediccion_accion_file = st.file_uploader("Archivo de ACCION para Predicción", type="csv", key="prediccion_accion")
 
-    st.markdown("---")
-    fs_advanced_pred = st.slider("Frecuencia de muestreo (Hz) para el análisis avanzado", min_value=50, max_value=200, value=100, step=10, key="fs_advanced_pred")
-    st.info(f"La duración de la ventana de análisis es fija en {ventana_duracion_seg} segundos.")
-
+    st.markdown("""
+        <style>
+        div[data-testid="stFileUploaderDropzoneInstructions"] span {
+            display: none !important;
+        }
+        div[data-testid="stFileUploaderDropzoneInstructions"]::before {
+            content: "Arrastrar archivo aquí";
+            font-weight: bold;
+            font-size: 16px;
+            color: #444;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
     if st.button("Realizar Predicción"):
-        if model:
-            prediccion_final = None
-            resultados_analisis = pd.DataFrame() # Para guardar el DataFrame de resultados para el PDF
-            datos_paciente_prediccion = {} # Se inicializa aquí para que esté disponible
+        
+        # --- DEFINICIÓN DE VARIABLES NECESARIAS DENTRO DE ESTE BLOQUE ---
+        # Frecuencia de muestreo (Hz)
+        FS = 100
+        # Duración de cada ventana en segundos para el análisis de temblor
+        VENTANA_DURACION_SEG = 2
+        # Solapamiento entre ventanas (ej. 0.5 para 50% de solapamiento)
+        SOLAPAMIENTO_VENTANA = 0.5
+        # Características esperadas por tu modelo ML (debe coincidir con el entrenamiento)
+        EXPECTED_FEATURES_FOR_MODEL = [
+            'edad',
+            'Frec_Reposo', 'RMS_Reposo', 'Amp_Reposo',
+            'Frec_Postural', 'RMS_Postural', 'Amp_Postural',
+            'Frec_Accion', 'RMS_Accion', 'Amp_Accion', # SIN TILDE AQUÍ, PARA COINCIDIR CON EL MODELO
+            'sexo',
+            'mano_medida',
+            'dedo_medido'
+        ]
+        # Columnas del sensor esperadas en los archivos CSV
+        SENSOR_COLS = ['AcelX', 'AcelY', 'AcelZ', 'GiroX', 'GiroY', 'GiroZ']
+        # --- FIN DEFINICIÓN DE VARIABLES NECESARIAS ---
 
-            if reposo_file and postural_file and accion_file:
-                try:
-                    st.info(f"Procesando datos para la predicción...")
-                    df_reposo = pd.read_csv(reposo_file, encoding='latin1', decimal=',')
-                    df_postural = pd.read_csv(postural_file, encoding='latin1', decimal=',')
-                    df_accion = pd.read_csv(accion_file, encoding='latin1', decimal=',')
+        # Mapeo de nombres de display a los objetos de archivo cargados
+        prediccion_files_correctas = {
+            "Reposo": prediccion_reposo_file,
+            "Postural": prediccion_postural_file,
+            "Acción": prediccion_accion_file # Usamos 'Acción' con tilde para el acceso
+        }
 
-                    # Extraer datos demográficos del paciente de uno de los archivos (ej. reposo)
-                    datos_paciente_prediccion = extraer_datos_paciente(df_reposo)
+        # Check if at least one file is uploaded
+        any_file_uploaded = any(file is not None for file in prediccion_files_correctas.values())
 
-                    # Calcular métricas con la función AVANZADA
-                    res_reposo_prom, _ = analizar_temblor_por_ventanas_avanzado(df_reposo, fs_advanced_pred, ventana_duracion_seg)
-                    res_postural_prom, _ = analizar_temblor_por_ventanas_avanzado(df_postural, fs_advanced_pred, ventana_duracion_seg)
-                    res_accion_prom, _ = analizar_temblor_por_ventanas_avanzado(df_accion, fs_advanced_pred, ventana_duracion_seg)
+        if not any_file_uploaded:
+            st.warning("Por favor, sube al menos un archivo CSV para realizar la predicción.")
+        else:
+            avg_tremor_metrics = {}
+            datos_paciente = {} # Se inicializa aquí para asegurar que siempre esté disponible
 
-                    if not (res_reposo_prom.empty or res_postural_prom.empty or res_accion_prom.empty):
-                        # Construir el DataFrame de características para la predicción
-                        data_para_prediccion = pd.DataFrame([{
-                            'sexo': datos_paciente_prediccion.get('sexo'),
-                            'edad': datos_paciente_prediccion.get('edad'),
-                            # 'mano_medida': datos_paciente_prediccion.get('mano_medida'), # No se usa en el modelo
-                            # 'dedo_medido': datos_paciente_prediccion.get('dedo_medido'), # No se usa en el modelo
-                            'Frec_Reposo': res_reposo_prom['Frecuencia Dominante (Hz)'].iloc[0],
-                            'RMS_Reposo': res_reposo_prom['RMS (m/s2)'].iloc[0],
-                            'Amp_Reposo': res_reposo_prom['Amplitud Temblor (cm)'].iloc[0],
-                            'Frec_Postural': res_postural_prom['Frecuencia Dominante (Hz)'].iloc[0],
-                            'RMS_Postural': res_postural_prom['RMS (m/s2)'].iloc[0],
-                            'Amp_Postural': res_postural_prom['Amplitud Temblor (cm)'].iloc[0],
-                            'Frec_Accion': res_accion_prom['Frecuencia Dominante (Hz)'].iloc[0],
-                            'RMS_Accion': res_accion_prom['RMS (m/s2)'].iloc[0],
-                            'Amp_Accion': res_accion_prom['Amplitud Temblor (cm)'].iloc[0]
-                        }])
+            # Process each uploaded file
+            for test_type, uploaded_file in prediccion_files_correctas.items(): # Usar las claves correctas para iterar
+                if uploaded_file is not None:
+                    uploaded_file.seek(0)
+                    df_raw = pd.read_csv(uploaded_file, encoding='latin1') # Lee el CSV completo ORIGINAL
 
-                        prediccion_final = model.predict(data_para_prediccion)[0]
+                    # --- CAMBIO CLAVE AQUÍ: Extraer datos del paciente del DataFrame crudo ANTES de la limpieza ---
+                    if not datos_paciente: # Solo extraer una vez del primer archivo disponible
+                        datos_paciente = extraer_datos_paciente(df_raw)
+                    # --- FIN CAMBIO CLAVE ---
 
-                        # Guardar resultados detallados para el PDF
-                        resultados_analisis = pd.DataFrame([
-                            {'Test': 'Reposo', 'Frecuencia Dominante (Hz)': res_reposo_prom['Frecuencia Dominante (Hz)'].iloc[0], 'RMS (m/s2)': res_reposo_prom['RMS (m/s2)'].iloc[0], 'Amplitud Temblor (cm)': res_reposo_prom['Amplitud Temblor (cm)'].iloc[0]},
-                            {'Test': 'Postural', 'Frecuencia Dominante (Hz)': res_postural_prom['Frecuencia Dominante (Hz)'].iloc[0], 'RMS (m/s2)': res_postural_prom['RMS (m/s2)'].iloc[0], 'Amplitud Temblor (cm)': res_postural_prom['Amplitud Temblor (cm)'].iloc[0]},
-                            {'Test': 'Acción', 'Frecuencia Dominante (Hz)': res_accion_prom['Frecuencia Dominante (Hz)'].iloc[0], 'RMS (m/s2)': res_accion_prom['RMS (m/s2)'].iloc[0], 'Amplitud Temblor (cm)': res_accion_prom['Amplitud Temblor (cm)'].iloc[0]}
-                        ])
+                    # --- Lógica de limpieza del DataFrame para el análisis del sensor ---
+                    df_current_test = df_raw.copy() # Trabajar en una copia para la limpieza de los datos del sensor
+                    
+                    for col in SENSOR_COLS: # Usamos la variable SENSOR_COLS definida arriba
+                        if col in df_current_test.columns:
+                            df_current_test[col] = pd.to_numeric(df_current_test[col], errors='coerce')
+                        else:
+                            st.warning(f"La columna '{col}' esperada para el sensor no se encontró en el archivo de {test_type}. Se llenará con NaN.")
+                            df_current_test[col] = np.nan # Llenar con NaN si la columna no existe
 
-                        # Generar gráfico para esta mano
-                        fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-                        metrics_to_plot = ['Frecuencia Dominante (Hz)', 'RMS (m/s2)', 'Amplitud Temblor (cm)']
-                        titles = ['Frecuencia Dominante', 'RMS', 'Amplitud Temblor']
+                    df_current_test = df_current_test.dropna(subset=SENSOR_COLS, how='all') # Eliminar filas donde todos los datos del sensor son NaN
+                    df_current_test = df_current_test.reset_index(drop=True)
+                    # --- Fin de la lógica de limpieza ---
 
-                        for i, metric in enumerate(metrics_to_plot):
-                            values = [
-                                resultados_analisis[resultados_analisis['Test'] == 'Reposo'][metric].iloc[0],
-                                resultados_analisis[resultados_analisis['Test'] == 'Postural'][metric].iloc[0],
-                                resultados_analisis[resultados_analisis['Test'] == 'Acción'][metric].iloc[0]
-                            ]
-                            axes[i].bar(['Reposo', 'Postural', 'Acción'], values, color=['skyblue', 'lightcoral', 'lightgreen'])
-                            axes[i].set_title(f'{titles[i]} por Test')
-                            axes[i].set_ylabel(metric)
-                            axes[i].grid(axis='y', linestyle='--', alpha=0.7)
+                    df_promedio, _ = analizar_temblor_por_ventanas_resultante(df_current_test, fs=FS) # Usa el DataFrame ya limpio
 
-                        plt.tight_layout()
-                        st.pyplot(fig)
-                        plt.close(fig) # Cierra la figura para liberar memoria
-
-                        # Guardar la figura temporalmente para el PDF
-                        temp_fig_path = os.path.join(tempfile.gettempdir(), f"metrica_analisis_prediccion.png")
-                        fig.savefig(temp_fig_path, dpi=300, bbox_inches='tight')
-
-                        st.success(f"El modelo predice: **{prediccion_final}**")
+                    if not df_promedio.empty:
+                        # Store the average tremor metrics for this test type
+                        avg_tremor_metrics[test_type] = df_promedio.iloc[0].to_dict()
                     else:
-                        st.warning("No se pudieron obtener datos válidos para la predicción. Asegúrate de que los archivos estén completos y contengan las columnas requeridas (Acc_X/Acel_X, Acc_Y/Acel_Y, Acc_Z/Acel_Z, qW, qX, qY, qZ).")
-                except Exception as e:
-                    st.error(f"Error al procesar los archivos: {e}")
-                    st.warning("Asegúrate de que las columnas en tus archivos CSV de entrada coincidan con las esperadas (Acc_X/Acel_X, Acc_Y/Acel_Y, Acc_Z/Acel_Z, qW, qX, qY, qZ) y que los datos sean válidos (usando coma decimal).")
+                        st.warning(f"No se pudieron calcular métricas de temblor para {test_type}. Se usarán NaN.")
+                        # Initialize with NaNs if no data is found for a specific test type
+                        avg_tremor_metrics[test_type] = {
+                            'Frecuencia Dominante (Hz)': np.nan,
+                            'RMS (m/s2)': np.nan,
+                            'Amplitud Temblor (cm)': np.nan
+                        }
+
+            if not avg_tremor_metrics:
+                st.error("No se pudo procesar ningún archivo cargado para la predicción. Asegúrate de que los archivos contengan datos válidos.")
             else:
-                st.warning("Por favor, sube los tres archivos (Reposo, Postural, Acción) para realizar la predicción.")
+                st.subheader("Datos de Temblor Calculados para la Predicción:")
+                # Display the calculated metrics for user review
+                df_metrics_display = pd.DataFrame.from_dict(avg_tremor_metrics, orient='index')
+                df_metrics_display.index.name = "Test"
+                st.dataframe(df_metrics_display)
 
-            # --- Mostrar Resumen y Botón de Descarga PDF ---
-            if prediccion_final is not None and not resultados_analisis.empty:
-                st.subheader("Datos del Paciente y Configuración del Análisis")
-                st.write("---")
-                st.write("**Sexo:**", datos_paciente_prediccion.get('sexo', 'N/A'))
-                st.write("**Edad:**", datos_paciente_prediccion.get('edad', 'N/A'))
-                # Mostrar mano_medida solo si está especificada
-                if datos_paciente_prediccion.get('mano_medida') and datos_paciente_prediccion.get('mano_medida') != "No especificada":
-                    st.write("**Mano Medida:**", datos_paciente_prediccion.get('mano_medida'))
-                if datos_paciente_prediccion.get('dedo_medido') and datos_paciente_prediccion.get('dedo_medido') != "No especificado":
-                    st.write("**Dedo Medido:**", datos_paciente_prediccion.get('dedo_medido'))
+                # Now, prepare the single row for your ML model
+                data_for_model = {}
 
-                st.write("**Frecuencia de Muestreo (Hz):**", fs_advanced_pred)
-                st.write("**Duración de Ventana (seg):**", ventana_duracion_seg)
-                st.write("---")
+                # 1. Añadir datos demográficos como columnas de texto (ahora extraídas correctamente)
+                edad_val = datos_paciente.get('edad', np.nan)
+                try:
+                    data_for_model['edad'] = int(float(edad_val)) if pd.notna(edad_val) else np.nan
+                except (ValueError, TypeError):
+                    data_for_model['edad'] = np.nan
+                
+                # Asignar los valores originales de texto para sexo, mano_medida, dedo_medido
+                data_for_model['sexo'] = datos_paciente.get('sexo', 'no especificado').lower()
+                data_for_model['mano_medida'] = datos_paciente.get('mano_medida', 'no especificada').lower()
+                data_for_model['dedo_medido'] = datos_paciente.get('dedo_medido', 'no especificado').lower()
 
-                st.subheader("Resultados Detallados del Análisis")
-                st.dataframe(resultados_analisis.round(3))
-                st.write("")
+                # 2. Añadir métricas de temblor promedio para cada tipo de prueba
+                # Crear un mapeo para asegurar que 'Acción' se convierta en 'Accion' para el modelo
+                # Esto es CRUCIAL para que los nombres de las columnas coincidan con lo que el modelo espera.
+                feature_name_map = {
+                    "Reposo": "Reposo",
+                    "Postural": "Postural",
+                    "Acción": "Accion" # Mapea 'Acción' (con tilde, como viene de los archivos) a 'Accion' (sin tilde, como el modelo lo espera)
+                }
 
-                st.subheader("Predicción de Diagnóstico Final")
-                st.write(f"El modelo predice: **{prediccion_final}**")
-                st.info("Nota: El diagnóstico clínico final debe considerar este resultado y el cuadro general del paciente.")
+                for original_test_type, model_feature_prefix in feature_name_map.items():
+                    metrics = avg_tremor_metrics.get(original_test_type, {}) # Usar la clave original para obtener las métricas
+                    data_for_model[f'Frec_{model_feature_prefix}'] = metrics.get('Frecuencia Dominante (Hz)', np.nan)
+                    data_for_model[f'RMS_{model_feature_prefix}'] = metrics.get('RMS (m/s2)', np.nan)
+                    data_for_model[f'Amp_{model_feature_prefix}'] = metrics.get('Amplitud Temblor (cm)', np.nan)
 
-                # Generar PDF
-                st.write("---")
-                st.subheader("Generar Informe PDF")
-                pdf_buffer = io.BytesIO()
+                
+                st.subheader("Contenido de data_for_model antes de crear el DataFrame:")
+                st.json(data_for_model)
+                st.write("Claves presentes en data_for_model:", list(data_for_model.keys()))
 
-                generar_pdf(
-                    "3️⃣ Predicción de Diagnóstico",
-                    {
-                        'datos_paciente': datos_paciente_prediccion,
-                        'resultados_analisis': resultados_analisis,
-                        'prediccion_final': prediccion_final,
-                        'fig_path': temp_fig_path, # La ruta de la figura generada
-                        'fs': fs_advanced_pred,
-                        'ventana_duracion_seg': ventana_duracion_seg
-                    },
-                    pdf_buffer
-                )
+                # Create DataFrame ensuring all expected features are present, filling missing with NaN
+                df_for_prediction = pd.DataFrame([data_for_model])[EXPECTED_FEATURES_FOR_MODEL] # Usamos la variable EXPECTED_FEATURES_FOR_MODEL definida arriba
+                
+                st.subheader("DataFrame preparado para el Modelo de Predicción:")
+                st.dataframe(df_for_prediction)
 
-                st.download_button(
-                    label="📄 Descargar Informe de Predicción PDF",
-                    data=pdf_buffer.getvalue(),
-                    file_name="informe_prediccion_temblor.pdf",
-                    mime="application/pdf"
-                )
-                # Limpiar archivo temporal de gráfico
-                if os.path.exists(temp_fig_path):
-                    os.remove(temp_fig_path)
+                # --- INTEGRACIÓN DE TU MODELO DE MACHINE LEARNING ---
+                st.info("Cargando y utilizando el modelo de predicción...")
+                
+                # Nombre del archivo de tu modelo Joblib
+                model_filename = 'tremor_prediction_model_V2.joblib'
+                
+                try:
+                    # Cargar el modelo
+                    modelo_cargado = joblib.load(model_filename)
+                    st.success(f"Modelo '{model_filename}' cargado exitosamente.")
+                    
+                    # Realizar la predicción
+                    prediction = modelo_cargado.predict(df_for_prediction)
+                    
+                    st.subheader("Resultado de la Predicción:")
+                    st.success(f"La predicción del modelo es: **{prediction[0]}**")
+                    
+                    # Si tu modelo es un clasificador y puede dar probabilidades, puedes hacer esto:
+                    if hasattr(modelo_cargado, 'predict_proba'):
+                        probabilities = modelo_cargado.predict_proba(df_for_prediction)
+                        st.write("Probabilidades por clase:")
+                        if hasattr(modelo_cargado, 'classes_'):
+                            for i, class_label in enumerate(modelo_cargado.classes_):
+                                st.write(f"- **{class_label}**: {probabilities[0][i]*100:.2f}%")
+                        else:
+                            st.info("El modelo no tiene el atributo 'classes_'. No se pueden mostrar las etiquetas de clase para las probabilidades.")
 
-        else: # Si el modelo no se cargó
-            st.warning("El modelo de predicción no está disponible. Por favor, asegúrate de que el archivo 'tremor_prediction_model_V2.joblib' esté en la carpeta correcta y sin errores.")
+                except FileNotFoundError:
+                    st.error(f"Error: El archivo del modelo '{model_filename}' no se encontró en la misma carpeta que este script.")
+                    st.error("Por favor, asegúrate de que el archivo 'tremor_prediction_model_V2.joblib' esté en la ubicación correcta.")
+                except Exception as e:
+                    st.error(f"Ocurrió un error al cargar o usar el modelo: {e}")
+                    st.error("Por favor, verifica que el formato del DataFrame `df_for_prediction` (columnas y orden) coincida con lo que espera tu modelo entrenado.")
+                
+                # --- FIN DE LA INTEGRACIÓN DEL MODELO ---
+
+                # Opcional: Mostrar gráfico de amplitud por ventana para el archivo de predicción
+                all_ventanas_for_plot = []
+                current_min_ventanas = float('inf')
+                for test_type, uploaded_file in prediccion_files_correctas.items():
+                    if uploaded_file is not None:
+                        uploaded_file.seek(0)
+                        df_temp_raw_for_plot = pd.read_csv(uploaded_file, encoding='latin1') # Leer de nuevo para el gráfico
+
+                        # Limpieza para el gráfico (similar a la anterior)
+                        df_temp = df_temp_raw_for_plot.copy()
+                        for col in SENSOR_COLS: # Usa SENSOR_COLS definida arriba
+                            if col in df_temp.columns:
+                                df_temp[col] = pd.to_numeric(df_temp[col], errors='coerce')
+                            else:
+                                df_temp[col] = np.nan
+                        df_temp = df_temp.dropna(subset=SENSOR_COLS, how='all')
+                        df_temp = df_temp.reset_index(drop=True)
+
+                        _, df_ventanas_temp = analizar_temblor_por_ventanas_resultante(df_temp, fs=FS)
+                        if not df_ventanas_temp.empty:
+                            df_ventanas_temp_copy = df_ventanas_temp.copy()
+                            df_ventanas_temp_copy["Test"] = test_type
+                            all_ventanas_for_plot.append(df_ventanas_temp_copy)
+                            if len(df_ventanas_temp_copy) < current_min_ventanas:
+                                current_min_ventanas = len(df_ventanas_temp_copy)
+
+                if all_ventanas_for_plot:
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    for df_plot in all_ventanas_for_plot:
+                        test_name = df_plot["Test"].iloc[0]
+                        if current_min_ventanas != float('inf') and len(df_plot) > current_min_ventanas:
+                            df_to_plot = df_plot.iloc[:current_min_ventanas].copy()
+                        else:
+                            df_to_plot = df_plot.copy()
+                        
+                        df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * VENTANA_DURACION_SEG * (1 - SOLAPAMIENTO_VENTANA)
+                        ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
+
+                    ax.set_title("Amplitud de Temblor por Ventana de Tiempo (Archivos de Predicción)")
+                    ax.set_xlabel("Tiempo (segundos)")
+                    ax.set_ylabel("Amplitud (cm)")
+                    ax.legend()
+                    ax.grid(True)
+                    st.pyplot(fig)
+                    plt.close(fig)
+                else:
+                    st.warning("No hay suficientes datos de ventanas para graficar 
    
