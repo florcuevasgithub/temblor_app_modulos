@@ -64,6 +64,9 @@ ventana_duracion_seg = 2
 # --------- Funciones compartidas ----------
 # Función para extraer datos del paciente de un DataFrame
 def extraer_datos_paciente(df):
+    # Normalizar nombres de columnas
+    df.columns = df.columns.str.strip().str.lower()
+    
     datos = {
         "sexo": "No especificado",
         "edad": 0,
@@ -88,10 +91,10 @@ def extraer_datos_paciente(df):
                 datos["edad"] = int(float(str(df.iloc[0]["edad"]).replace(',', '.')))
             except (ValueError, TypeError):
                 datos["edad"] = 0
-        if "mano_medida" in df.columns and pd.notna(df.iloc[0]["mano_medida"]):
-            datos["mano_medida"] = str(df.iloc[0]["mano_medida"])
-        if "dedo_medido" in df.columns and pd.notna(df.iloc[0]["dedo_medido"]):
-            datos["dedo_medido"] = str(df.iloc[0]["dedo_medido"])
+        if "mano" in df.columns and pd.notna(df.iloc[0]["mano"]):
+            datos["mano_medida"] = str(df.iloc[0]["mano"])
+        if "dedo" in df.columns and pd.notna(df.iloc[0]["dedo"]):
+            datos["dedo_medido"] = str(df.iloc[0]["dedo"])
         
         # Extracción de otros metadatos generales
         for col in ["Nombre", "Apellido", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]:
