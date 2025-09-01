@@ -781,12 +781,12 @@ elif opcion == "2️⃣ Comparación de mediciones":
 elif opcion == "3️⃣ Diagnóstico tentativo":
 
     st.title("🩺 Diagnóstico Tentativo")
-    st.markdown("### Cargar archivos CSV para la Predicción")
+    st.markdown("### Cargar archivos CSV para el Diagnóstico")
 
     # Using multiple file uploaders for each test type for prediction
-    prediccion_reposo_file = st.file_uploader("Archivo de REPOSO para Predicción", type="csv", key="prediccion_reposo")
-    prediccion_postural_file = st.file_uploader("Archivo de POSTURAL para Predicción", type="csv", key="prediccion_postural")
-    prediccion_accion_file = st.file_uploader("Archivo de ACCION para Predicción", type="csv", key="prediccion_accion")
+    prediccion_reposo_file = st.file_uploader("Archivo de REPOSO para Diagnóstico", type="csv", key="prediccion_reposo")
+    prediccion_postural_file = st.file_uploader("Archivo de POSTURAL para Diagnóstico", type="csv", key="prediccion_postural")
+    prediccion_accion_file = st.file_uploader("Archivo de ACCION para Diagnóstico", type="csv", key="prediccion_accion")
 
     # Estilo para arrastrar archivo
     st.markdown("""
@@ -805,7 +805,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         </style>
     """, unsafe_allow_html=True)
 
-    if st.button("Realizar Predicción"):
+    if st.button("Realizar Diagnóstico"):
         prediccion_files_correctas = {
             "Reposo": prediccion_reposo_file,
             "Postural": prediccion_postural_file,
@@ -815,7 +815,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         any_file_uploaded = any(file is not None for file in prediccion_files_correctas.values())
 
         if not any_file_uploaded:
-            st.warning("Por favor, sube al menos un archivo CSV para realizar la predicción.")
+            st.warning("Por favor, sube al menos un archivo CSV para realizar el diagnóstico.")
         else:
             avg_tremor_metrics = {}
             datos_paciente = {}
@@ -841,9 +841,9 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                         }
 
             if not avg_tremor_metrics:
-                st.error("No se pudo procesar ningún archivo cargado para la predicción. Asegúrate de que los archivos contengan datos válidos.")
+                st.error("No se pudo procesar ningún archivo cargado para el diagnóstico. Asegúrate de que los archivos contengan datos válidos.")
             else:
-                st.subheader("Datos de Temblor Calculados para la Predicción:")
+                st.subheader("Datos de Temblor Calculados para el Diagnóstico:")
                 df_metrics_display = pd.DataFrame.from_dict(avg_tremor_metrics, orient='index')
                 df_metrics_display.index.name = "Test"
                 st.dataframe(df_metrics_display)
@@ -891,8 +891,8 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     modelo_cargado = joblib.load(model_filename)
                     prediction = modelo_cargado.predict(df_for_prediction)
 
-                    st.subheader("Resultado de la Predicción:")
-                    st.success(f"La predicción del modelo es: **{prediction[0]}**")
+                    st.subheader("Resultados del Diagnóstico:")
+                    st.success(f"El diagnóstico tentativo es: **{prediction[0]}**")
 
                     if hasattr(modelo_cargado, 'predict_proba'):
                         probabilities = modelo_cargado.predict_proba(df_for_prediction)
@@ -940,7 +940,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                         df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * ventana_duracion_seg
                         ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
 
-                    ax.set_title("Amplitud de Temblor por Ventana de Tiempo (Archivos de Predicción)")
+                    ax.set_title("Amplitud de Temblor por Ventana de Tiempo")
                     ax.set_xlabel("Tiempo (segundos)")
                     ax.set_ylabel("Amplitud (cm)")
                     ax.legend()
