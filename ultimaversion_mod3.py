@@ -223,12 +223,12 @@ def manejar_reinicio():
 # ------------------ Modo principal --------------------
 
 st.title("🧠 Análisis de Temblor")
-opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparar dos mediciones", "3️⃣ Predicción de Temblor"])
+opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparación de mediciones", "3️⃣ Diagnóstico tentativo"])
 if st.sidebar.button("🔄 Nuevo análisis"):
     manejar_reinicio()
 
 if opcion == "1️⃣ Análisis de una medición":
-    st.title("📈​ Análisis de una medición")
+    st.title("📈​ Análisis de una Medición")
 
     # --------- Funciones auxiliares ----------
 
@@ -500,8 +500,8 @@ if opcion == "1️⃣ Análisis de una medición":
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
 
-elif opcion == "2️⃣ Comparar dos mediciones":
-    st.title("📊 Comparar dos mediciones")
+elif opcion == "2️⃣ Comparación de mediciones":
+    st.title("📊 Comparación de Mediciones")
 
     st.markdown("### Cargar archivos de la **medición 1**")
     config1_archivos = {
@@ -778,7 +778,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
 
 
-elif opcion == "3️⃣ Predicción de Temblor":
+elif opcion == "3️⃣ Diagnóstico tentativo":
 
     st.title("🩺 Diagnóstico Tentativo")
     st.markdown("### Cargar archivos CSV para la Predicción")
