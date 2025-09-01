@@ -780,7 +780,7 @@ elif opcion == "2️⃣ Comparar dos mediciones":
 
 elif opcion == "3️⃣ Predicción de Temblor":
 
-    st.title("🔮 Predicción de Temblor")
+    st.title("🩺 Diagnóstico Tentativo de Temblor")
     st.markdown("### Cargar archivos CSV para la Predicción")
 
     # Using multiple file uploaders for each test type for prediction
