@@ -211,125 +211,125 @@ if opcion == "1️⃣ Análisis de una medición":
 
     # --- Función generar_pdf modificada para aceptar un diccionario de datos del paciente ---
     def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", fig=None):
-    fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
-
-    pdf.set_font("Arial", size=12)
-    pdf.ln(10)
-
-    # Helper para imprimir campos solo si tienen valor
-    def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-        if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
-            pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
-
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, "Datos del Paciente", ln=True)
-    pdf.set_font("Arial", size=12)
-
-    _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
-    _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
+        fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
     
-    # Manejo especial para Edad para asegurar que sea un número si es posible
-    edad_val = datos_paciente_dict.get("edad") # Usar 'edad' como clave
-    if isinstance(edad_val, (int, float)):
-        _imprimir_campo_pdf(pdf, "Edad", int(edad_val))
-    
-    _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
-    _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("Diagnostico"))
-    _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo"))
-    _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("mano_medida"))
-    _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("dedo_medido"))
-    _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente_dict.get("Antecedente"))
-    _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente_dict.get("Medicacion"))
-    
-    pdf.ln(5) # Espacio después de los datos del paciente
-
-    # --- SECCIÓN: Parámetros de Estimulación (Configuración) ---
-    # Definir los parámetros de estimulación y sus unidades
-    parametros_estimulacion = {
-        "ECP": "", "GPI": "", "NST": "", "Polaridad": "",
-        "Duracion": " ms", "Pulso": " µs", "Corriente": " mA",
-        "Voltaje": " V", "Frecuencia": " Hz"
-    }
-    
-    # Verificar si hay al menos un parámetro de estimulación presente para imprimir el título
-    hay_parametros_estimulacion = False
-    for param_key in parametros_estimulacion.keys():
-        val = datos_paciente_dict.get(param_key)
-        if val is not None and str(val).strip() != "" and str(val).lower() != "no especificado":
-            hay_parametros_estimulacion = True
-            break
-
-    if hay_parametros_estimulacion:
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Configuración", ln=True) # Título cambiado a "Configuración"
         pdf.set_font("Arial", size=12)
-        for param_key, unit in parametros_estimulacion.items():
-            _imprimir_campo_pdf(pdf, param_key, datos_paciente_dict.get(param_key), unit)
-        pdf.ln(5)
-    # --- FIN SECCIÓN ---
-
-    pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True) # Siempre se imprime la fecha/hora
-
-    pdf.ln(10)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(30, 10, "Test", 1)
-    pdf.cell(40, 10, "Frecuencia (Hz)", 1)
-    pdf.cell(30, 10, "RMS", 1)
-    pdf.cell(50, 10, "Amplitud (cm)", 1)
-    pdf.ln(10)
-
-    pdf.set_font("Arial", "", 12)
-    for _, row in df.iterrows():
-        pdf.cell(30, 10, row['Test'], 1)
-        pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
-        pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
-        pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
         pdf.ln(10)
-
-
-    def limpiar_texto_para_pdf(texto):
-        return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
     
-    pdf.ln(10)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(200, 10, "Interpretación clínica:", ln=True)
-    pdf.set_font("Arial", size=10)
-    texto_original = """
-    Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
-
-    Los valores de referencia considerados son:
-      Para las frecuencias (Hz):
-    - Temblor Parkinsoniano: 3-6 Hz en reposo.
-    - Temblor Esencial: 8-10 Hz en acción o postura.
-
-      Para las amplitudes:
-    - Mayores a 0.5 cm pueden ser clínicamente relevantes.
-
-      Para el RMS (m/s2):
-    - Normal/sano: menor a 0.5 m/s2.
-    - PK leve: entre 0.5 y 1.5 m/s2.
-    - TE o PK severo: mayor a 2 m/s2.
-
-    Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica.
-
-    """
-
-    texto_limpio = limpiar_texto_para_pdf(texto_original)
-    pdf.multi_cell(0, 8, texto_limpio)
-    pdf.set_font("Arial", 'B', 12)
-
-    if fig is not None:
-        import tempfile
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
-            fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
-            pdf.image(tmpfile.name, x=15, w=180)
-            os.remove(tmpfile.name)
-
-    pdf.output(nombre_archivo)
+        # Helper para imprimir campos solo si tienen valor
+        def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
+            if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+                pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+    
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Datos del Paciente", ln=True)
+        pdf.set_font("Arial", size=12)
+    
+        _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
+        _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
+        
+        # Manejo especial para Edad para asegurar que sea un número si es posible
+        edad_val = datos_paciente_dict.get("edad") # Usar 'edad' como clave
+        if isinstance(edad_val, (int, float)):
+            _imprimir_campo_pdf(pdf, "Edad", int(edad_val))
+        
+        _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
+        _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("Diagnostico"))
+        _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo"))
+        _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("mano_medida"))
+        _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("dedo_medido"))
+        _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente_dict.get("Antecedente"))
+        _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente_dict.get("Medicacion"))
+        
+        pdf.ln(5) # Espacio después de los datos del paciente
+    
+        # --- SECCIÓN: Parámetros de Estimulación (Configuración) ---
+        # Definir los parámetros de estimulación y sus unidades
+        parametros_estimulacion = {
+            "ECP": "", "GPI": "", "NST": "", "Polaridad": "",
+            "Duracion": " ms", "Pulso": " µs", "Corriente": " mA",
+            "Voltaje": " V", "Frecuencia": " Hz"
+        }
+        
+        # Verificar si hay al menos un parámetro de estimulación presente para imprimir el título
+        hay_parametros_estimulacion = False
+        for param_key in parametros_estimulacion.keys():
+            val = datos_paciente_dict.get(param_key)
+            if val is not None and str(val).strip() != "" and str(val).lower() != "no especificado":
+                hay_parametros_estimulacion = True
+                break
+    
+        if hay_parametros_estimulacion:
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Configuración", ln=True) # Título cambiado a "Configuración"
+            pdf.set_font("Arial", size=12)
+            for param_key, unit in parametros_estimulacion.items():
+                _imprimir_campo_pdf(pdf, param_key, datos_paciente_dict.get(param_key), unit)
+            pdf.ln(5)
+        # --- FIN SECCIÓN ---
+    
+        pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True) # Siempre se imprime la fecha/hora
+    
+        pdf.ln(10)
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(30, 10, "Test", 1)
+        pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+        pdf.cell(30, 10, "RMS", 1)
+        pdf.cell(50, 10, "Amplitud (cm)", 1)
+        pdf.ln(10)
+    
+        pdf.set_font("Arial", "", 12)
+        for _, row in df.iterrows():
+            pdf.cell(30, 10, row['Test'], 1)
+            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+            pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+            pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+            pdf.ln(10)
+    
+    
+        def limpiar_texto_para_pdf(texto):
+            return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
+        
+        pdf.ln(10)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(200, 10, "Interpretación clínica:", ln=True)
+        pdf.set_font("Arial", size=10)
+        texto_original = """
+        Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
+    
+        Los valores de referencia considerados son:
+          Para las frecuencias (Hz):
+        - Temblor Parkinsoniano: 3-6 Hz en reposo.
+        - Temblor Esencial: 8-10 Hz en acción o postura.
+    
+          Para las amplitudes:
+        - Mayores a 0.5 cm pueden ser clínicamente relevantes.
+    
+          Para el RMS (m/s2):
+        - Normal/sano: menor a 0.5 m/s2.
+        - PK leve: entre 0.5 y 1.5 m/s2.
+        - TE o PK severo: mayor a 2 m/s2.
+    
+        Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica.
+    
+        """
+    
+        texto_limpio = limpiar_texto_para_pdf(texto_original)
+        pdf.multi_cell(0, 8, texto_limpio)
+        pdf.set_font("Arial", 'B', 12)
+    
+        if fig is not None:
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+                fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
+                pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+    
+        pdf.output(nombre_archivo)
 
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
