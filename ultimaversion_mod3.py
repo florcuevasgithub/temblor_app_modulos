@@ -68,37 +68,71 @@ ventana_duracion_seg = 2
 # Función para extraer datos del paciente de un DataFrame
 def extraer_datos_paciente(df):
     """
-    Extrae datos personales del paciente desde un DataFrame,
-    sin modificar las columnas originales del DataFrame.
+    Extrae datos personales del paciente y parámetros de configuración de DBS
+    desde un DataFrame, sin modificar las columnas originales del DataFrame.
     """
-    if df is None or df.empty:
-        return {}
-    
-    # El primer registro contiene todos los metadatos
-    df_metadata = df.iloc[0]
+    col_map = {col.lower().strip(): col for col in df.columns}
 
     datos = {
-        "sexo": str(df_metadata.get('Sexo', 'No especificado')).strip(),
-        "edad": int(float(str(df_metadata.get('Edad', 0)).replace(',', '.'))) if pd.notna(df_metadata.get('Edad')) else 0,
-        "mano_medida": str(df_metadata.get('Mano', 'No especificada')).strip(),
-        "dedo_medido": str(df_metadata.get('Dedo', 'No especificado')).strip(),
-        "Nombre": str(df_metadata.get('Nombre', '')).strip(),
-        "Apellido": str(df_metadata.get('Apellido', '')).strip(),
-        "Diagnostico": str(df_metadata.get('Diagnostico', '')).strip(),
-        "Antecedente": str(df_metadata.get('Antecedente', '')).strip(),
-        "Medicacion": str(df_metadata.get('Medicacion', '')).strip(),
-        "Tipo": str(df_metadata.get('Tipo', '')).strip(),
-        "ECP": str(df_metadata.get('ECP', '')).strip(),
-        "GPI": str(df_metadata.get('GPI', '')).strip(),
-        "NST": str(df_metadata.get('NST', '')).strip(),
-        "Polaridad": str(df_metadata.get('Polaridad', '')).strip(),
-        "Duracion": float(str(df_metadata.get('Duracion [ms]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Duracion [ms]')) else None,
-        "Pulso": float(str(df_metadata.get('Pulso [µS]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Pulso [µS]')) else None,
-        "Corriente": float(str(df_metadata.get('Corriente [mA]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Corriente [mA]')) else None,
-        "Voltaje": float(str(df_metadata.get('Voltaje [mV]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Voltaje [mV]')) else None,
-        "Frecuencia": float(str(df_metadata.get('Frecuencia [Hz]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Frecuencia [Hz]')) else None
+        "sexo": "No especificado", "edad": 0,
+        "mano_medida": "No especificada", "dedo_medido": "No especificado",
+        "Nombre": None, "Apellido": None, "Diagnostico": None,
+        "Antecedente": None, "Medicacion": None, "Tipo": None,
+        "DBS": None, "Nucleo": None,
+        "Voltaje_izq": None, "Corriente_izq": None, "Contacto_izq": None, "Frecuencia_izq": None, "Ancho_pulso_izq": None,
+        "Voltaje_dch": None, "Corriente_dch": None, "Contacto_dch": None, "Frecuencia_dch": None, "Ancho_pulso_dch": None,
     }
-    
+
+    if not df.empty:
+        # Extraer datos personales usando el mapeo
+        if "sexo" in col_map and pd.notna(df.at[0, col_map["sexo"]]):
+            datos["sexo"] = str(df.at[0, col_map["sexo"]]).strip()
+        if "edad" in col_map and pd.notna(df.at[0, col_map["edad"]]):
+            try:
+                datos["edad"] = int(float(str(df.at[0, col_map["edad"]]).replace(',', '.')))
+            except (ValueError, TypeError):
+                datos["edad"] = 0
+        if "mano" in col_map and pd.notna(df.at[0, col_map["mano"]]):
+            datos["mano_medida"] = str(df.at[0, col_map["mano"]]).strip()
+        if "dedo" in col_map and pd.notna(df.at[0, col_map["dedo"]]):
+            datos["dedo_medido"] = str(df.at[0, col_map["dedo"]]).strip()
+
+        for key in ["Nombre", "Apellido", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]:
+            key_l = key.lower()
+            if key_l in col_map and pd.notna(df.at[0, col_map[key_l]]):
+                datos[key] = str(df.at[0, col_map[key_l]])
+
+        # Extraer campos de estimulación con los nombres exactos proporcionados
+        # General
+        if "dbs" in col_map and pd.notna(df.at[0, col_map["dbs"]]):
+            datos["DBS"] = str(df.at[0, col_map["dbs"]])
+        if "nucleo" in col_map and pd.notna(df.at[0, col_map["nucleo"]]):
+            datos["Nucleo"] = str(df.at[0, col_map["nucleo"]])
+
+        # Izquierda
+        if "voltaje [mv]_izq" in col_map and pd.notna(df.at[0, col_map["voltaje [mv]_izq"]]):
+            datos["Voltaje_izq"] = str(df.at[0, col_map["voltaje [mv]_izq"]]).replace(',', '.')
+        if "corriente [ma]_izq" in col_map and pd.notna(df.at[0, col_map["corriente [ma]_izq"]]):
+            datos["Corriente_izq"] = str(df.at[0, col_map["corriente [ma]_izq"]]).replace(',', '.')
+        if "contacto_izq" in col_map and pd.notna(df.at[0, col_map["contacto_izq"]]):
+            datos["Contacto_izq"] = str(df.at[0, col_map["contacto_izq"]])
+        if "frecuencia [hz]_izq" in col_map and pd.notna(df.at[0, col_map["frecuencia [hz]_izq"]]):
+            datos["Frecuencia_izq"] = str(df.at[0, col_map["frecuencia [hz]_izq"]]).replace(',', '.')
+        if "ancho de pulso [µs]_izq" in col_map and pd.notna(df.at[0, col_map["ancho de pulso [µs]_izq"]]):
+            datos["Ancho_pulso_izq"] = str(df.at[0, col_map["ancho de pulso [µs]_izq"]]).replace(',', '.')
+
+        # Derecha
+        if "voltaje [mv]_dch" in col_map and pd.notna(df.at[0, col_map["voltaje [mv]_dch"]]):
+            datos["Voltaje_dch"] = str(df.at[0, col_map["voltaje [mv]_dch"]]).replace(',', '.')
+        if "corriente [ma]_dch" in col_map and pd.notna(df.at[0, col_map["corriente [ma]_dch"]]):
+            datos["Corriente_dch"] = str(df.at[0, col_map["corriente [ma]_dch"]]).replace(',', '.')
+        if "contacto_dch" in col_map and pd.notna(df.at[0, col_map["contacto_dch"]]):
+            datos["Contacto_dch"] = str(df.at[0, col_map["contacto_dch"]])
+        if "frecuencia [hz]_dch" in col_map and pd.notna(df.at[0, col_map["frecuencia [hz]_dch"]]):
+            datos["Frecuencia_dch"] = str(df.at[0, col_map["frecuencia [hz]_dch"]]).replace(',', '.')
+        if "ancho de pulso [µs]_dch" in col_map and pd.notna(df.at[0, col_map["ancho de pulso [µs]_dch"]]):
+            datos["Ancho_pulso_dch"] = str(df.at[0, col_map["ancho de pulso [µs]_dch"]]).replace(',', '.')
+
     return datos
 
 
@@ -209,14 +243,12 @@ if st.sidebar.button("🔄 Nuevo análisis"):
 if opcion == "1️⃣ Análisis de una medición":
     st.title("📈​ Análisis de una Medición")
 
-    # --- Función generar_pdf modificada para aceptar un diccionario de datos del paciente ---
     def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", fig=None):
         fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", 'B', 16)
         pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
-    
         pdf.set_font("Arial", size=12)
         pdf.ln(10)
     
@@ -225,18 +257,15 @@ if opcion == "1️⃣ Análisis de una medición":
             if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
                 pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
     
+        # Impresión de Datos Personales
         pdf.set_font("Arial", 'B', 14)
         pdf.cell(0, 10, "Datos del Paciente", ln=True)
         pdf.set_font("Arial", size=12)
-    
         _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
         _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
-        
-        # Manejo especial para Edad para asegurar que sea un número si es posible
-        edad_val = datos_paciente_dict.get("edad") # Usar 'edad' como clave
+        edad_val = datos_paciente_dict.get("edad")
         if isinstance(edad_val, (int, float)):
             _imprimir_campo_pdf(pdf, "Edad", int(edad_val))
-        
         _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
         _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("Diagnostico"))
         _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo"))
@@ -244,8 +273,7 @@ if opcion == "1️⃣ Análisis de una medición":
         _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("dedo_medido"))
         _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente_dict.get("Antecedente"))
         _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente_dict.get("Medicacion"))
-        
-        pdf.ln(5) # Espacio después de los datos del paciente
+        pdf.ln(5)
     
         # Impresión de Parámetros de Estimulación
         hay_parametros_estimulacion = datos_paciente_dict.get("DBS") is not None or datos_paciente_dict.get("Nucleo") is not None
@@ -280,10 +308,9 @@ if opcion == "1️⃣ Análisis de una medición":
                 _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("Frecuencia_dch"), " Hz")
                 _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("Ancho_pulso_dch"), " µS")
             pdf.ln(5)
-        # --- FIN SECCIÓN ---
-    
-        pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True) # Siempre se imprime la fecha/hora
-    
+        
+        # El resto del código del PDF se mantiene igual
+        pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
         pdf.ln(10)
         pdf.set_font("Arial", "B", 12)
         pdf.cell(30, 10, "Test", 1)
@@ -299,7 +326,6 @@ if opcion == "1️⃣ Análisis de una medición":
             pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
             pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
             pdf.ln(10)
-    
     
         def limpiar_texto_para_pdf(texto):
             return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
@@ -327,7 +353,6 @@ if opcion == "1️⃣ Análisis de una medición":
         Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica.
     
         """
-    
         texto_limpio = limpiar_texto_para_pdf(texto_original)
         pdf.multi_cell(0, 8, texto_limpio)
         pdf.set_font("Arial", 'B', 12)
