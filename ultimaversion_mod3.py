@@ -716,7 +716,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
 
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
-
 elif opcion == "3️⃣ Diagnóstico tentativo":
     st.title("🩺 Diagnóstico Tentativo")
     st.markdown("### Cargar archivos CSV para el Diagnóstico")
@@ -741,6 +740,69 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         </style>
     """, unsafe_allow_html=True)
 
+    def generar_pdf_diagnostico(datos_paciente_dict, df_metrics, diagnostico, probabilidades, nombre_archivo="informe_diagnostico.pdf"):
+        fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(200, 10, "Informe de Diagnóstico Tentativo", ln=True, align='C')
+        
+        pdf.set_font("Arial", size=12)
+        pdf.ln(10)
+        
+        # Datos del Paciente
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Datos del Paciente", ln=True)
+        pdf.set_font("Arial", size=12)
+        
+        def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
+            if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+                pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+        
+        _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
+        _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
+        _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("edad"))
+        _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
+        _imprimir_campo_pdf(pdf, "Mano de medición", datos_paciente_dict.get("mano_medida"))
+        _imprimir_campo_pdf(pdf, "Dedo de medición", datos_paciente_dict.get("dedo_medido"))
+        _imprimir_campo_pdf(pdf, "Diagnóstico", diagnostico)
+        
+        pdf.ln(5)
+        
+        # Resultados del Diagnóstico
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Resultados del Análisis de Temblor", ln=True)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(30, 10, "Test", 1)
+        pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+        pdf.cell(30, 10, "RMS", 1)
+        pdf.cell(50, 10, "Amplitud (cm)", 1)
+        pdf.ln(10)
+        
+        pdf.set_font("Arial", "", 12)
+        for index, row in df_metrics.iterrows():
+            pdf.cell(30, 10, index, 1)
+            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+            pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+            pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+            pdf.ln(10)
+        
+        # Probabilidades
+        pdf.ln(10)
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Probabilidades por clase", ln=True)
+        pdf.set_font("Arial", size=12)
+        if probabilidades:
+            for label, prob in probabilidades.items():
+                pdf.cell(0, 10, f"- {label}: {prob:.2f}%", ln=True)
+        
+        pdf_output = BytesIO()
+        pdf.output(dest='S').encode('latin1')
+        pdf.output(pdf_output)
+        pdf_bytes = pdf_output.getvalue()
+        
+        return pdf_bytes
+
     if st.button("Realizar Diagnóstico"):
         prediccion_files_correctas = {
             "Reposo": prediccion_reposo_file,
@@ -748,96 +810,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             "Acción": prediccion_accion_file
         }
 
-        st.subheader("Generar Informe del Diagnóstico")
-
-        def generar_pdf_diagnostico(datos_paciente_dict, df_metrics, diagnostico, probabilidades, nombre_archivo="informe_diagnostico.pdf"):
-            fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", 'B', 16)
-            pdf.cell(200, 10, "Informe de Diagnóstico Tentativo", ln=True, align='C')
-    
-            pdf.set_font("Arial", size=12)
-            pdf.ln(10)
-            
-            # Datos del Paciente
-            pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, "Datos del Paciente", ln=True)
-            pdf.set_font("Arial", size=12)
-    
-            def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-                if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
-                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
-            
-            _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
-            _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
-            _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("edad"))
-            _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
-            _imprimir_campo_pdf(pdf, "Mano de medición", datos_paciente_dict.get("mano_medida"))
-            _imprimir_campo_pdf(pdf, "Dedo de medición", datos_paciente_dict.get("dedo_medido"))
-            _imprimir_campo_pdf(pdf, "Diagnóstico", diagnostico)
-    
-            pdf.ln(5)
-    
-            # Resultados del Diagnóstico
-            pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, "Resultados del Análisis de Temblor", ln=True)
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(30, 10, "Test", 1)
-            pdf.cell(40, 10, "Frecuencia (Hz)", 1)
-            pdf.cell(30, 10, "RMS", 1)
-            pdf.cell(50, 10, "Amplitud (cm)", 1)
-            pdf.ln(10)
-    
-            pdf.set_font("Arial", "", 12)
-            for index, row in df_metrics.iterrows():
-                pdf.cell(30, 10, index, 1)
-                pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
-                pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
-                pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
-                pdf.ln(10)
-    
-            # Probabilidades
-            pdf.ln(10)
-            pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, "Probabilidades por clase", ln=True)
-            pdf.set_font("Arial", size=12)
-            if probabilidades:
-                for label, prob in probabilidades.items():
-                    pdf.cell(0, 10, f"- {label}: {prob:.2f}%", ln=True)
-    
-            pdf_output = BytesIO()
-            pdf.output(dest='S').encode('latin1')
-            pdf.output(pdf_output)
-            pdf_bytes = pdf_output.getvalue()
-    
-            return pdf_bytes
-    
-        # Llamar a la función para generar y descargar el PDF
-        if prediction is not None:
-            df_metrics_for_pdf = df_metrics_display.copy()
-            
-            # Obtener las probabilidades para el PDF
-            prob_dict = {}
-            if hasattr(modelo_cargado, 'predict_proba'):
-                probabilities = modelo_cargado.predict_proba(df_for_prediction)
-                if hasattr(modelo_cargado, 'classes_'):
-                    for i, class_label in enumerate(modelo_cargado.classes_):
-                        prob_dict[class_label] = probabilities[0][i]*100
-    
-            pdf_bytes = generar_pdf_diagnostico(
-                datos_paciente,
-                df_metrics_for_pdf,
-                prediction[0],
-                prob_dict
-            )
-    
-            st.download_button(
-                label="📄 Descargar informe de diagnóstico",
-                data=pdf_bytes,
-                file_name="informe_diagnostico.pdf",
-                mime="application/pdf"
-            )
         any_file_uploaded = any(file is not None for file in prediccion_files_correctas.values())
 
         if not any_file_uploaded:
@@ -846,7 +818,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             avg_tremor_metrics = {}
             datos_paciente = {}
 
-            # Extraer datos y procesar archivos
             first_file_processed = False
             for test_type, uploaded_file in prediccion_files_correctas.items():
                 if uploaded_file is not None:
@@ -896,95 +867,4 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
 
                 for original_test_type, model_feature_prefix in feature_name_map.items():
                     metrics = avg_tremor_metrics.get(original_test_type, {})
-                    data_for_model[f'Frec_{model_feature_prefix}'] = metrics.get('Frecuencia Dominante (Hz)', np.nan)
-                    data_for_model[f'RMS_{model_feature_prefix}'] = metrics.get('RMS (m/s2)', np.nan)
-                    data_for_model[f'Amp_{model_feature_prefix}'] = metrics.get('Amplitud Temblor (cm)', np.nan)
-
-                expected_features_for_model = [
-                    'edad',
-                    'Frec_Reposo', 'RMS_Reposo', 'Amp_Reposo',
-                    'Frec_Postural', 'RMS_Postural', 'Amp_Postural',
-                    'Frec_Accion', 'RMS_Accion', 'Amp_Accion',
-                    'sexo', 'mano_medida', 'dedo_medido'
-                ]
-
-                df_for_prediction = pd.DataFrame([data_for_model])[expected_features_for_model]
-
-                st.subheader("DataFrame preparado para el Modelo de Predicción:")
-                st.dataframe(df_for_prediction)
-
-                model_filename = 'tremor_prediction_model_V2.joblib'
-
-                try:
-                    modelo_cargado = joblib.load(model_filename)
-                    
-                    # Usar un LabelEncoder temporal si el modelo lo requiere (práctica común en producción)
-                    # O si el modelo ya tiene el LabelEncoder integrado, simplemente se omite.
-                    # Aquí asumo que el modelo ya maneja las variables categóricas.
-                    
-                    # Convertir datos para que el modelo los entienda si es necesario
-                    # Ejemplo: One-Hot Encoding manual si el modelo lo espera
-                    # Para simplificar, asumimos que el modelo cargado puede manejar las columnas categóricas
-                    # 'sexo', 'mano_medida', 'dedo_medido' directamente.
-                    
-                    prediction = modelo_cargado.predict(df_for_prediction)
-
-                    st.subheader("Resultados del Diagnóstico:")
-                    st.success(f"El diagnóstico tentativo es: **{prediction[0]}**")
-
-                    if hasattr(modelo_cargado, 'predict_proba'):
-                        probabilities = modelo_cargado.predict_proba(df_for_prediction)
-                        st.write("Probabilidades por clase:")
-                        if hasattr(modelo_cargado, 'classes_'):
-                            for i, class_label in enumerate(modelo_cargado.classes_):
-                                st.write(f"- **{class_label}**: {probabilities[0][i]*100:.2f}%")
-                        else:
-                            st.info("El modelo no tiene el atributo 'classes_'. No se pueden mostrar las etiquetas de clase.")
-
-                except FileNotFoundError:
-                    st.error(f"Error: El archivo del modelo '{model_filename}' no se encontró.")
-                    st.error("Asegúrate de que esté en la misma carpeta que este script.")
-                except Exception as e:
-                    st.error(f"Ocurrió un error al usar el modelo: {e}")
-                    st.error("Verifica que el DataFrame `df_for_prediction` coincida con lo que espera el modelo.")
-
-                # Gráfico opcional
-                all_ventanas_for_plot = []
-                current_min_ventanas = float('inf')
-
-                for test_type, uploaded_file in prediccion_files_correctas.items():
-                    if uploaded_file is not None:
-                        uploaded_file.seek(0)
-                        df_temp = pd.read_csv(uploaded_file, encoding='latin1')
-                        _, df_ventanas_temp = analizar_temblor_por_ventanas_resultante(df_temp, fs=100)
-
-                        if not df_ventanas_temp.empty:
-                            df_ventanas_temp_copy = df_ventanas_temp.copy()
-                            df_ventanas_temp_copy["Test"] = test_type
-                            all_ventanas_for_plot.append(df_ventanas_temp_copy)
-
-                            if len(df_ventanas_temp_copy) < current_min_ventanas:
-                                current_min_ventanas = len(df_ventanas_temp_copy)
-
-                if all_ventanas_for_plot:
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    for df_plot in all_ventanas_for_plot:
-                        test_name = df_plot["Test"].iloc[0]
-                        if current_min_ventanas != float('inf') and len(df_plot) > current_min_ventanas:
-                            df_to_plot = df_plot.iloc[:current_min_ventanas].copy()
-                        else:
-                            df_to_plot = df_plot.copy()
-
-                        df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * ventana_duracion_seg
-                        ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
-
-                    ax.set_title("Amplitud de Temblor por Ventana de Tiempo")
-                    ax.set_xlabel("Tiempo (segundos)")
-                    ax.set_ylabel("Amplitud (cm)")
-                    ax.legend()
-                    ax.grid(True)
-                    st.pyplot(fig)
-                    plt.close(fig)
-                else:
-                    st.warning("No hay suficientes datos de ventanas para graficar los archivos de predicción.")
-   
+                    data_for_model
