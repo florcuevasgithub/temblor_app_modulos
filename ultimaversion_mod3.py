@@ -753,6 +753,116 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
     st.title("🩺 Diagnóstico Tentativo")
     st.markdown("### Cargar archivos CSV para el Diagnóstico")
 
+    # Definiciones de funciones para el PDF, fuera del botón
+    def extraer_datos_paciente(df_csv):
+        datos_paciente = {
+            "Nombre": df_csv.loc[0, 'Nombre'] if 'Nombre' in df_csv.columns else 'No especificado',
+            "Apellido": df_csv.loc[0, 'Apellido'] if 'Apellido' in df_csv.columns else 'No especificado',
+            "Edad": df_csv.loc[0, 'Edad'] if 'Edad' in df_csv.columns else 'No especificada',
+            "Sexo": df_csv.loc[0, 'Sexo'] if 'Sexo' in df_csv.columns else 'No especificado',
+            "Diagnostico": df_csv.loc[0, 'Diagnostico'] if 'Diagnostico' in df_csv.columns else 'No especificado',
+            "Tipo": df_csv.loc[0, 'Tipo'] if 'Tipo' in df_csv.columns else 'No especificado',
+            "Antecedente": df_csv.loc[0, 'Antecedente'] if 'Antecedente' in df_csv.columns else 'No especificado',
+            "Medicacion": df_csv.loc[0, 'Medicacion'] if 'Medicacion' in df_csv.columns else 'No especificado',
+        }
+        return datos_paciente
+
+    def extraer_datos_estimulacion(df_csv):
+        metadata_dict = {}
+        column_map = {
+            # Solo se extrae mano y dedo, ya que no hay estimulación en este caso
+            "Mano": "Mano",
+            "Dedo": "Dedo"
+        }
+        for csv_col, pdf_label in column_map.items():
+            if csv_col in df_csv.columns:
+                value = df_csv.loc[0, csv_col]
+                metadata_dict[pdf_label] = value
+        return metadata_dict
+
+    def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
+        if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+            pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+
+    def imprimir_parametros_y_config(pdf_obj, parametros_dict, titulo):
+        pdf_obj.set_font("Arial", 'B', 12)
+        pdf_obj.cell(0, 10, titulo, ln=True)
+        pdf_obj.set_font("Arial", size=10)
+        
+        # Solo se imprimen la mano y el dedo, el resto de campos no existen en este contexto
+        parametros_a_imprimir_con_unidad = {
+            "Mano": "", "Dedo": ""
+        }
+        for param_key, unit in parametros_dict.items():
+            value = parametros_dict.get(param_key)
+            if value is not None and str(value).strip() != "" and str(value).lower() != "no especificado":
+                pdf_obj.cell(200, 10, f"{param_key}: {value}{unit}", ln=True)
+        pdf_obj.ln(5)
+
+    def generar_pdf(paciente_data, estimulacion_data, resultados_df, prediccion_texto, graficos_paths):
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Informe de Diagnóstico de Temblor", ln=True, align="C")
+        pdf.ln(5)
+        
+        pdf.set_font("Arial", size=10)
+        pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
+        
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Datos del Paciente", ln=True)
+        pdf.set_font("Arial", size=12)
+        _imprimir_campo_pdf(pdf, "Nombre", paciente_data.get("Nombre"))
+        _imprimir_campo_pdf(pdf, "Apellido", paciente_data.get("Apellido"))
+        _imprimir_campo_pdf(pdf, "Edad", paciente_data.get("Edad"))
+        _imprimir_campo_pdf(pdf, "Sexo", paciente_data.get("Sexo"))
+        _imprimir_campo_pdf(pdf, "Diagnóstico", paciente_data.get("Diagnostico"))
+        _imprimir_campo_pdf(pdf, "Tipo", paciente_data.get("Tipo"))
+        _imprimir_campo_pdf(pdf, "Antecedente", paciente_data.get("Antecedente"))
+        _imprimir_campo_pdf(pdf, "Medicacion", paciente_data.get("Medicacion"))
+        pdf.ln(5)
+        
+        imprimir_parametros_y_config(pdf, estimulacion_data, "Configuración de la Medición")
+        
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Resultados del Análisis", ln=True)
+        pdf.ln(2)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(30, 10, "Test", 1)
+        pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+        pdf.cell(30, 10, "RMS", 1)
+        pdf.cell(50, 10, "Amplitud (cm)", 1)
+        pdf.ln(10)
+        pdf.set_font("Arial", "", 10)
+        for _, row in resultados_df.iterrows():
+            pdf.cell(30, 10, row['Test'], 1)
+            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+            pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+            pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+            pdf.ln(10)
+        pdf.ln(5)
+        
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, "Diagnóstico (Predicción)", ln=True)
+        pdf.set_font("Arial", size=10)
+        pdf.multi_cell(0, 10, prediccion_texto)
+        pdf.ln(5)
+
+        for i, img_path in enumerate(graficos_paths):
+            if os.path.exists(img_path):
+                pdf.add_page()
+                pdf.set_font("Arial", 'B', 14)
+                pdf.cell(0, 10, f"Gráfico {i+1}", ln=True, align="C")
+                pdf.image(img_path, x=15, w=180)
+            else:
+                pdf.cell(0, 10, f"Error: No se pudo cargar el gráfico {i+1}", ln=True)
+        
+        pdf_output = BytesIO()
+        pdf_bytes = pdf.output(dest='S').encode('latin1')
+        pdf_output.write(pdf_bytes)
+        pdf_output.seek(0)
+        return pdf_output
+
     prediccion_reposo_file = st.file_uploader("Archivo de REPOSO para Diagnóstico", type="csv", key="prediccion_reposo")
     prediccion_postural_file = st.file_uploader("Archivo de POSTURAL para Diagnóstico", type="csv", key="prediccion_postural")
     prediccion_accion_file = st.file_uploader("Archivo de ACCION para Diagnóstico", type="csv", key="prediccion_accion")
@@ -787,9 +897,9 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         else:
             avg_tremor_metrics = {}
             datos_paciente = {}
-
-            # Extraer datos y procesar archivos
+            datos_estimulacion = {}
             first_file_processed = False
+
             for test_type, uploaded_file in prediccion_files_correctas.items():
                 if uploaded_file is not None:
                     uploaded_file.seek(0)
@@ -797,10 +907,11 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
 
                     if not first_file_processed:
                         datos_paciente = extraer_datos_paciente(df_current_test)
+                        datos_estimulacion = extraer_datos_estimulacion(df_current_test)
                         first_file_processed = True
 
                     df_promedio, _ = analizar_temblor_por_ventanas_resultante(df_current_test, fs=100)
-
+                    
                     if not df_promedio.empty:
                         avg_tremor_metrics[test_type] = df_promedio.iloc[0].to_dict()
                     else:
@@ -820,15 +931,15 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 st.dataframe(df_metrics_display)
 
                 data_for_model = {}
-                edad_val = datos_paciente.get('edad', np.nan)
+                edad_val = datos_paciente.get('Edad', np.nan)
                 try:
                     data_for_model['edad'] = int(float(edad_val)) if pd.notna(edad_val) else np.nan
                 except (ValueError, TypeError):
                     data_for_model['edad'] = np.nan
 
-                data_for_model['sexo'] = datos_paciente.get('sexo', 'no especificado').lower()
-                data_for_model['mano_medida'] = datos_paciente.get('mano_medida', 'no especificada').lower()
-                data_for_model['dedo_medido'] = datos_paciente.get('dedo_medido', 'no especificado').lower()
+                data_for_model['sexo'] = datos_paciente.get('Sexo', 'no especificado').lower()
+                data_for_model['mano_medida'] = datos_estimulacion.get('Mano', 'no especificada').lower()
+                data_for_model['dedo_medido'] = datos_estimulacion.get('Dedo', 'no especificado').lower()
 
                 feature_name_map = {
                     "Reposo": "Reposo",
@@ -849,30 +960,21 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     'Frec_Accion', 'RMS_Accion', 'Amp_Accion',
                     'sexo', 'mano_medida', 'dedo_medido'
                 ]
-
                 df_for_prediction = pd.DataFrame([data_for_model])[expected_features_for_model]
 
                 st.subheader("DataFrame preparado para el Modelo de Predicción:")
                 st.dataframe(df_for_prediction)
 
                 model_filename = 'tremor_prediction_model_V2.joblib'
-
+                prediccion_final = "No se pudo realizar el diagnóstico."
+                
                 try:
                     modelo_cargado = joblib.load(model_filename)
-                    
-                    # Usar un LabelEncoder temporal si el modelo lo requiere (práctica común en producción)
-                    # O si el modelo ya tiene el LabelEncoder integrado, simplemente se omite.
-                    # Aquí asumo que el modelo ya maneja las variables categóricas.
-                    
-                    # Convertir datos para que el modelo los entienda si es necesario
-                    # Ejemplo: One-Hot Encoding manual si el modelo lo espera
-                    # Para simplificar, asumimos que el modelo cargado puede manejar las columnas categóricas
-                    # 'sexo', 'mano_medida', 'dedo_medido' directamente.
-                    
                     prediction = modelo_cargado.predict(df_for_prediction)
+                    prediccion_final = prediction[0]
 
                     st.subheader("Resultados del Diagnóstico:")
-                    st.success(f"El diagnóstico tentativo es: **{prediction[0]}**")
+                    st.success(f"El diagnóstico tentativo es: **{prediccion_final}**")
 
                     if hasattr(modelo_cargado, 'predict_proba'):
                         probabilities = modelo_cargado.predict_proba(df_for_prediction)
@@ -882,7 +984,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                                 st.write(f"- **{class_label}**: {probabilities[0][i]*100:.2f}%")
                         else:
                             st.info("El modelo no tiene el atributo 'classes_'. No se pueden mostrar las etiquetas de clase.")
-
                 except FileNotFoundError:
                     st.error(f"Error: El archivo del modelo '{model_filename}' no se encontró.")
                     st.error("Asegúrate de que esté en la misma carpeta que este script.")
@@ -890,9 +991,10 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     st.error(f"Ocurrió un error al usar el modelo: {e}")
                     st.error("Verifica que el DataFrame `df_for_prediction` coincida con lo que espera el modelo.")
 
-                # Gráfico opcional
+                # Generación de gráficos y guardado en archivos temporales
                 all_ventanas_for_plot = []
                 current_min_ventanas = float('inf')
+                graficos_paths = []
 
                 for test_type, uploaded_file in prediccion_files_correctas.items():
                     if uploaded_file is not None:
@@ -919,13 +1021,39 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
 
                         df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * ventana_duracion_seg
                         ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
-
+                    
                     ax.set_title("Amplitud de Temblor por Ventana de Tiempo")
                     ax.set_xlabel("Tiempo (segundos)")
                     ax.set_ylabel("Amplitud (cm)")
                     ax.legend()
                     ax.grid(True)
                     st.pyplot(fig)
+
+                    # Guardar el gráfico en un archivo temporal
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
+                        fig.savefig(tmp_img.name, format='png', bbox_inches='tight')
+                        graficos_paths.append(tmp_img.name)
                     plt.close(fig)
                 else:
                     st.warning("No hay suficientes datos de ventanas para graficar los archivos de predicción.")
+
+                # Generar el PDF y mostrar el botón de descarga
+                pdf_output = generar_pdf(
+                    datos_paciente, 
+                    datos_estimulacion, 
+                    df_metrics_display, 
+                    f"El diagnóstico tentativo es: {prediccion_final}",
+                    graficos_paths
+                )
+
+                st.download_button(
+                    label="Descargar Informe PDF",
+                    data=pdf_output.getvalue(),
+                    file_name="informe_diagnostico_temblor.pdf",
+                    mime="application/pdf"
+                )
+                
+                # Limpiar los archivos temporales después de la descarga
+                for path in graficos_paths:
+                    if os.path.exists(path):
+                        os.remove(path)
