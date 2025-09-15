@@ -247,28 +247,38 @@ if opcion == "1️⃣ Análisis de una medición":
         
         pdf.ln(5) # Espacio después de los datos del paciente
     
-        # --- SECCIÓN: Parámetros de Estimulación (Configuración) ---
-        # Definir los parámetros de estimulación y sus unidades
-        parametros_estimulacion = {
-            "ECP": "", "GPI": "", "NST": "", "Polaridad": "",
-            "Duracion": " ms", "Pulso": " µs", "Corriente": " mA",
-            "Voltaje": " V", "Frecuencia": " Hz"
-        }
+        # Impresión de Parámetros de Estimulación
+        hay_parametros_estimulacion = datos_paciente_dict.get("DBS") is not None or datos_paciente_dict.get("Nucleo") is not None
+        hay_parametros_izq = datos_paciente_dict.get("Voltaje_izq") is not None
+        hay_parametros_dch = datos_paciente_dict.get("Voltaje_dch") is not None
         
-        # Verificar si hay al menos un parámetro de estimulación presente para imprimir el título
-        hay_parametros_estimulacion = False
-        for param_key in parametros_estimulacion.keys():
-            val = datos_paciente_dict.get(param_key)
-            if val is not None and str(val).strip() != "" and str(val).lower() != "no especificado":
-                hay_parametros_estimulacion = True
-                break
-    
-        if hay_parametros_estimulacion:
+        if hay_parametros_estimulacion or hay_parametros_izq or hay_parametros_dch:
             pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, "Configuración", ln=True) # Título cambiado a "Configuración"
+            pdf.cell(0, 10, "Configuración de Estimulación", ln=True)
             pdf.set_font("Arial", size=12)
-            for param_key, unit in parametros_estimulacion.items():
-                _imprimir_campo_pdf(pdf, param_key, datos_paciente_dict.get(param_key), unit)
+            _imprimir_campo_pdf(pdf, "DBS", datos_paciente_dict.get("DBS"))
+            _imprimir_campo_pdf(pdf, "Núcleo", datos_paciente_dict.get("Nucleo"))
+    
+            if hay_parametros_izq:
+                pdf.set_font("Arial", 'B', 12)
+                pdf.cell(0, 10, "Configuración Izquierda", ln=True)
+                pdf.set_font("Arial", size=12)
+                _imprimir_campo_pdf(pdf, "Voltaje", datos_paciente_dict.get("Voltaje_izq"), " mV")
+                _imprimir_campo_pdf(pdf, "Corriente", datos_paciente_dict.get("Corriente_izq"), " mA")
+                _imprimir_campo_pdf(pdf, "Contacto", datos_paciente_dict.get("Contacto_izq"))
+                _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("Frecuencia_izq"), " Hz")
+                _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("Ancho_pulso_izq"), " µS")
+                pdf.ln(2)
+    
+            if hay_parametros_dch:
+                pdf.set_font("Arial", 'B', 12)
+                pdf.cell(0, 10, "Configuración Derecha", ln=True)
+                pdf.set_font("Arial", size=12)
+                _imprimir_campo_pdf(pdf, "Voltaje", datos_paciente_dict.get("Voltaje_dch"), " mV")
+                _imprimir_campo_pdf(pdf, "Corriente", datos_paciente_dict.get("Corriente_dch"), " mA")
+                _imprimir_campo_pdf(pdf, "Contacto", datos_paciente_dict.get("Contacto_dch"))
+                _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("Frecuencia_dch"), " Hz")
+                _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("Ancho_pulso_dch"), " µS")
             pdf.ln(5)
         # --- FIN SECCIÓN ---
     
