@@ -317,7 +317,7 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.cell(40, 10, "Frecuencia (Hz)", 1)
         pdf.cell(30, 10, "RMS", 1)
         pdf.cell(50, 10, "Amplitud (cm)", 1)
-        pdf.ln(10)
+        pdf.ln(15)
     
         pdf.set_font("Arial", "", 12)
         for _, row in df.iterrows():
