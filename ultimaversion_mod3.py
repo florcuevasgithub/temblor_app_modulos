@@ -260,7 +260,7 @@ if opcion == "1️⃣ Análisis de una medición":
         except ValueError:
             pass # Si falla la conversión, no se imprimirá
 
-        _imprimir_campo_pdf(pdf, "Edad", edad_str_to_print)
+        _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("Edad"))
         _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("Sexo"))
         _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("Diagnostico"))
         _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo")) # Agregado "Tipo"
@@ -280,11 +280,11 @@ if opcion == "1️⃣ Análisis de una medición":
         _imprimir_campo_pdf(pdf, "GPI", datos_paciente_dict.get("GPI"))
         _imprimir_campo_pdf(pdf, "NST", datos_paciente_dict.get("NST"))
         _imprimir_campo_pdf(pdf, "Polaridad", datos_paciente_dict.get("Polaridad"))
-        _imprimir_campo_pdf(pdf, "Duracion [ms]", datos_paciente_dict.get("Duracion"))
-        _imprimir_campo_pdf(pdf, "Pulso [µS]", datos_paciente_dict.get("Pulso"))
-        _imprimir_campo_pdf(pdf, "Corriente  [mA]", datos_paciente_dict.get("Corriente"))
-        _imprimir_campo_pdf(pdf, "Voltaje [mV]", datos_paciente_dict.get("Voltaje"))
-        _imprimir_campo_pdf(pdf, "Frecuencia [Hz]", datos_paciente_dict.get("Frecuencia"))
+        _imprimir_campo_pdf(pdf, "Duracion [ms]", datos_paciente_dict.get("Duracion [ms]"))
+        _imprimir_campo_pdf(pdf, "Pulso [µS]", datos_paciente_dict.get("Pulso [µS]"))
+        _imprimir_campo_pdf(pdf, "Corriente  [mA]", datos_paciente_dict.get("Corriente  [mA]"))
+        _imprimir_campo_pdf(pdf, "Voltaje [mV]", datos_paciente_dict.get("Voltaje [mV]"))
+        _imprimir_campo_pdf(pdf, "Frecuencia [Hz]", datos_paciente_dict.get("Frecuencia [Hz]"))
 
         pdf.ln(5) # Espacio después de los datos de Configuración
         
