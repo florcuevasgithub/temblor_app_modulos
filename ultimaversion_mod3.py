@@ -8,6 +8,7 @@ from fpdf import FPDF
 from datetime import datetime, timedelta
 import os
 from scipy.fft import fft, fftfreq
+import tempfile
 import unicodedata
 import io
 from io import BytesIO, StringIO
@@ -16,6 +17,8 @@ import os
 import glob
 import streamlit as st
 import joblib
+
+
 
 # Inicializar una variable en el estado de sesión para controlar el reinicio
 if "reiniciar" not in st.session_state:
