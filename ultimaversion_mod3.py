@@ -467,7 +467,6 @@ if opcion == "1️⃣ Análisis de una medición":
                 st.warning("No se encontraron datos suficientes para el análisis.")
                 
 # ------------------ MÓDULO 2: COMPARACIÓN DE MEDICIONES --------------------
-
 elif opcion == "2️⃣ Comparación de mediciones":
     st.title("📊 Comparación de Mediciones")
 
@@ -534,11 +533,13 @@ elif opcion == "2️⃣ Comparación de mediciones":
             # Leer el primer archivo de cada configuración para extraer los metadatos
             df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
             df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
-            
-            # Extraer los datos del paciente y la configuración usando la función centralizada
+
+            # Extraer los datos del paciente y la configuración
             datos_paciente = extraer_datos_paciente(df_config1_meta)
-            config1_params = extraer_datos_paciente(df_config1_meta)
-            config2_params = extraer_datos_paciente(df_config2_meta)
+            
+            # La corrección está aquí:
+            config1_params = extraer_datos_estimulacion(df_config1_meta)
+            config2_params = extraer_datos_estimulacion(df_config2_meta)
 
             df_resultados_config1 = analizar_configuracion(config1_archivos)
             df_resultados_config2 = analizar_configuracion(config2_archivos)
@@ -555,7 +556,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             # Helper para imprimir campos solo si tienen valor
             def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
                 if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
-                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unit}", ln=True)
 
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Datos del Paciente", ln=True)
@@ -573,7 +574,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente.get("Medicacion"))
             pdf.ln(5)
 
-            # Impresión de CONFIGURACIÓN
+            # Impresión de CONFIGURACIÓN - Aquí se usa la función corregida y las nuevas variables
             def imprimir_parametros_y_config(pdf_obj, parametros_dict, titulo):
                 pdf_obj.set_font("Arial", 'B', 12)
                 pdf_obj.cell(0, 10, titulo, ln=True)
@@ -584,7 +585,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
                     "Duracion": " ms", "Pulso": " µs", "Corriente": " mA",
                     "Voltaje": " V", "Frecuencia": " Hz"
                 }
-            
+
                 # Recorrer el diccionario y imprimir solo los valores que existen
                 for param_key, unit in parametros_a_imprimir_con_unidad.items():
                     value = parametros_dict.get(param_key)
@@ -592,10 +593,8 @@ elif opcion == "2️⃣ Comparación de mediciones":
                         pdf_obj.cell(200, 10, f"{param_key}: {value}{unit}", ln=True)
                 pdf_obj.ln(5)
 
-
             imprimir_parametros_y_config(pdf, config1_params, "Configuración Medición 1")
             imprimir_parametros_y_config(pdf, config2_params, "Configuración Medición 2")
-
 
             def imprimir_resultados(pdf_obj, df_res, titulo):
                 pdf_obj.set_font("Arial", 'B', 14)
@@ -618,8 +617,8 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
             imprimir_resultados(pdf, df_resultados_config1, "Resultados Medición 1")
             imprimir_resultados(pdf, df_resultados_config2, "Resultados Medición 2")
-
-            # Gráficos y conclusión
+            
+            # La parte de los gráficos y la conclusión se mantiene igual
             amp_avg_config1 = df_resultados_config1['Amplitud Temblor (cm)'].mean()
             amp_avg_config2 = df_resultados_config2['Amplitud Temblor (cm)'].mean()
 
@@ -629,7 +628,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
                     f"La Medición 1 muestra una amplitud de temblor promedio ({amp_avg_config1:.2f} cm) "
                     f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor."
                 )
-            elif amp_avg_config2 < amp_avg_config1:
+            elif amp_avg_avg_config2 < amp_avg_config1:
                 conclusion = (
                     f"La Medición 2 muestra una amplitud de temblor promedio ({amp_avg_config2:.2f} cm) "
                     f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor."
@@ -646,7 +645,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.dataframe(df_resultados_config2)
 
             st.subheader("Comparación Gráfica de Amplitud por Ventana")
-            nombres_test = ["Reposo", "Postural", "Acción"] # Corregido a "Postural" en lugar de "Acción" para coincidir con la lógica del código
+            nombres_test = ["Reposo", "Postural", "Acción"]
 
             for test in nombres_test:
                 archivo1 = config1_archivos[test]
@@ -680,7 +679,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
                             fig.savefig(tmp_img.name, format='png', bbox_inches='tight')
                             image_path_for_pdf = tmp_img.name
-
                         try:
                             pdf.add_page()
                             pdf.set_font("Arial", 'B', 14)
@@ -688,7 +686,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
                             pdf.image(image_path_for_pdf, x=15, w=180)
                         finally:
                             os.remove(image_path_for_pdf)
-
                         plt.close(fig)
                     else:
                         st.warning(f"No hay suficientes datos de ventanas para graficar el test: {test}")
