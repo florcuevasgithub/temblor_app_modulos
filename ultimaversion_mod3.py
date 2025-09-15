@@ -79,7 +79,7 @@ def extraer_datos_paciente(df):
 
     datos = {
         "sexo": str(df_metadata.get('Sexo', 'No especificado')).strip(),
-        "edad": int(float(str(df_metadata.get('Edad', 0)).replace(',', '.'))) if pd.notna(df_metadata.get('Edad')) else 0,
+        "edad": int(str(df_metadata.get('Edad', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Edad')) else 0,
         "mano_medida": str(df_metadata.get('Mano', 'No especificada')).strip(),
         "dedo_medido": str(df_metadata.get('Dedo', 'No especificado')).strip(),
         "Nombre": str(df_metadata.get('Nombre', '')).strip(),
@@ -270,6 +270,24 @@ if opcion == "1️⃣ Análisis de una medición":
         _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente_dict.get("Medicacion"))
         
         pdf.ln(5) # Espacio después de los datos del paciente
+
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Datos de Configuración", ln=True)
+        pdf.set_font("Arial", size=12)
+
+        _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo"))
+        _imprimir_campo_pdf(pdf, "ECP", datos_paciente_dict.get("ECP"))
+        _imprimir_campo_pdf(pdf, "GPI", datos_paciente_dict.get("GPI"))
+        _imprimir_campo_pdf(pdf, "NST", datos_paciente_dict.get("NST"))
+        _imprimir_campo_pdf(pdf, "Polaridad", datos_paciente_dict.get("Polaridad"))
+        _imprimir_campo_pdf(pdf, "Duracion [ms]", datos_paciente_dict.get("Duracion"))
+        _imprimir_campo_pdf(pdf, "Pulso [µS]", datos_paciente_dict.get("Pulso"))
+        _imprimir_campo_pdf(pdf, "Corriente  [mA]", datos_paciente_dict.get("Corriente"))
+        _imprimir_campo_pdf(pdf, "Voltaje [mV]", datos_paciente_dict.get("Voltaje"))
+        _imprimir_campo_pdf(pdf, "Frecuencia [Hz]", datos_paciente_dict.get("Frecuencia"))
+
+        pdf.ln(5) # Espacio después de los datos de Configuración
+        
 
         # --- SECCIÓN: Parámetros de Estimulación (Configuración) ---
         # Definir los parámetros de estimulación y sus unidades
