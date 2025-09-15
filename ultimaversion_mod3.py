@@ -65,7 +65,7 @@ st.markdown("""
 ventana_duracion_seg = 2
 
 # --------- Funciones compartidas ----------
-# Función para extraer datos del paciente de un DataFrame
+# Función para extraer los datos
 def extraer_datos_paciente(df):
     """
     Extrae datos personales del paciente desde un DataFrame,
@@ -78,25 +78,26 @@ def extraer_datos_paciente(df):
     df_metadata = df.iloc[0]
 
     datos = {
-        "sexo": str(df_metadata.get('Sexo', 'No especificado')).strip(),
-        "edad": int(float(str(df_metadata.get('Edad', 0)).replace(',', '.'))) if pd.notna(df_metadata.get('Edad')) else 0,
-        "mano_medida": str(df_metadata.get('Mano', 'No especificada')).strip(),
-        "dedo_medido": str(df_metadata.get('Dedo', 'No especificado')).strip(),
-        "Nombre": str(df_metadata.get('Nombre', '')).strip(),
-        "Apellido": str(df_metadata.get('Apellido', '')).strip(),
-        "Diagnostico": str(df_metadata.get('Diagnostico', '')).strip(),
-        "Antecedente": str(df_metadata.get('Antecedente', '')).strip(),
-        "Medicacion": str(df_metadata.get('Medicacion', '')).strip(),
-        "Tipo": str(df_metadata.get('Tipo', '')).strip(),
-        "ECP": str(df_metadata.get('ECP', '')).strip(),
-        "GPI": str(df_metadata.get('GPI', '')).strip(),
-        "NST": str(df_metadata.get('NST', '')).strip(),
-        "Polaridad": str(df_metadata.get('Polaridad', '')).strip(),
-        "Duracion": float(str(df_metadata.get('Duracion [ms]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Duracion [ms]')) else None,
-        "Pulso": float(str(df_metadata.get('Pulso [µS]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Pulso [µS]')) else None,
-        "Corriente": float(str(df_metadata.get('Corriente [mA]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Corriente [mA]')) else None,
-        "Voltaje": float(str(df_metadata.get('Voltaje [mV]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Voltaje [mV]')) else None,
-        "Frecuencia": float(str(df_metadata.get('Frecuencia [Hz]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Frecuencia [Hz]')) else None
+        "Nombre": str(df_metadata.get('Nombre', 'No especificado')).strip(),
+        "Apellido": str(df_metadata.get('Apellido', 'No especificado')).strip(),
+        "Edad": int(float(str(df_metadata.get('Edad', 0)).replace(',', '.'))) if pd.notna(df_metadata.get('Edad')) else 'No especificada',
+        "Sexo": str(df_metadata.get('Sexo', 'No especificado')).strip(),
+        "Diagnostico": str(df_metadata.get('Diagnostico', 'No especificado')).strip(),
+        "Tipo": str(df_metadata.get('Tipo', 'No especificado')).strip(),
+        "Mano": str(df_metadata.get('Mano', 'No especificada')).strip(),
+        "Dedo": str(df_metadata.get('Dedo', 'No especificado')).strip(),
+        "Antecedente": str(df_metadata.get('Antecedente', 'No especificado')).strip(),
+        "Medicacion": str(df_metadata.get('Medicacion', 'No especificado')).strip(),
+        # Datos de configuración
+        "ECP": str(df_metadata.get('ECP', 'No especificado')).strip(),
+        "GPI": str(df_metadata.get('GPI', 'No especificado')).strip(),
+        "NST": str(df_metadata.get('NST', 'No especificado')).strip(),
+        "Polaridad": str(df_metadata.get('Polaridad', 'No especificado')).strip(),
+        "Duracion": df_metadata.get('Duracion [ms]') if pd.notna(df_metadata.get('Duracion [ms]')) else 'No especificado',
+        "Pulso": df_metadata.get('Pulso [µS]') if pd.notna(df_metadata.get('Pulso [µS]')) else 'No especificado',
+        "Corriente": df_metadata.get('Corriente [mA]') if pd.notna(df_metadata.get('Corriente [mA]')) else 'No especificado',
+        "Voltaje": df_metadata.get('Voltaje [mV]') if pd.notna(df_metadata.get('Voltaje [mV]')) else 'No especificado',
+        "Frecuencia": df_metadata.get('Frecuencia [Hz]') if pd.notna(df_metadata.get('Frecuencia [Hz]')) else 'No especificado'
     }
     
     return datos
@@ -226,91 +227,60 @@ if opcion == "1️⃣ Análisis de una medición":
         else:
             return "Temblor dentro de parámetros normales"
 
-    # --- Función generar_pdf modificada para aceptar un diccionario de datos del paciente ---
-    def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", diagnostico="", fig=None):
-
-        fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", 'B', 16)
-        pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
-
-        pdf.set_font("Arial", size=12)
-        pdf.ln(10)
-
-        # Helper para imprimir campos solo si tienen valor
-        def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-            if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
-                pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
-
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Datos del Paciente", ln=True)
-        pdf.set_font("Arial", size=12)
-
-        _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
-        _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
+    # --- Función generar_pdf corregida para usar las mismas claves ---
+        def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", diagnostico="", fig=None):
         
-        # Manejo especial para Edad para asegurar que sea un número si es posible
-        edad_val = datos_paciente_dict.get("Edad")
-        edad_str_to_print = None
-        try:
-            if edad_val is not None and str(edad_val).strip() != "":
-                edad_int = int(float(edad_val))
-                edad_str_to_print = str(edad_int)
-        except ValueError:
-            pass # Si falla la conversión, no se imprimirá
-
-        _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("Edad"))
-        _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("Sexo"))
-        _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("Diagnostico"))
-        _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo")) # Agregado "Tipo"
-        _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("Mano"))
-        _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("Dedo"))
-        _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente_dict.get("Antecedente"))
-        _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente_dict.get("Medicacion"))
+            fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 16)
+            pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
         
-        pdf.ln(5) # Espacio después de los datos del paciente
-
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Datos de Configuración", ln=True)
-        pdf.set_font("Arial", size=12)
-
-        _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo"))
-        _imprimir_campo_pdf(pdf, "ECP", datos_paciente_dict.get("ECP"))
-        _imprimir_campo_pdf(pdf, "GPI", datos_paciente_dict.get("GPI"))
-        _imprimir_campo_pdf(pdf, "NST", datos_paciente_dict.get("NST"))
-        _imprimir_campo_pdf(pdf, "Polaridad", datos_paciente_dict.get("Polaridad"))
-        _imprimir_campo_pdf(pdf, "Duracion [ms]", datos_paciente_dict.get("Duracion [ms]"))
-        _imprimir_campo_pdf(pdf, "Pulso [µS]", datos_paciente_dict.get("Pulso [µS]"))
-        _imprimir_campo_pdf(pdf, "Corriente  [mA]", datos_paciente_dict.get("Corriente  [mA]"))
-        _imprimir_campo_pdf(pdf, "Voltaje [mV]", datos_paciente_dict.get("Voltaje [mV]"))
-        _imprimir_campo_pdf(pdf, "Frecuencia [Hz]", datos_paciente_dict.get("Frecuencia [Hz]"))
-
-        pdf.ln(5) # Espacio después de los datos de Configuración
-        
-
-        # --- SECCIÓN: Parámetros de Estimulación (Configuración) ---
-        # Definir los parámetros de estimulación y sus unidades
-        parametros_estimulacion = {
-            "ECP": "", "GPI": "", "NST": "", "Polaridad": "",
-            "Duracion": " ms", "Pulso": " µs", "Corriente": " mA",
-            "Voltaje": " V", "Frecuencia": " Hz"
-        }
-        
-        # Verificar si hay al menos un parámetro de estimulación presente para imprimir el título
-        hay_parametros_estimulacion = False
-        for param_key in parametros_estimulacion.keys():
-            if datos_paciente_dict.get(param_key) is not None and str(datos_paciente_dict.get(param_key)).strip() != "":
-                hay_parametros_estimulacion = True
-                break
-
-        if hay_parametros_estimulacion:
-            pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, "Configuración", ln=True) # Título cambiado a "Configuración"
             pdf.set_font("Arial", size=12)
-            for param_key, unit in parametros_estimulacion.items():
-                _imprimir_campo_pdf(pdf, param_key, datos_paciente_dict.get(param_key), unit)
-            pdf.ln(5)
+            pdf.ln(10)
+        
+            # Helper para imprimir campos solo si tienen valor
+            def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
+                if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+        
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Datos del Paciente", ln=True)
+            pdf.set_font("Arial", size=12)
+        
+            _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
+            _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
+            _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("Edad")) # Corregido: usa la clave "Edad"
+            _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("Sexo"))
+            _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("Diagnostico"))
+            _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo")) # Agregado "Tipo"
+            _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("Mano"))
+            _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("Dedo"))
+            _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente_dict.get("Antecedente"))
+            _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente_dict.get("Medicacion"))
+            
+            pdf.ln(5) # Espacio después de los datos del paciente
+        
+            # Título de la sección de Configuración
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Datos de Configuración", ln=True)
+            pdf.set_font("Arial", size=12)
+        
+            # Imprimir los parámetros de configuración
+            _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo"))
+            _imprimir_campo_pdf(pdf, "ECP", datos_paciente_dict.get("ECP"))
+            _imprimir_campo_pdf(pdf, "GPI", datos_paciente_dict.get("GPI"))
+            _imprimir_campo_pdf(pdf, "NST", datos_paciente_dict.get("NST"))
+            _imprimir_campo_pdf(pdf, "Polaridad", datos_paciente_dict.get("Polaridad"))
+            _imprimir_campo_pdf(pdf, "Duracion", datos_paciente_dict.get("Duracion"), " ms")
+            _imprimir_campo_pdf(pdf, "Pulso", datos_paciente_dict.get("Pulso"), " µS")
+            _imprimir_campo_pdf(pdf, "Corriente", datos_paciente_dict.get("Corriente"), " mA")
+            _imprimir_campo_pdf(pdf, "Voltaje", datos_paciente_dict.get("Voltaje"), " mV")
+            _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("Frecuencia"), " Hz")
+            
+            pdf.ln(5) # Espacio después de los datos de Configuración
+            
+            
         # --- FIN SECCIÓN ---
 
         pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True) # Siempre se imprime la fecha/hora
