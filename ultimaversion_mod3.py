@@ -79,7 +79,7 @@ def extraer_datos_paciente(df):
 
     datos = {
         "sexo": str(df_metadata.get('Sexo', 'No especificado')).strip(),
-        "edad": int(str(df_metadata.get('Edad', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Edad')) else 0,
+        "edad": int(float(str(df_metadata.get('Edad', 0)).replace(',', '.'))) if pd.notna(df_metadata.get('Edad')) else 0,
         "mano_medida": str(df_metadata.get('Mano', 'No especificada')).strip(),
         "dedo_medido": str(df_metadata.get('Dedo', 'No especificado')).strip(),
         "Nombre": str(df_metadata.get('Nombre', '')).strip(),
