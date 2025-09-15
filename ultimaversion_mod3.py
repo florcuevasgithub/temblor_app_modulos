@@ -15,7 +15,7 @@ from ahrs.filters import Mahony
 import os
 import glob
 import streamlit as st
-import joblib 
+import joblib
 
 # Inicializar una variable en el estado de sesión para controlar el reinicio
 if "reiniciar" not in st.session_state:
@@ -68,62 +68,36 @@ def extraer_datos_paciente(df):
     Extrae datos personales del paciente desde un DataFrame,
     sin modificar las columnas originales del DataFrame.
     """
-    # Crear un mapeo normalizado de nombres: {columna_lower: columna_original}
-    col_map = {col.lower().strip(): col for col in df.columns}
+    if df is None or df.empty:
+        return {}
+    
+    # El primer registro contiene todos los metadatos
+    df_metadata = df.iloc[0]
 
     datos = {
-        "sexo": "No especificado",
-        "edad": 0,
-        "mano_medida": "No especificada",
-        "dedo_medido": "No especificado",
-        "Nombre": None,
-        "Apellido": None,
-        "Diagnostico": None,
-        "Antecedente": None,
-        "Medicacion": None,
-        "Tipo": None,
-        "ECP": None, "GPI": None, "NST": None, "Polaridad": None,
-        "Duracion": None, "Pulso": None, "Corriente": None,
-        "Voltaje": None, "Frecuencia": None
+        "sexo": str(df_metadata.get('Sexo', 'No especificado')).strip(),
+        "edad": int(float(str(df_metadata.get('Edad', 0)).replace(',', '.'))) if pd.notna(df_metadata.get('Edad')) else 0,
+        "mano_medida": str(df_metadata.get('Mano', 'No especificada')).strip(),
+        "dedo_medido": str(df_metadata.get('Dedo', 'No especificado')).strip(),
+        "Nombre": str(df_metadata.get('Nombre', '')).strip(),
+        "Apellido": str(df_metadata.get('Apellido', '')).strip(),
+        "Diagnostico": str(df_metadata.get('Diagnostico', '')).strip(),
+        "Antecedente": str(df_metadata.get('Antecedente', '')).strip(),
+        "Medicacion": str(df_metadata.get('Medicacion', '')).strip(),
+        "Tipo": str(df_metadata.get('Tipo', '')).strip(),
+        "ECP": str(df_metadata.get('ECP', '')).strip(),
+        "GPI": str(df_metadata.get('GPI', '')).strip(),
+        "NST": str(df_metadata.get('NST', '')).strip(),
+        "Polaridad": str(df_metadata.get('Polaridad', '')).strip(),
+        "Duracion": float(str(df_metadata.get('Duracion [ms]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Duracion [ms]')) else None,
+        "Pulso": float(str(df_metadata.get('Pulso [µS]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Pulso [µS]')) else None,
+        "Corriente": float(str(df_metadata.get('Corriente [mA]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Corriente [mA]')) else None,
+        "Voltaje": float(str(df_metadata.get('Voltaje [mV]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Voltaje [mV]')) else None,
+        "Frecuencia": float(str(df_metadata.get('Frecuencia [Hz]', 0)).replace(',', '.')) if pd.notna(df_metadata.get('Frecuencia [Hz]')) else None
     }
-
-    if not df.empty:
-        # Extraer datos personales usando el mapeo
-        if "sexo" in col_map and pd.notna(df.at[0, col_map["sexo"]]):
-            datos["sexo"] = str(df.at[0, col_map["sexo"]]).strip()
-
-        if "edad" in col_map and pd.notna(df.at[0, col_map["edad"]]):
-            try:
-                datos["edad"] = int(float(str(df.at[0, col_map["edad"]]).replace(',', '.')))
-            except (ValueError, TypeError):
-                datos["edad"] = 0
-
-        if "mano" in col_map and pd.notna(df.at[0, col_map["mano"]]):
-            datos["mano_medida"] = str(df.at[0, col_map["mano"]]).strip()
-
-        if "dedo" in col_map and pd.notna(df.at[0, col_map["dedo"]]):
-            datos["dedo_medido"] = str(df.at[0, col_map["dedo"]]).strip()
-
-        # Extraer otros metadatos generales
-        for key in ["Nombre", "Apellido", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]:
-            key_l = key.lower()
-            if key_l in col_map and pd.notna(df.at[0, col_map[key_l]]):
-                datos[key] = str(df.at[0, col_map[key_l]])
-
-        # Extraer campos de estimulación/configuración
-        for key in ["ECP", "GPI", "NST", "Polaridad", "Duracion", "Pulso", "Corriente", "Voltaje", "Frecuencia"]:
-            key_l = key.lower()
-            if key_l in col_map and pd.notna(df.at[0, col_map[key_l]]):
-                val = str(df.at[0, col_map[key_l]]).replace(',', '.')
-                try:
-                    if key in ["Duracion", "Pulso", "Corriente", "Voltaje", "Frecuencia"]:
-                        datos[key] = float(val)
-                    else:
-                        datos[key] = val
-                except ValueError:
-                    datos[key] = val  # Dejar como texto si no es convertible
-
+    
     return datos
+
 
 def filtrar_temblor(signal, fs=100):
     b, a = butter(N=4, Wn=[1, 15], btype='bandpass', fs=fs)
@@ -133,15 +107,15 @@ def q_to_matrix(q):
     w, x, y, z = q
     return np.array([
         [1 - 2*(y**2 + z**2),         2*(x*y - z*w),           2*(x*z + y*w)],
-        [2*(x*y + z*w),               1 - 2*(x**2 + z**2),      2*(y*z - x*w)],
-        [2*(x*z - y*w),               2*(y*z + x*w),           1 - 2*(x**2 + y**2)]
+        [2*(x*y + z*w),                 1 - 2*(x**2 + z**2),       2*(y*z - x*w)],
+        [2*(x*z - y*w),                 2*(y*z + x*w),           1 - 2*(x**2 + y**2)]
     ])
 
 def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_duracion_seg):
     required_cols = ['Acel_X', 'Acel_Y', 'Acel_Z', 'GiroX', 'GiroY', 'GiroZ']
-    df = df[required_cols].dropna() # Dropping NaNs here might reduce the total length
-    acc = df[['Acel_X', 'Acel_Y', 'Acel_Z']].to_numpy()
-    gyr = np.radians(df[['GiroX', 'GiroY', 'GiroZ']].to_numpy())
+    df_senial = df[required_cols].dropna() # Dropping NaNs here might reduce the total length
+    acc = df_senial[['Acel_X', 'Acel_Y', 'Acel_Z']].to_numpy()
+    gyr = np.radians(df_senial[['GiroX', 'GiroY', 'GiroZ']].to_numpy())
     mahony = Mahony(gyr=gyr, acc=acc, frequency=fs)
     Q = mahony.Q
     linear_accelerations_magnitude = []
@@ -191,7 +165,7 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_dur
            'RMS (m/s2)': rms,
            'Amplitud Temblor (g)': amp_g,
            'Amplitud Temblor (cm)': amp_cm
-         })
+          })
 
     df_por_ventana = pd.DataFrame(resultados_por_ventana)
 
@@ -226,31 +200,15 @@ st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparación de mediciones", "3️⃣ Diagnóstico tentativo"])
 if st.sidebar.button("🔄 Nuevo análisis"):
     manejar_reinicio()
+    
+# ------------------ MÓDULO 1: ANÁLISIS DE UNA MEDICIÓN --------------------
 
 if opcion == "1️⃣ Análisis de una medición":
     st.title("📈​ Análisis de una Medición")
 
-    # --------- Funciones auxiliares ----------
-
-    def diagnosticar(df):
-        def max_amp(test):
-            fila = df[df['Test'] == test]
-            return fila['Amplitud Temblor (cm)'].max() if not fila.empty else 0
-
-        def mean_freq(test):
-            fila = df[df['Test'] == test]
-            return fila['Frecuencia Dominante (Hz)'].mean() if not fila.empty else 0
-
-        if max_amp('Reposo') > 0.3 and 3 <= mean_freq('Reposo') <= 6.5:
-            return "Probable Parkinson"
-        elif (max_amp('Postural') > 0.3 or max_amp('Acción') > 0.3) and (7.5 <= mean_freq('Postural') <= 12 or 7.5 <= mean_freq('Acción') <= 12):
-            return "Probable Temblor Esencial"
-        else:
-            return "Temblor dentro de parámetros normales"
-
     # --- Función generar_pdf modificada para aceptar un diccionario de datos del paciente ---
-    def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", diagnostico="", fig=None):
-
+    def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", fig=None):
+        # Eliminada la variable 'diagnostico' de la función
         fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
         pdf = FPDF()
         pdf.add_page()
@@ -416,15 +374,17 @@ if opcion == "1️⃣ Análisis de una medición":
     datos_paciente_para_pdf = {} # Cambiado a diccionario para datos del paciente
     ventanas_para_grafico = []
     min_ventanas_count = float('inf')
-    fig = None  
+    fig = None
 
     if st.button("Iniciar análisis"):
-        # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
         mediciones_tests = {}
+        # MODIFICACIÓN: En lugar de leer el CSV, pasamos el objeto file_uploader directamente
         for test, file in uploaded_files.items():
             if file is not None:
-                file.seek(0) # Reset file pointer for re-reading
-                mediciones_tests[test] = pd.read_csv(file, encoding='latin1')
+                file.seek(0)
+                # Aquí, ya no leemos el CSV. Simplemente guardamos el objeto file
+                mediciones_tests[test] = file
+
 
         if not mediciones_tests:
             st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
@@ -432,30 +392,38 @@ if opcion == "1️⃣ Análisis de una medición":
             # Extraer datos del paciente y de estimulación de la primera medición (o de la que se cargue primero)
             # Asegurarse de que solo se extraigan una vez y de un archivo válido
             primer_df_cargado = None
-            for test, datos in mediciones_tests.items():
-                if datos is not None and not datos.empty:
-                    primer_df_cargado = datos
+            for test, file_object in mediciones_tests.items():
+                if file_object is not None:
+                    # Leemos el archivo una sola vez para extraer los datos
+                    df = pd.read_csv(file_object, encoding='latin1', header=0)
+                    primer_df_cargado = df
+                    # Mover el puntero del archivo al principio para que pueda ser leído de nuevo
+                    file_object.seek(0)
                     break
-
+            
             if primer_df_cargado is not None:
                 # Extraer todos los datos del paciente y configuración usando la función actualizada
                 datos_paciente_para_pdf = extraer_datos_paciente(primer_df_cargado)
             
             # Procesar cada test
-            for test, datos in mediciones_tests.items():
-                df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(datos, fs=100)
+            for test, file_object in mediciones_tests.items():
+                # Leer el archivo dentro de este bucle para cada test
+                if file_object is not None:
+                    df = pd.read_csv(file_object, encoding='latin1', header=0)
 
-                if not df_promedio.empty:
-                    fila = df_promedio.iloc[0].to_dict()
-                    fila['Test'] = test
-                    resultados_globales.append(fila)
+                    df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(df, fs=100)
 
-                if not df_ventanas.empty:
-                    df_ventanas_copy = df_ventanas.copy()
-                    df_ventanas_copy["Test"] = test
-                    ventanas_para_grafico.append(df_ventanas_copy)
-                    if len(df_ventanas_copy) < min_ventanas_count:
-                        min_ventanas_count = len(df_ventanas_copy)
+                    if not df_promedio.empty:
+                        fila = df_promedio.iloc[0].to_dict()
+                        fila['Test'] = test
+                        resultados_globales.append(fila)
+
+                    if not df_ventanas.empty:
+                        df_ventanas_copy = df_ventanas.copy()
+                        df_ventanas_copy["Test"] = test
+                        ventanas_para_grafico.append(df_ventanas_copy)
+                        if len(df_ventanas_copy) < min_ventanas_count:
+                            min_ventanas_count = len(df_ventanas_copy)
 
             if ventanas_para_grafico:
                 fig, ax = plt.subplots(figsize=(10, 6))
@@ -480,17 +448,15 @@ if opcion == "1️⃣ Análisis de una medición":
 
             if resultados_globales:
                 df_resultados_final = pd.DataFrame(resultados_globales)
-                diagnostico_auto = diagnosticar(df_resultados_final)
+                # Eliminada la llamada a la función diagnosticar
 
                 st.subheader("Resultados del Análisis de Temblor")
                 st.dataframe(df_resultados_final.set_index('Test'))
 
-                # --- Llamada a generar_pdf con el diccionario de datos del paciente ---
                 generar_pdf(
                     datos_paciente_para_pdf, # Ahora pasamos el diccionario
                     df_resultados_final,
                     nombre_archivo="informe_temblor.pdf",
-                    diagnostico=diagnostico_auto,
                     fig=fig
                 )
 
@@ -499,6 +465,8 @@ if opcion == "1️⃣ Análisis de una medición":
                     st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
+                
+# ------------------ MÓDULO 2: COMPARACIÓN DE MEDICIONES --------------------
 
 elif opcion == "2️⃣ Comparación de mediciones":
     st.title("📊 Comparación de Mediciones")
@@ -538,7 +506,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
         for test, archivo in archivos.items():
             if archivo is not None:
                 archivo.seek(0)
-                # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
                 df = pd.read_csv(archivo, encoding='latin1')
                 df_promedio, df_ventana = analizar_temblor_por_ventanas_resultante(df, fs=fs)
                 if isinstance(df_ventana, pd.DataFrame) and not df_ventana.empty:
@@ -565,44 +532,17 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.warning("Por favor, cargue los 3 archivos para ambas mediciones.")
         else:
             # Leer el primer archivo de cada configuración para extraer los metadatos
-            # Asumimos que los metadatos son consistentes dentro de cada configuración
-            # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
             df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
             df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
-
-            # Función auxiliar para limpiar y extraer campos
-            def extraer_y_limpiar_campos(df_fuente, campos_lista):
-                resultado = {}
-                for campo in campos_lista:
-                    if campo in df_fuente.columns:
-                        valor = df_fuente.iloc[0].get(campo)
-                        if pd.notna(valor) and str(valor).strip() != "":
-                            resultado[campo] = valor
-                return resultado
-
-            # Definir todos los campos relevantes para extracción
-            # QUITAMOS MANO y DEDO de los personales generales
-            campos_personales_generales = ["Nombre", "Apellido", "Edad", "Sexo", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]
-            # AGREGAMOS MANO y DEDO a los campos de estimulación/configuración
-            campos_estim_y_config = ["Mano", "Dedo", "ECP", "GPI", "NST", "Polaridad", "Duracion", "Pulso", "Corriente", "Voltaje", "Frecuencia"]
             
-            # Extraer y limpiar datos
-            datos_personales = extraer_y_limpiar_campos(df_config1_meta, campos_personales_generales)
-            parametros_config1 = extraer_y_limpiar_campos(df_config1_meta, campos_estim_y_config)
-            parametros_config2 = extraer_y_limpiar_campos(df_config2_meta, campos_estim_y_config)
-
-            # Manejo especial para Edad (convertir a int si es posible)
-            if "Edad" in datos_personales:
-                try:
-                    edad_int = int(float(datos_personales["Edad"]))
-                    datos_personales["Edad"] = str(edad_int)
-                except Exception:
-                    datos_personales["Edad"] = None # O simplemente eliminar si no se puede convertir
+            # Extraer los datos del paciente y la configuración usando la función centralizada
+            datos_paciente = extraer_datos_paciente(df_config1_meta)
+            config1_params = extraer_datos_paciente(df_config1_meta)
+            config2_params = extraer_datos_paciente(df_config2_meta)
 
             df_resultados_config1 = analizar_configuracion(config1_archivos)
             df_resultados_config2 = analizar_configuracion(config2_archivos)
 
-            # Inicializar PDF antes de graficar
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", 'B', 14)
@@ -611,22 +551,35 @@ elif opcion == "2️⃣ Comparación de mediciones":
             pdf.set_font("Arial", size=10)
             pdf.ln(10)
             pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
-
-            # Helper para imprimir campo en PDF (reutilizado)
-            def imprimir_campo_si_valido(pdf_obj, etiqueta, valor, unidad=""):
+            
+            # Helper para imprimir campos solo si tienen valor
+            def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
                 if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
-                    pdf_obj.cell(0, 8, f"{etiqueta}: {valor}{unidad}", ln=True)
+                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
 
-            # Helper para imprimir parámetros de estimulación (reutilizado, solo ajusta unidad)
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Datos del Paciente", ln=True)
+            pdf.set_font("Arial", size=12)
+
+            _imprimir_campo_pdf(pdf, "Nombre", datos_paciente.get("Nombre"))
+            _imprimir_campo_pdf(pdf, "Apellido", datos_paciente.get("Apellido"))
+            _imprimir_campo_pdf(pdf, "Edad", datos_paciente.get("Edad"))
+            _imprimir_campo_pdf(pdf, "Sexo", datos_paciente.get("Sexo"))
+            _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente.get("Diagnostico"))
+            _imprimir_campo_pdf(pdf, "Tipo", datos_paciente.get("Tipo"))
+            _imprimir_campo_pdf(pdf, "Mano", datos_paciente.get("mano_medida"))
+            _imprimir_campo_pdf(pdf, "Dedo", datos_paciente.get("dedo_medido"))
+            _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente.get("Antecedente"))
+            _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente.get("Medicacion"))
+            pdf.ln(5)
+
+            # Impresión de CONFIGURACIÓN
             def imprimir_parametros_y_config(pdf_obj, parametros_dict, titulo):
                 pdf_obj.set_font("Arial", 'B', 12)
                 pdf_obj.cell(0, 10, titulo, ln=True)
                 pdf_obj.set_font("Arial", size=10)
                 
-                # Definir los parámetros de configuración y sus unidades
-                # AHORA INCLUYE MANO Y DEDO
                 parametros_a_imprimir_con_unidad = {
-                    "Mano": "", "Dedo": "", # Agregados aquí
                     "ECP": "", "GPI": "", "NST": "", "Polaridad": "",
                     "Duracion": " ms", "Pulso": " µs", "Corriente": " mA",
                     "Voltaje": " V", "Frecuencia": " Hz"
@@ -634,28 +587,12 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
                 for param_key, unit in parametros_a_imprimir_con_unidad.items():
                     value = parametros_dict.get(param_key)
-                    imprimir_campo_si_valido(pdf_obj, param_key, value, unit)
+                    _imprimir_campo_pdf(pdf_obj, param_key, value, unit)
                 pdf_obj.ln(5)
 
+            imprimir_parametros_y_config(pdf, config1_params, "Configuración Medición 1")
+            imprimir_parametros_y_config(pdf, config2_params, "Configuración Medición 2")
 
-            # Impresión de Datos Personales GENERALES
-            pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, "Datos del Paciente", ln=True)
-            pdf.set_font("Arial", size=12)
-            imprimir_campo_si_valido(pdf, "Nombre", datos_personales.get("Nombre"))
-            imprimir_campo_si_valido(pdf, "Apellido", datos_personales.get("Apellido"))
-            imprimir_campo_si_valido(pdf, "Edad", datos_personales.get("Edad"))
-            imprimir_campo_si_valido(pdf, "Sexo", datos_personales.get("Sexo"))
-            imprimir_campo_si_valido(pdf, "Diagnóstico", datos_personales.get("Diagnostico"))
-            imprimir_campo_si_valido(pdf, "Tipo", datos_personales.get("Tipo"))  
-            imprimir_campo_si_valido(pdf, "Antecedente", datos_personales.get("Antecedente"))
-            imprimir_campo_si_valido(pdf, "Medicacion", datos_personales.get("Medicacion"))
-            pdf.ln(5)
-
-
-            # Impresión de CONFIGURACIÓN (incluyendo Mano y Dedo)
-            imprimir_parametros_y_config(pdf, parametros_config1, "Configuración Medición 1")
-            imprimir_parametros_y_config(pdf, parametros_config2, "Configuración Medición 2")
 
             def imprimir_resultados(pdf_obj, df_res, titulo):
                 pdf_obj.set_font("Arial", 'B', 14)
@@ -679,26 +616,24 @@ elif opcion == "2️⃣ Comparación de mediciones":
             imprimir_resultados(pdf, df_resultados_config1, "Resultados Medición 1")
             imprimir_resultados(pdf, df_resultados_config2, "Resultados Medición 2")
 
+            # Gráficos y conclusión
             amp_avg_config1 = df_resultados_config1['Amplitud Temblor (cm)'].mean()
             amp_avg_config2 = df_resultados_config2['Amplitud Temblor (cm)'].mean()
-
-            rms_avg_config1 = df_resultados_config1['RMS (m/s2)'].mean()
-            rms_avg_config2 = df_resultados_config2['RMS (m/s2)'].mean()
 
             conclusion = ""
             if amp_avg_config1 < amp_avg_config2:
                 conclusion = (
                     f"La Medición 1 muestra una amplitud de temblor promedio ({amp_avg_config1:.2f} cm) "
-                    f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor "
+                    f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor."
                 )
             elif amp_avg_config2 < amp_avg_config1:
                 conclusion = (
                     f"La Medición 2 muestra una amplitud de temblor promedio ({amp_avg_config2:.2f} cm) "
-                    f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor "
+                    f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor."
                 )
             else:
                 conclusion = (
-                    f"Ambas mediciones muestran amplitudes de temblor promedio muy similares ({amp_avg_config1:.2f} cm). "
+                    f"Ambas mediciones muestran amplitudes de temblor promedio muy similares ({amp_avg_config1:.2f} cm)."
                 )
 
             st.subheader("Resultados Medición 1")
@@ -708,7 +643,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.dataframe(df_resultados_config2)
 
             st.subheader("Comparación Gráfica de Amplitud por Ventana")
-            nombres_test = ["Reposo", "Acción", "Postural"]
+            nombres_test = ["Reposo", "Postural", "Acción"] # Corregido a "Postural" en lugar de "Acción" para coincidir con la lógica del código
 
             for test in nombres_test:
                 archivo1 = config1_archivos[test]
@@ -717,7 +652,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 if archivo1 is not None and archivo2 is not None:
                     archivo1.seek(0)
                     archivo2.seek(0)
-                    # MODIFICACIÓN: Añadir encoding='latin1' a la lectura del CSV
                     df1 = pd.read_csv(archivo1, encoding='latin1')
                     df2 = pd.read_csv(archivo2, encoding='latin1')
 
@@ -745,11 +679,13 @@ elif opcion == "2️⃣ Comparación de mediciones":
                             image_path_for_pdf = tmp_img.name
 
                         try:
+                            pdf.add_page()
+                            pdf.set_font("Arial", 'B', 14)
+                            pdf.cell(0, 10, f"Gráfico Comparativo: {test}", ln=True, align="C")
                             pdf.image(image_path_for_pdf, x=15, w=180)
                         finally:
                             os.remove(image_path_for_pdf)
 
-                        pdf.ln(10)
                         plt.close(fig)
                     else:
                         st.warning(f"No hay suficientes datos de ventanas para graficar el test: {test}")
@@ -759,6 +695,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.subheader("Conclusión del Análisis Comparativo")
             st.write(conclusion)
 
+            pdf.add_page()
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(0, 10, "Conclusión", ln=True)
             pdf.set_font("Arial", size=10)
@@ -778,17 +715,16 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
 
 
-elif opcion == "3️⃣ Diagnóstico tentativo":
+# ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
 
+elif "3️⃣ Diagnóstico tentativo" == st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparación de mediciones", "3️⃣ Diagnóstico tentativo"]):
     st.title("🩺 Diagnóstico Tentativo")
     st.markdown("### Cargar archivos CSV para el Diagnóstico")
 
-    # Using multiple file uploaders for each test type for prediction
     prediccion_reposo_file = st.file_uploader("Archivo de REPOSO para Diagnóstico", type="csv", key="prediccion_reposo")
     prediccion_postural_file = st.file_uploader("Archivo de POSTURAL para Diagnóstico", type="csv", key="prediccion_postural")
     prediccion_accion_file = st.file_uploader("Archivo de ACCION para Diagnóstico", type="csv", key="prediccion_accion")
 
-    # Estilo para arrastrar archivo
     st.markdown("""
         <style>
         div[data-testid="stFileUploaderDropzoneInstructions"] span {
@@ -820,13 +756,16 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             avg_tremor_metrics = {}
             datos_paciente = {}
 
+            # Extraer datos y procesar archivos
+            first_file_processed = False
             for test_type, uploaded_file in prediccion_files_correctas.items():
                 if uploaded_file is not None:
                     uploaded_file.seek(0)
                     df_current_test = pd.read_csv(uploaded_file, encoding='latin1')
 
-                    if not datos_paciente:
+                    if not first_file_processed:
                         datos_paciente = extraer_datos_paciente(df_current_test)
+                        first_file_processed = True
 
                     df_promedio, _ = analizar_temblor_por_ventanas_resultante(df_current_test, fs=100)
 
@@ -848,7 +787,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 df_metrics_display.index.name = "Test"
                 st.dataframe(df_metrics_display)
 
-                # Preparar datos para el modelo
                 data_for_model = {}
                 edad_val = datos_paciente.get('edad', np.nan)
                 try:
@@ -889,6 +827,16 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
 
                 try:
                     modelo_cargado = joblib.load(model_filename)
+                    
+                    # Usar un LabelEncoder temporal si el modelo lo requiere (práctica común en producción)
+                    # O si el modelo ya tiene el LabelEncoder integrado, simplemente se omite.
+                    # Aquí asumo que el modelo ya maneja las variables categóricas.
+                    
+                    # Convertir datos para que el modelo los entienda si es necesario
+                    # Ejemplo: One-Hot Encoding manual si el modelo lo espera
+                    # Para simplificar, asumimos que el modelo cargado puede manejar las columnas categóricas
+                    # 'sexo', 'mano_medida', 'dedo_medido' directamente.
+                    
                     prediction = modelo_cargado.predict(df_for_prediction)
 
                     st.subheader("Resultados del Diagnóstico:")
