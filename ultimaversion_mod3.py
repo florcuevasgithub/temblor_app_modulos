@@ -64,6 +64,15 @@ st.markdown("""
 # --- Configuración global de la duración de la ventana ---
 ventana_duracion_seg = 2
 
+# --------- FUNCIONES GENERALES DE LIMPIEZA DE DATOS ----------
+def clean_dataframe(df):
+    """
+    Convierte los nombres de las columnas a minúsculas y 
+    reemplaza los valores NaN por "sin informacion".
+    """
+    df.columns = df.columns.str.lower()
+    return df.fillna("sin informacion")
+
 # --------- Funciones compartidas ----------
 # Función para extraer datos del paciente de un DataFrame
 def extraer_datos_paciente(df):
@@ -71,6 +80,10 @@ def extraer_datos_paciente(df):
     Extrae datos personales del paciente y parámetros de configuración de DBS
     desde un DataFrame, sin modificar las columnas originales del DataFrame.
     """
+    # Se crea una copia para evitar modificar el original
+    df_copy = df.copy()
+    df_copy = clean_dataframe(df_copy) 
+
     col_map = {col.lower().strip(): col for col in df.columns}
 
     datos = {
@@ -83,55 +96,55 @@ def extraer_datos_paciente(df):
         "Voltaje_dch": None, "Corriente_dch": None, "Contacto_dch": None, "Frecuencia_dch": None, "Ancho_pulso_dch": None,
     }
 
-    if not df.empty:
+    if not df_copy.empty:
         # Extraer datos personales usando el mapeo
-        if "sexo" in col_map and pd.notna(df.at[0, col_map["sexo"]]):
-            datos["sexo"] = str(df.at[0, col_map["sexo"]]).strip()
-        if "edad" in col_map and pd.notna(df.at[0, col_map["edad"]]):
+        if "sexo" in col_map and pd.notna(df_copy.at[0, col_map["sexo"]]):
+            datos["sexo"] = str(df_copy.at[0, col_map["sexo"]]).strip()
+        if "edad" in col_map and pd.notna(df_copy.at[0, col_map["edad"]]):
             try:
-                datos["edad"] = int(float(str(df.at[0, col_map["edad"]]).replace(',', '.')))
+                datos["edad"] = int(float(str(df_copy.at[0, col_map["edad"]]).replace(',', '.')))
             except (ValueError, TypeError):
                 datos["edad"] = 0
-        if "mano" in col_map and pd.notna(df.at[0, col_map["mano"]]):
-            datos["mano_medida"] = str(df.at[0, col_map["mano"]]).strip()
-        if "dedo" in col_map and pd.notna(df.at[0, col_map["dedo"]]):
-            datos["dedo_medido"] = str(df.at[0, col_map["dedo"]]).strip()
+        if "mano" in col_map and pd.notna(df_copy.at[0, col_map["mano"]]):
+            datos["mano_medida"] = str(df_copy.at[0, col_map["mano"]]).strip()
+        if "dedo" in col_map and pd.notna(df_copy.at[0, col_map["dedo"]]):
+            datos["dedo_medido"] = str(df_copy.at[0, col_map["dedo"]]).strip()
 
         for key in ["Nombre", "Apellido", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]:
             key_l = key.lower()
-            if key_l in col_map and pd.notna(df.at[0, col_map[key_l]]):
-                datos[key] = str(df.at[0, col_map[key_l]])
+            if key_l in col_map and pd.notna(df_copy.at[0, col_map[key_l]]):
+                datos[key] = str(df_copy.at[0, col_map[key_l]])
 
         # Extraer campos de estimulación con los nombres exactos proporcionados
         # General
-        if "dbs" in col_map and pd.notna(df.at[0, col_map["dbs"]]):
-            datos["DBS"] = str(df.at[0, col_map["dbs"]])
-        if "nucleo" in col_map and pd.notna(df.at[0, col_map["nucleo"]]):
-            datos["Nucleo"] = str(df.at[0, col_map["nucleo"]])
+        if "dbs" in col_map and pd.notna(df_copy.at[0, col_map["dbs"]]):
+            datos["DBS"] = str(df_copy.at[0, col_map["dbs"]])
+        if "nucleo" in col_map and pd.notna(df_copy.at[0, col_map["nucleo"]]):
+            datos["Nucleo"] = str(df_copy.at[0, col_map["nucleo"]])
 
         # Izquierda
-        if "voltaje [mv]_izq" in col_map and pd.notna(df.at[0, col_map["voltaje [mv]_izq"]]):
-            datos["Voltaje_izq"] = str(df.at[0, col_map["voltaje [mv]_izq"]]).replace(',', '.')
-        if "corriente [ma]_izq" in col_map and pd.notna(df.at[0, col_map["corriente [ma]_izq"]]):
-            datos["Corriente_izq"] = str(df.at[0, col_map["corriente [ma]_izq"]]).replace(',', '.')
-        if "contacto_izq" in col_map and pd.notna(df.at[0, col_map["contacto_izq"]]):
-            datos["Contacto_izq"] = str(df.at[0, col_map["contacto_izq"]])
-        if "frecuencia [hz]_izq" in col_map and pd.notna(df.at[0, col_map["frecuencia [hz]_izq"]]):
-            datos["Frecuencia_izq"] = str(df.at[0, col_map["frecuencia [hz]_izq"]]).replace(',', '.')
-        if "ancho de pulso [µs]_izq" in col_map and pd.notna(df.at[0, col_map["ancho de pulso [µs]_izq"]]):
-            datos["Ancho_pulso_izq"] = str(df.at[0, col_map["ancho de pulso [µs]_izq"]]).replace(',', '.')
+        if "voltaje [mv]_izq" in col_map and pd.notna(df_copy.at[0, col_map["voltaje [mv]_izq"]]):
+            datos["Voltaje_izq"] = str(df_copy.at[0, col_map["voltaje [mv]_izq"]]).replace(',', '.')
+        if "corriente [ma]_izq" in col_map and pd.notna(df_copy.at[0, col_map["corriente [ma]_izq"]]):
+            datos["Corriente_izq"] = str(df_copy.at[0, col_map["corriente [ma]_izq"]]).replace(',', '.')
+        if "contacto_izq" in col_map and pd.notna(df_copy.at[0, col_map["contacto_izq"]]):
+            datos["Contacto_izq"] = str(df_copy.at[0, col_map["contacto_izq"]])
+        if "frecuencia [hz]_izq" in col_map and pd.notna(df_copy.at[0, col_map["frecuencia [hz]_izq"]]):
+            datos["Frecuencia_izq"] = str(df_copy.at[0, col_map["frecuencia [hz]_izq"]]).replace(',', '.')
+        if "ancho de pulso [µs]_izq" in col_map and pd.notna(df_copy.at[0, col_map["ancho de pulso [µs]_izq"]]):
+            datos["Ancho_pulso_izq"] = str(df_copy.at[0, col_map["ancho de pulso [µs]_izq"]]).replace(',', '.')
 
         # Derecha
-        if "voltaje [mv]_dch" in col_map and pd.notna(df.at[0, col_map["voltaje [mv]_dch"]]):
-            datos["Voltaje_dch"] = str(df.at[0, col_map["voltaje [mv]_dch"]]).replace(',', '.')
-        if "corriente [ma]_dch" in col_map and pd.notna(df.at[0, col_map["corriente [ma]_dch"]]):
-            datos["Corriente_dch"] = str(df.at[0, col_map["corriente [ma]_dch"]]).replace(',', '.')
-        if "contacto_dch" in col_map and pd.notna(df.at[0, col_map["contacto_dch"]]):
-            datos["Contacto_dch"] = str(df.at[0, col_map["contacto_dch"]])
-        if "frecuencia [hz]_dch" in col_map and pd.notna(df.at[0, col_map["frecuencia [hz]_dch"]]):
-            datos["Frecuencia_dch"] = str(df.at[0, col_map["frecuencia [hz]_dch"]]).replace(',', '.')
-        if "ancho de pulso [µs]_dch" in col_map and pd.notna(df.at[0, col_map["ancho de pulso [µs]_dch"]]):
-            datos["Ancho_pulso_dch"] = str(df.at[0, col_map["ancho de pulso [µs]_dch"]]).replace(',', '.')
+        if "voltaje [mv]_dch" in col_map and pd.notna(df_copy.at[0, col_map["voltaje [mv]_dch"]]):
+            datos["Voltaje_dch"] = str(df_copy.at[0, col_map["voltaje [mv]_dch"]]).replace(',', '.')
+        if "corriente [ma]_dch" in col_map and pd.notna(df_copy.at[0, col_map["corriente [ma]_dch"]]):
+            datos["Corriente_dch"] = str(df_copy.at[0, col_map["corriente [ma]_dch"]]).replace(',', '.')
+        if "contacto_dch" in col_map and pd.notna(df_copy.at[0, col_map["contacto_dch"]]):
+            datos["Contacto_dch"] = str(df_copy.at[0, col_map["contacto_dch"]])
+        if "frecuencia [hz]_dch" in col_map and pd.notna(df_copy.at[0, col_map["frecuencia [hz]_dch"]]):
+            datos["Frecuencia_dch"] = str(df_copy.at[0, col_map["frecuencia [hz]_dch"]]).replace(',', '.')
+        if "ancho de pulso [µs]_dch" in col_map and pd.notna(df_copy.at[0, col_map["ancho de pulso [µs]_dch"]]):
+            datos["Ancho_pulso_dch"] = str(df_copy.at[0, col_map["ancho de pulso [µs]_dch"]]).replace(',', '.')
 
     return datos
 
@@ -143,9 +156,9 @@ def filtrar_temblor(signal, fs=100):
 def q_to_matrix(q):
     w, x, y, z = q
     return np.array([
-        [1 - 2*(y**2 + z**2),         2*(x*y - z*w),           2*(x*z + y*w)],
-        [2*(x*y + z*w),                 1 - 2*(x**2 + z**2),       2*(y*z - x*w)],
-        [2*(x*z - y*w),                 2*(y*z + x*w),           1 - 2*(x**2 + y**2)]
+        [1 - 2*(y**2 + z**2),          2*(x*y - z*w),            2*(x*z + y*w)],
+        [2*(x*y + z*w),                  1 - 2*(x**2 + z**2),        2*(y*z - x*w)],
+        [2*(x*z - y*w),                  2*(y*z + x*w),            1 - 2*(x**2 + y**2)]
     ])
 
 def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_duracion_seg):
@@ -197,12 +210,12 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_dur
             amp_cm = 0.0
 
         resultados_por_ventana.append({
-           'Ventana': i,
-           'Frecuencia Dominante (Hz)': freq_dominante,
-           'RMS (m/s2)': rms,
-           'Amplitud Temblor (g)': amp_g,
-           'Amplitud Temblor (cm)': amp_cm
-          })
+            'Ventana': i,
+            'Frecuencia Dominante (Hz)': freq_dominante,
+            'RMS (m/s2)': rms,
+            'Amplitud Temblor (g)': amp_g,
+            'Amplitud Temblor (cm)': amp_cm
+            })
 
     df_por_ventana = pd.DataFrame(resultados_por_ventana)
 
@@ -215,6 +228,10 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_dur
         }])
     else:
         df_promedio = pd.DataFrame()
+
+    # Se aplica la función de limpieza antes de retornar
+    df_por_ventana = clean_dataframe(df_por_ventana)
+    df_promedio = clean_dataframe(df_promedio)
 
     return df_promedio, df_por_ventana
 
@@ -231,13 +248,13 @@ def manejar_reinicio():
         st.experimental_rerun()
 
 
-# ------------------ Modo principal --------------------
+# ------------------ MODO PRINCIPAL --------------------
 
 st.title("🧠 Análisis de Temblor")
 opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparación de mediciones", "3️⃣ Diagnóstico tentativo"])
 if st.sidebar.button("🔄 Nuevo análisis"):
     manejar_reinicio()
-    
+
 # ------------------ MÓDULO 1: ANÁLISIS DE UNA MEDICIÓN --------------------
 
 if opcion == "1️⃣ Análisis de una medición":
