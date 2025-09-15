@@ -929,8 +929,9 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 st.error("No se pudo procesar ningún archivo cargado para el diagnóstico. Asegúrate de que los archivos contengan datos válidos.")
             else:
                 st.subheader("Datos de Temblor Calculados para el Diagnóstico:")
-                df_metrics_display = pd.DataFrame.from_dict(avg_tremor_metrics, orient='index')
-                df_metrics_display.index.name = "Test"
+                # Se crea el DataFrame y se convierte el índice en una columna 'Test'
+                df_metrics_display = pd.DataFrame.from_dict(avg_tremor_metrics, orient='index').reset_index()
+                df_metrics_display = df_metrics_display.rename(columns={'index': 'Test'})
                 st.dataframe(df_metrics_display)
 
                 data_for_model = {}
