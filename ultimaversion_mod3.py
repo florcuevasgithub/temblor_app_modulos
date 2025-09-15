@@ -197,7 +197,7 @@ def manejar_reinicio():
 # ------------------ Modo principal --------------------
 
 st.title("🧠 Análisis de Temblor")
-opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparación de mediciones", "3️⃣ Diagnóstico tentativo"])
+st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparación de mediciones", "3️⃣ Diagnóstico tentativo"], key="main_menu")
 if st.sidebar.button("🔄 Nuevo análisis"):
     manejar_reinicio()
     
