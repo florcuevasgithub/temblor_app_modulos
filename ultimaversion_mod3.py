@@ -197,7 +197,7 @@ def manejar_reinicio():
 # ------------------ Modo principal --------------------
 
 st.title("🧠 Análisis de Temblor")
-st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparación de mediciones", "3️⃣ Diagnóstico tentativo"], key="main_menu")
+opcion = st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparación de mediciones", "3️⃣ Diagnóstico tentativo"])
 if st.sidebar.button("🔄 Nuevo análisis"):
     manejar_reinicio()
     
@@ -717,7 +717,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
 
-elif "3️⃣ Diagnóstico tentativo" == st.sidebar.radio("Selecciona una opción:", ["1️⃣ Análisis de una medición", "2️⃣ Comparación de mediciones", "3️⃣ Diagnóstico tentativo"]):
+elif opcion == "3️⃣ Diagnóstico tentativo":
     st.title("🩺 Diagnóstico Tentativo")
     st.markdown("### Cargar archivos CSV para el Diagnóstico")
 
