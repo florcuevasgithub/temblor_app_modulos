@@ -471,6 +471,20 @@ if opcion == "1️⃣ Análisis de una medición":
 elif opcion == "2️⃣ Comparación de mediciones":
     st.title("📊 Comparación de Mediciones")
 
+    def extraer_datos_paciente(df_csv):
+        # Esta función ahora no extrae la mano ni el dedo
+        datos_paciente = {
+            "Nombre": df_csv.loc[0, 'Nombre'] if 'Nombre' in df_csv.columns else 'No especificado',
+            "Apellido": df_csv.loc[0, 'Apellido'] if 'Apellido' in df_csv.columns else 'No especificado',
+            "Edad": df_csv.loc[0, 'Edad'] if 'Edad' in df_csv.columns else 'No especificada',
+            "Sexo": df_csv.loc[0, 'Sexo'] if 'Sexo' in df_csv.columns else 'No especificado',
+            "Diagnostico": df_csv.loc[0, 'Diagnostico'] if 'Diagnostico' in df_csv.columns else 'No especificado',
+            "Tipo": df_csv.loc[0, 'Tipo'] if 'Tipo' in df_csv.columns else 'No especificado',
+            "Antecedente": df_csv.loc[0, 'Antecedente'] if 'Antecedente' in df_csv.columns else 'No especificado',
+            "Medicacion": df_csv.loc[0, 'Medicacion'] if 'Medicacion' in df_csv.columns else 'No especificado',
+        }
+        return datos_paciente
+
     def extraer_datos_estimulacion(df_csv):
         metadata_dict = {}
         # Mapea los nombres de columna de tu CSV a los nombres que quieres en el PDF
@@ -486,7 +500,9 @@ elif opcion == "2️⃣ Comparación de mediciones":
             "Corriente [mA]_dch": "Corriente_dch",
             "Contacto_dch": "Contacto_dch", 
             "Frecuencia [Hz]_dch": "Frecuencia_dch",
-            "Ancho de pulso [µS]_dch": "Pulso_dch"
+            "Ancho de pulso [µS]_dch": "Pulso_dch",
+            "Mano": "Mano",
+            "Dedo": "Dedo"
         }
         
         for csv_col, pdf_label in column_map.items():
@@ -588,8 +604,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
             _imprimir_campo_pdf(pdf, "Sexo", datos_paciente.get("Sexo"))
             _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente.get("Diagnostico"))
             _imprimir_campo_pdf(pdf, "Tipo", datos_paciente.get("Tipo"))
-            _imprimir_campo_pdf(pdf, "Mano", datos_paciente.get("mano_medida"))
-            _imprimir_campo_pdf(pdf, "Dedo", datos_paciente.get("dedo_medido"))
             _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente.get("Antecedente"))
             _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente.get("Medicacion"))
             pdf.ln(5)
@@ -600,6 +614,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 pdf_obj.set_font("Arial", size=10)
                 
                 parametros_a_imprimir_con_unidad = {
+                    "Mano": "", "Dedo": "",
                     "DBS": "", "Nucleo": "",
                     "Voltaje_izq": " mV", "Corriente_izq": " mA", "Contacto_izq": "",
                     "Frecuencia_izq": " Hz", "Pulso_izq": " µS",
