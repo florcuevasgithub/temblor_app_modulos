@@ -616,7 +616,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
             pdf = FPDF()
             pdf.add_page()
-            pdf.set_font("Arial", 'B', 14)
+            pdf.set_font("Arial", 'B', 16)
             pdf.cell(0, 10, "Informe Comparativo de Mediciones", ln=True, align="C")
 
             pdf.set_font("Arial", size=10)
