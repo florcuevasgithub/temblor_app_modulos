@@ -584,11 +584,14 @@ elif opcion == "2️⃣ Comparación de mediciones":
                     "Duracion": " ms", "Pulso": " µs", "Corriente": " mA",
                     "Voltaje": " V", "Frecuencia": " Hz"
                 }
-
+            
+                # Recorrer el diccionario y imprimir solo los valores que existen
                 for param_key, unit in parametros_a_imprimir_con_unidad.items():
                     value = parametros_dict.get(param_key)
-                    _imprimir_campo_pdf(pdf_obj, param_key, value, unit)
+                    if value is not None and str(value).strip() != "" and str(value).lower() != "no especificado":
+                        pdf_obj.cell(200, 10, f"{param_key}: {value}{unit}", ln=True)
                 pdf_obj.ln(5)
+
 
             imprimir_parametros_y_config(pdf, config1_params, "Configuración Medición 1")
             imprimir_parametros_y_config(pdf, config2_params, "Configuración Medición 2")
@@ -748,6 +751,96 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             "Acción": prediccion_accion_file
         }
 
+        st.subheader("Generar Informe del Diagnóstico")
+
+        def generar_pdf_diagnostico(datos_paciente_dict, df_metrics, diagnostico, probabilidades, nombre_archivo="informe_diagnostico.pdf"):
+            fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 16)
+            pdf.cell(200, 10, "Informe de Diagnóstico Tentativo", ln=True, align='C')
+    
+            pdf.set_font("Arial", size=12)
+            pdf.ln(10)
+            
+            # Datos del Paciente
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Datos del Paciente", ln=True)
+            pdf.set_font("Arial", size=12)
+    
+            def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
+                if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+            
+            _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
+            _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
+            _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("edad"))
+            _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
+            _imprimir_campo_pdf(pdf, "Mano de medición", datos_paciente_dict.get("mano_medida"))
+            _imprimir_campo_pdf(pdf, "Dedo de medición", datos_paciente_dict.get("dedo_medido"))
+            _imprimir_campo_pdf(pdf, "Diagnóstico", diagnostico)
+    
+            pdf.ln(5)
+    
+            # Resultados del Diagnóstico
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Resultados del Análisis de Temblor", ln=True)
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(30, 10, "Test", 1)
+            pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+            pdf.cell(30, 10, "RMS", 1)
+            pdf.cell(50, 10, "Amplitud (cm)", 1)
+            pdf.ln(10)
+    
+            pdf.set_font("Arial", "", 12)
+            for index, row in df_metrics.iterrows():
+                pdf.cell(30, 10, index, 1)
+                pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+                pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+                pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+                pdf.ln(10)
+    
+            # Probabilidades
+            pdf.ln(10)
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Probabilidades por clase", ln=True)
+            pdf.set_font("Arial", size=12)
+            if probabilidades:
+                for label, prob in probabilidades.items():
+                    pdf.cell(0, 10, f"- {label}: {prob:.2f}%", ln=True)
+    
+            pdf_output = BytesIO()
+            pdf.output(dest='S').encode('latin1')
+            pdf.output(pdf_output)
+            pdf_bytes = pdf_output.getvalue()
+    
+            return pdf_bytes
+    
+        # Llamar a la función para generar y descargar el PDF
+        if prediction is not None:
+            df_metrics_for_pdf = df_metrics_display.copy()
+            
+            # Obtener las probabilidades para el PDF
+            prob_dict = {}
+            if hasattr(modelo_cargado, 'predict_proba'):
+                probabilities = modelo_cargado.predict_proba(df_for_prediction)
+                if hasattr(modelo_cargado, 'classes_'):
+                    for i, class_label in enumerate(modelo_cargado.classes_):
+                        prob_dict[class_label] = probabilities[0][i]*100
+    
+            pdf_bytes = generar_pdf_diagnostico(
+                datos_paciente,
+                df_metrics_for_pdf,
+                prediction[0],
+                prob_dict
+            )
+    
+            st.download_button(
+                label="📄 Descargar informe de diagnóstico",
+                data=pdf_bytes,
+                file_name="informe_diagnostico.pdf",
+                mime="application/pdf"
+            )
         any_file_uploaded = any(file is not None for file in prediccion_files_correctas.values())
 
         if not any_file_uploaded:
