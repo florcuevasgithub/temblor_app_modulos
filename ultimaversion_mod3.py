@@ -471,15 +471,28 @@ if opcion == "1️⃣ Análisis de una medición":
 elif opcion == "2️⃣ Comparación de mediciones":
     st.title("📊 Comparación de Mediciones")
 
-    # Mover la función fuera de la lógica principal si es necesario
     def extraer_datos_estimulacion(df_csv):
         metadata_dict = {}
-        for col in df_csv.columns:
-            if col.startswith("ECP_") or col.startswith("GPI_") or col.startswith("NST_") or col.startswith("Polaridad_") or col.startswith("Duracion_") or col.startswith("Pulso_") or col.startswith("Corriente_") or col.startswith("Voltaje_") or col.startswith("Frecuencia_"):
-                # Obtener el nombre del parámetro
-                param_name = col.split('_')[0]
-                value = df_csv.loc[0, col]
-                metadata_dict[param_name] = value
+        # Mapea los nombres de columna de tu CSV a los nombres que quieres en el PDF
+        column_map = {
+            "DBS": "DBS", 
+            "Nucleo": "Nucleo",
+            "Voltaje [mV]_izq": "Voltaje_izq", 
+            "Corriente [mA]_izq": "Corriente_izq",
+            "Contacto_izq": "Contacto_izq", 
+            "Frecuencia [Hz]_izq": "Frecuencia_izq",
+            "Ancho de pulso [µS]_izq": "Pulso_izq",
+            "Voltaje [mV]_dch": "Voltaje_dch", 
+            "Corriente [mA]_dch": "Corriente_dch",
+            "Contacto_dch": "Contacto_dch", 
+            "Frecuencia [Hz]_dch": "Frecuencia_dch",
+            "Ancho de pulso [µS]_dch": "Pulso_dch"
+        }
+        
+        for csv_col, pdf_label in column_map.items():
+            if csv_col in df_csv.columns:
+                value = df_csv.loc[0, csv_col]
+                metadata_dict[pdf_label] = value
         return metadata_dict
 
     st.markdown("### Cargar archivos de la **medición 1**")
@@ -587,9 +600,11 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 pdf_obj.set_font("Arial", size=10)
                 
                 parametros_a_imprimir_con_unidad = {
-                    "ECP": "", "GPI": "", "NST": "", "Polaridad": "",
-                    "Duracion": " ms", "Pulso": " µs", "Corriente": " mA",
-                    "Voltaje": " V", "Frecuencia": " Hz"
+                    "DBS": "", "Nucleo": "",
+                    "Voltaje_izq": " mV", "Corriente_izq": " mA", "Contacto_izq": "",
+                    "Frecuencia_izq": " Hz", "Pulso_izq": " µS",
+                    "Voltaje_dch": " mV", "Corriente_dch": " mA", "Contacto_dch": "",
+                    "Frecuencia_dch": " Hz", "Pulso_dch": " µS"
                 }
 
                 for param_key, unit in parametros_a_imprimir_con_unidad.items():
@@ -717,6 +732,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 mime="application/pdf"
             )
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
+            
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
 elif opcion == "3️⃣ Diagnóstico tentativo":
     st.title("🩺 Diagnóstico Tentativo")
