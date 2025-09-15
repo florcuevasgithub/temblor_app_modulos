@@ -467,8 +467,20 @@ if opcion == "1️⃣ Análisis de una medición":
                 st.warning("No se encontraron datos suficientes para el análisis.")
                 
 # ------------------ MÓDULO 2: COMPARACIÓN DE MEDICIONES --------------------
+
 elif opcion == "2️⃣ Comparación de mediciones":
     st.title("📊 Comparación de Mediciones")
+
+    # Mover la función fuera de la lógica principal si es necesario
+    def extraer_datos_estimulacion(df_csv):
+        metadata_dict = {}
+        for col in df_csv.columns:
+            if col.startswith("ECP_") or col.startswith("GPI_") or col.startswith("NST_") or col.startswith("Polaridad_") or col.startswith("Duracion_") or col.startswith("Pulso_") or col.startswith("Corriente_") or col.startswith("Voltaje_") or col.startswith("Frecuencia_"):
+                # Obtener el nombre del parámetro
+                param_name = col.split('_')[0]
+                value = df_csv.loc[0, col]
+                metadata_dict[param_name] = value
+        return metadata_dict
 
     st.markdown("### Cargar archivos de la **medición 1**")
     config1_archivos = {
@@ -483,7 +495,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
         "Postural": st.file_uploader("Archivo de POSTURAL medición 2", type="csv", key="postural2"),
         "Acción": st.file_uploader("Archivo de ACCION medición 2", type="csv", key="accion2")
     }
-
+    
     st.markdown("""
         <style>
         div[data-testid="stFileUploaderDropzoneInstructions"] span {
@@ -530,14 +542,10 @@ elif opcion == "2️⃣ Comparación de mediciones":
         if not archivos_cargados:
             st.warning("Por favor, cargue los 3 archivos para ambas mediciones.")
         else:
-            # Leer el primer archivo de cada configuración para extraer los metadatos
             df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
             df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
 
-            # Extraer los datos del paciente y la configuración
             datos_paciente = extraer_datos_paciente(df_config1_meta)
-            
-            # La corrección está aquí:
             config1_params = extraer_datos_estimulacion(df_config1_meta)
             config2_params = extraer_datos_estimulacion(df_config2_meta)
 
@@ -553,10 +561,9 @@ elif opcion == "2️⃣ Comparación de mediciones":
             pdf.ln(10)
             pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
             
-            # Helper para imprimir campos solo si tienen valor
             def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
                 if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
-                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unit}", ln=True)
+                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
 
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Datos del Paciente", ln=True)
@@ -574,7 +581,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
             _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente.get("Medicacion"))
             pdf.ln(5)
 
-            # Impresión de CONFIGURACIÓN - Aquí se usa la función corregida y las nuevas variables
             def imprimir_parametros_y_config(pdf_obj, parametros_dict, titulo):
                 pdf_obj.set_font("Arial", 'B', 12)
                 pdf_obj.cell(0, 10, titulo, ln=True)
@@ -586,7 +592,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
                     "Voltaje": " V", "Frecuencia": " Hz"
                 }
 
-                # Recorrer el diccionario y imprimir solo los valores que existen
                 for param_key, unit in parametros_a_imprimir_con_unidad.items():
                     value = parametros_dict.get(param_key)
                     if value is not None and str(value).strip() != "" and str(value).lower() != "no especificado":
@@ -618,7 +623,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
             imprimir_resultados(pdf, df_resultados_config1, "Resultados Medición 1")
             imprimir_resultados(pdf, df_resultados_config2, "Resultados Medición 2")
             
-            # La parte de los gráficos y la conclusión se mantiene igual
             amp_avg_config1 = df_resultados_config1['Amplitud Temblor (cm)'].mean()
             amp_avg_config2 = df_resultados_config2['Amplitud Temblor (cm)'].mean()
 
@@ -628,7 +632,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
                     f"La Medición 1 muestra una amplitud de temblor promedio ({amp_avg_config1:.2f} cm) "
                     f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor."
                 )
-            elif amp_avg_avg_config2 < amp_avg_config1:
+            elif amp_avg_config2 < amp_avg_config1:
                 conclusion = (
                     f"La Medición 2 muestra una amplitud de temblor promedio ({amp_avg_config2:.2f} cm) "
                     f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor."
@@ -713,8 +717,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 mime="application/pdf"
             )
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
-
-
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
 elif opcion == "3️⃣ Diagnóstico tentativo":
     st.title("🩺 Diagnóstico Tentativo")
