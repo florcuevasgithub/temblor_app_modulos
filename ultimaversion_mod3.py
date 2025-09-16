@@ -487,43 +487,61 @@ elif opcion == "2️⃣ Comparación de mediciones":
     st.title("📊 Comparación de Mediciones")
 
     def extraer_datos_paciente(df_csv):
-        # Esta función ahora no extrae la mano ni el dedo
-        datos_paciente = {
-            "Nombre": df_csv.loc[0, 'Nombre'] if 'Nombre' in df_csv.columns else 'No especificado',
-            "Apellido": df_csv.loc[0, 'Apellido'] if 'Apellido' in df_csv.columns else 'No especificado',
-            "Edad": df_csv.loc[0, 'Edad'] if 'Edad' in df_csv.columns else 'No especificada',
-            "Sexo": df_csv.loc[0, 'Sexo'] if 'Sexo' in df_csv.columns else 'No especificado',
-            "Diagnostico": df_csv.loc[0, 'Diagnostico'] if 'Diagnostico' in df_csv.columns else 'No especificado',
-            "Tipo": df_csv.loc[0, 'Tipo'] if 'Tipo' in df_csv.columns else 'No especificado',
-            "Antecedente": df_csv.loc[0, 'Antecedente'] if 'Antecedente' in df_csv.columns else 'No especificado',
-            "Medicacion": df_csv.loc[0, 'Medicacion'] if 'Medicacion' in df_csv.columns else 'No especificado',
-        }
+        datos_paciente = {}
+        col_map = {col.lower().strip(): col for col in df_csv.columns}
+
+        # Manejo de los campos personales
+        campos_personales = ["nombre", "apellido", "diagnostico", "antecedente", "medicacion", "sexo", "tipo"]
+        for campo in campos_personales:
+            if campo in col_map and pd.notna(df_csv.loc[0, col_map[campo]]):
+                valor = str(df_csv.loc[0, col_map[campo]]).strip()
+                if valor:
+                    datos_paciente[campo.capitalize()] = valor.lower()
+                else:
+                    datos_paciente[campo.capitalize()] = 'Sin información'
+            else:
+                datos_paciente[campo.capitalize()] = 'Sin información'
+
+        # Manejo especial para la edad (entero)
+        if "edad" in col_map and pd.notna(df_csv.loc[0, col_map["edad"]]):
+            try:
+                edad = int(float(str(df_csv.loc[0, col_map["edad"]]).replace(',', '.')))
+                datos_paciente["Edad"] = edad
+            except (ValueError, TypeError):
+                datos_paciente["Edad"] = 'Sin información'
+        else:
+            datos_paciente["Edad"] = 'Sin información'
+
         return datos_paciente
 
     def extraer_datos_estimulacion(df_csv):
         metadata_dict = {}
         # Mapea los nombres de columna de tu CSV a los nombres que quieres en el PDF
         column_map = {
-            "DBS": "DBS", 
+            "DBS": "DBS",
             "Nucleo": "Nucleo",
-            "Voltaje [mV]_izq": "Voltaje_izq", 
+            "Voltaje [mV]_izq": "Voltaje_izq",
             "Corriente [mA]_izq": "Corriente_izq",
-            "Contacto_izq": "Contacto_izq", 
+            "Contacto_izq": "Contacto_izq",
             "Frecuencia [Hz]_izq": "Frecuencia_izq",
             "Ancho de pulso [µS]_izq": "Pulso_izq",
-            "Voltaje [mV]_dch": "Voltaje_dch", 
+            "Voltaje [mV]_dch": "Voltaje_dch",
             "Corriente [mA]_dch": "Corriente_dch",
-            "Contacto_dch": "Contacto_dch", 
+            "Contacto_dch": "Contacto_dch",
             "Frecuencia [Hz]_dch": "Frecuencia_dch",
             "Ancho de pulso [µS]_dch": "Pulso_dch",
             "Mano": "Mano",
             "Dedo": "Dedo"
         }
-        
+
         for csv_col, pdf_label in column_map.items():
             if csv_col in df_csv.columns:
                 value = df_csv.loc[0, csv_col]
-                metadata_dict[pdf_label] = value
+                # Reemplazar valores nulos o "No especificado" con "Sin información"
+                if pd.isna(value) or str(value).lower() in ["no especificado", "nan"]:
+                    metadata_dict[pdf_label] = "Sin información"
+                else:
+                    metadata_dict[pdf_label] = value
         return metadata_dict
 
     st.markdown("### Cargar archivos de la **medición 1**")
@@ -539,7 +557,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
         "Postural": st.file_uploader("Archivo de POSTURAL medición 2", type="csv", key="postural2"),
         "Acción": st.file_uploader("Archivo de ACCION medición 2", type="csv", key="accion2")
     }
-    
+
     st.markdown("""
         <style>
         div[data-testid="stFileUploaderDropzoneInstructions"] span {
@@ -604,10 +622,15 @@ elif opcion == "2️⃣ Comparación de mediciones":
             pdf.set_font("Arial", size=10)
             pdf.ln(10)
             pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
-            
+
             def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-                if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
-                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+                if pd.isna(valor) or str(valor).strip().lower() in ["", "nan", "no especificado"]:
+                    valor_str = "Sin información"
+                else:
+                    valor_str = str(valor)
+
+                if valor_str != "Sin información":
+                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor_str}{unidad}", ln=True)
 
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Datos del Paciente", ln=True)
@@ -627,7 +650,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 pdf_obj.set_font("Arial", 'B', 12)
                 pdf_obj.cell(0, 10, titulo, ln=True)
                 pdf_obj.set_font("Arial", size=10)
-                
+
                 parametros_a_imprimir_con_unidad = {
                     "Mano": "", "Dedo": "",
                     "DBS": "", "Nucleo": "",
@@ -639,7 +662,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
                 for param_key, unit in parametros_a_imprimir_con_unidad.items():
                     value = parametros_dict.get(param_key)
-                    if value is not None and str(value).strip() != "" and str(value).lower() != "no especificado":
+                    if value is not None and str(value).strip() != "" and str(value).lower() not in ["no especificado", "sin informacion"]:
                         pdf_obj.cell(200, 10, f"{param_key}: {value}{unit}", ln=True)
                 pdf_obj.ln(5)
 
@@ -667,7 +690,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
             imprimir_resultados(pdf, df_resultados_config1, "Resultados Medición 1")
             imprimir_resultados(pdf, df_resultados_config2, "Resultados Medición 2")
-            
+
             amp_avg_config1 = df_resultados_config1['Amplitud Temblor (cm)'].mean()
             amp_avg_config2 = df_resultados_config2['Amplitud Temblor (cm)'].mean()
 
@@ -740,7 +763,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
                         st.warning(f"No hay suficientes datos de ventanas para graficar el test: {test}")
                 else:
                     st.warning(f"Faltan archivos para el test {test} en al menos una Medición.")
-            
+
             st.subheader("Conclusión del Análisis Comparativo")
             st.write(conclusion)
 
