@@ -633,7 +633,9 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
             _imprimir_campo_pdf(pdf, "Nombre", datos_paciente.get("Nombre"))
             _imprimir_campo_pdf(pdf, "Apellido", datos_paciente.get("Apellido"))
-            _imprimir_campo_pdf(pdf, "Edad", datos_paciente.get("Edad"))
+            edad_val = datos_paciente_dict.get("edad")
+                if isinstance(edad_val, (int, float)):
+            _imprimir_campo_pdf(pdf, "Edad", int(edad_val))
             _imprimir_campo_pdf(pdf, "Sexo", datos_paciente.get("Sexo"))
             _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente.get("Diagnostico"))
             _imprimir_campo_pdf(pdf, "Tipo", datos_paciente.get("Tipo"))
