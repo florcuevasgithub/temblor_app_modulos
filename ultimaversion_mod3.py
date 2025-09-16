@@ -74,64 +74,46 @@ def extraer_datos_paciente(df):
     col_map = {col.lower().strip(): col for col in df.columns}
 
     datos = {
-        "sexo": "No especificado", "edad": 0,
-        "mano_medida": "No especificada", "dedo_medido": "No especificado",
-        "Nombre": None, "Apellido": None, "Diagnostico": None,
-        "Antecedente": None, "Medicacion": None, "Tipo": None,
-        "DBS": None, "Nucleo": None,
-        "Voltaje_izq": None, "Corriente_izq": None, "Contacto_izq": None, "Frecuencia_izq": None, "Ancho_pulso_izq": None,
-        "Voltaje_dch": None, "Corriente_dch": None, "Contacto_dch": None, "Frecuencia_dch": None, "Ancho_pulso_dch": None,
+        "sexo": "sin informacion", "edad": "sin informacion",
+        "mano_medida": "sin informacion", "dedo_medido": "sin informacion",
+        "Nombre": "sin informacion", "Apellido": "sin informacion", "Diagnostico": "sin informacion",
+        "Antecedente": "sin informacion", "Medicacion": "sin informacion", "Tipo": "sin informacion",
+        "DBS": "sin informacion", "Nucleo": "sin informacion",
+        "Voltaje_izq": "sin informacion", "Corriente_izq": "sin informacion", "Contacto_izq": "sin informacion", "Frecuencia_izq": "sin informacion", "Ancho_pulso_izq": "sin informacion",
+        "Voltaje_dch": "sin informacion", "Corriente_dch": "sin informacion", "Contacto_dch": "sin informacion", "Frecuencia_dch": "sin informacion", "Ancho_pulso_dch": "sin informacion",
     }
 
     if not df.empty:
-        # Extraer datos personales usando el mapeo
-        if "sexo" in col_map and pd.notna(df.at[0, col_map["sexo"]]):
-            datos["sexo"] = str(df.at[0, col_map["sexo"]]).strip()
-        if "edad" in col_map and pd.notna(df.at[0, col_map["edad"]]):
-            try:
-                datos["edad"] = int(float(str(df.at[0, col_map["edad"]]).replace(',', '.')))
-            except (ValueError, TypeError):
-                datos["edad"] = 0
-        if "mano" in col_map and pd.notna(df.at[0, col_map["mano"]]):
-            datos["mano_medida"] = str(df.at[0, col_map["mano"]]).strip()
-        if "dedo" in col_map and pd.notna(df.at[0, col_map["dedo"]]):
-            datos["dedo_medido"] = str(df.at[0, col_map["dedo"]]).strip()
-
-        for key in ["Nombre", "Apellido", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]:
+        # Extraer datos personales y convertir a minúsculas, excepto edad
+        personal_fields = ["sexo", "mano", "dedo", "Nombre", "Apellido", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]
+        for key in personal_fields:
             key_l = key.lower()
             if key_l in col_map and pd.notna(df.at[0, col_map[key_l]]):
-                datos[key] = str(df.at[0, col_map[key_l]])
+                value = str(df.at[0, col_map[key_l]]).strip()
+                if value:
+                    datos[key_l if key_l != "mano" and key_l != "dedo" else key_l + "_medida"] = value.lower()
 
-        # Extraer campos de estimulación con los nombres exactos proporcionados
-        # General
-        if "dbs" in col_map and pd.notna(df.at[0, col_map["dbs"]]):
-            datos["DBS"] = str(df.at[0, col_map["dbs"]])
-        if "nucleo" in col_map and pd.notna(df.at[0, col_map["nucleo"]]):
-            datos["Nucleo"] = str(df.at[0, col_map["nucleo"]])
+        # Extraer edad y convertir a entero
+        if "edad" in col_map and pd.notna(df.at[0, col_map["edad"]]):
+            try:
+                edad = int(float(str(df.at[0, col_map["edad"]]).replace(',', '.')))
+                datos["edad"] = edad
+            except (ValueError, TypeError):
+                datos["edad"] = "sin informacion"
 
-        # Izquierda
-        if "voltaje [mv]_izq" in col_map and pd.notna(df.at[0, col_map["voltaje [mv]_izq"]]):
-            datos["Voltaje_izq"] = str(df.at[0, col_map["voltaje [mv]_izq"]]).replace(',', '.')
-        if "corriente [ma]_izq" in col_map and pd.notna(df.at[0, col_map["corriente [ma]_izq"]]):
-            datos["Corriente_izq"] = str(df.at[0, col_map["corriente [ma]_izq"]]).replace(',', '.')
-        if "contacto_izq" in col_map and pd.notna(df.at[0, col_map["contacto_izq"]]):
-            datos["Contacto_izq"] = str(df.at[0, col_map["contacto_izq"]])
-        if "frecuencia [hz]_izq" in col_map and pd.notna(df.at[0, col_map["frecuencia [hz]_izq"]]):
-            datos["Frecuencia_izq"] = str(df.at[0, col_map["frecuencia [hz]_izq"]]).replace(',', '.')
-        if "ancho de pulso [µs]_izq" in col_map and pd.notna(df.at[0, col_map["ancho de pulso [µs]_izq"]]):
-            datos["Ancho_pulso_izq"] = str(df.at[0, col_map["ancho de pulso [µs]_izq"]]).replace(',', '.')
-
-        # Derecha
-        if "voltaje [mv]_dch" in col_map and pd.notna(df.at[0, col_map["voltaje [mv]_dch"]]):
-            datos["Voltaje_dch"] = str(df.at[0, col_map["voltaje [mv]_dch"]]).replace(',', '.')
-        if "corriente [ma]_dch" in col_map and pd.notna(df.at[0, col_map["corriente [ma]_dch"]]):
-            datos["Corriente_dch"] = str(df.at[0, col_map["corriente [ma]_dch"]]).replace(',', '.')
-        if "contacto_dch" in col_map and pd.notna(df.at[0, col_map["contacto_dch"]]):
-            datos["Contacto_dch"] = str(df.at[0, col_map["contacto_dch"]])
-        if "frecuencia [hz]_dch" in col_map and pd.notna(df.at[0, col_map["frecuencia [hz]_dch"]]):
-            datos["Frecuencia_dch"] = str(df.at[0, col_map["frecuencia [hz]_dch"]]).replace(',', '.')
-        if "ancho de pulso [µs]_dch" in col_map and pd.notna(df.at[0, col_map["ancho de pulso [µs]_dch"]]):
-            datos["Ancho_pulso_dch"] = str(df.at[0, col_map["ancho de pulso [µs]_dch"]]).replace(',', '.')
+        # Extraer campos de estimulación (valores numéricos como están, contactos como texto)
+        stimulation_fields = {
+            "dbs": "DBS", "nucleo": "Nucleo",
+            "voltaje [mv]_izq": "Voltaje_izq", "corriente [ma]_izq": "Corriente_izq", "contacto_izq": "Contacto_izq",
+            "frecuencia [hz]_izq": "Frecuencia_izq", "ancho de pulso [µs]_izq": "Ancho_pulso_izq",
+            "voltaje [mv]_dch": "Voltaje_dch", "corriente [ma]_dch": "Corriente_dch", "contacto_dch": "Contacto_dch",
+            "frecuencia [hz]_dch": "Frecuencia_dch", "ancho de pulso [µs]_dch": "Ancho_pulso_dch",
+        }
+        for csv_key, dict_key in stimulation_fields.items():
+            if csv_key in col_map and pd.notna(df.at[0, col_map[csv_key]]):
+                value = str(df.at[0, col_map[csv_key]]).strip()
+                if value:
+                    datos[dict_key] = value.replace(',', '.')
 
     return datos
 
