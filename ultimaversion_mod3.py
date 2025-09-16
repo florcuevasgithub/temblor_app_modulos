@@ -264,7 +264,9 @@ if opcion == "1️⃣ Análisis de una medición":
         _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
         _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
         _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
-        _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("edad"))
+        edad_val = datos_paciente_dict.get("edad")
+        if isinstance(edad_val, (int, float)):
+                _imprimir_campo_pdf(pdf, "Edad", int(edad_val))
         _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("Diagnostico"))
         _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo"))
         _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("mano_medida"))
@@ -631,9 +633,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
             _imprimir_campo_pdf(pdf, "Nombre", datos_paciente.get("Nombre"))
             _imprimir_campo_pdf(pdf, "Apellido", datos_paciente.get("Apellido"))
-            edad_val = datos_paciente_dict.get("edad")
-            if isinstance(edad_val, (int, float)):
-                _imprimir_campo_pdf(pdf, "Edad", int(edad_val))
+            _imprimir_campo_pdf(pdf, "Edad", datos_paciente.get("Edad"))
             _imprimir_campo_pdf(pdf, "Sexo", datos_paciente.get("Sexo"))
             _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente.get("Diagnostico"))
             _imprimir_campo_pdf(pdf, "Tipo", datos_paciente.get("Tipo"))
