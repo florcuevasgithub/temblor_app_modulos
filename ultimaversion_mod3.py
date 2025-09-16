@@ -263,7 +263,7 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.set_font("Arial", size=12)
         _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
         _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
-        edad_val = datos_paciente_dict.get("edad")
+        edad_val = datos_paciente_dict.get("Edad")
         if isinstance(edad_val, (int, float)):
             _imprimir_campo_pdf(pdf, "Edad", int(edad_val))
         _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
