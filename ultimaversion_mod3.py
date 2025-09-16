@@ -505,7 +505,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
     st.title("📊 Comparación de Mediciones")
 
     def extraer_datos_paciente(df_csv):
-        # Esta función ahora no extrae la mano ni el dedo
+        # Esta función ahora extrae todos los datos del paciente y maneja la edad como entero
         datos_paciente = {
             "Nombre": df_csv.loc[0, 'Nombre'] if 'Nombre' in df_csv.columns else 'No especificado',
             "Apellido": df_csv.loc[0, 'Apellido'] if 'Apellido' in df_csv.columns else 'No especificado',
@@ -516,22 +516,35 @@ elif opcion == "2️⃣ Comparación de mediciones":
             "Antecedente": df_csv.loc[0, 'Antecedente'] if 'Antecedente' in df_csv.columns else 'No especificado',
             "Medicacion": df_csv.loc[0, 'Medicacion'] if 'Medicacion' in df_csv.columns else 'No especificado',
         }
+        # Intenta convertir la edad a entero, si es un valor numérico
+        edad_val = datos_paciente.get("Edad")
+        try:
+            # Convierte a entero si es un número válido
+            if isinstance(edad_val, (int, float)):
+                datos_paciente["Edad"] = int(edad_val)
+            elif isinstance(edad_val, str) and edad_val.replace('.', '', 1).isdigit():
+                datos_paciente["Edad"] = int(float(edad_val))
+            else:
+                datos_paciente["Edad"] = "No especificada"
+        except (ValueError, TypeError):
+            datos_paciente["Edad"] = "No especificada"
+
         return datos_paciente
 
     def extraer_datos_estimulacion(df_csv):
         metadata_dict = {}
         # Mapea los nombres de columna de tu CSV a los nombres que quieres en el PDF
         column_map = {
-            "DBS": "DBS", 
+            "DBS": "DBS",  
             "Nucleo": "Nucleo",
-            "Voltaje [mV]_izq": "Voltaje_izq", 
+            "Voltaje [mV]_izq": "Voltaje_izq",  
             "Corriente [mA]_izq": "Corriente_izq",
-            "Contacto_izq": "Contacto_izq", 
+            "Contacto_izq": "Contacto_izq",  
             "Frecuencia [Hz]_izq": "Frecuencia_izq",
             "Ancho de pulso [µS]_izq": "Pulso_izq",
-            "Voltaje [mV]_dch": "Voltaje_dch", 
+            "Voltaje [mV]_dch": "Voltaje_dch",  
             "Corriente [mA]_dch": "Corriente_dch",
-            "Contacto_dch": "Contacto_dch", 
+            "Contacto_dch": "Contacto_dch",  
             "Frecuencia [Hz]_dch": "Frecuencia_dch",
             "Ancho de pulso [µS]_dch": "Pulso_dch",
             "Mano": "Mano",
@@ -580,6 +593,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             if archivo is not None:
                 archivo.seek(0)
                 df = pd.read_csv(archivo, encoding='latin1')
+                df = clean_dataframe(df) # Se agrega la limpieza del DataFrame aquí
                 df_promedio, df_ventana = analizar_temblor_por_ventanas_resultante(df, fs=fs)
                 if isinstance(df_ventana, pd.DataFrame) and not df_ventana.empty:
                     prom = df_promedio.iloc[0] if not df_promedio.empty else None
@@ -606,6 +620,9 @@ elif opcion == "2️⃣ Comparación de mediciones":
         else:
             df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
             df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
+
+            df_config1_meta = clean_dataframe(df_config1_meta)
+            df_config2_meta = clean_dataframe(df_config2_meta)
 
             datos_paciente = extraer_datos_paciente(df_config1_meta)
             config1_params = extraer_datos_estimulacion(df_config1_meta)
@@ -713,7 +730,8 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
             st.subheader("Comparación Gráfica de Amplitud por Ventana")
             nombres_test = ["Reposo", "Postural", "Acción"]
-
+            ventana_duracion_seg = 2
+            
             for test in nombres_test:
                 archivo1 = config1_archivos[test]
                 archivo2 = config2_archivos[test]
@@ -723,6 +741,9 @@ elif opcion == "2️⃣ Comparación de mediciones":
                     archivo2.seek(0)
                     df1 = pd.read_csv(archivo1, encoding='latin1')
                     df2 = pd.read_csv(archivo2, encoding='latin1')
+                    
+                    df1 = clean_dataframe(df1) # Se agrega la limpieza del DataFrame aquí
+                    df2 = clean_dataframe(df2) # Se agrega la limpieza del DataFrame aquí
 
                     df1_promedio, df1_ventanas = analizar_temblor_por_ventanas_resultante(df1, fs=100)
                     df2_promedio, df2_ventanas = analizar_temblor_por_ventanas_resultante(df2, fs=100)
