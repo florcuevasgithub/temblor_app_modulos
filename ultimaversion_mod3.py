@@ -222,8 +222,8 @@ if st.sidebar.button("🔄 Nuevo análisis"):
     
 # ------------------ MÓDULO 1: ANÁLISIS DE UNA MEDICIÓN --------------------
 if opcion == "1️⃣ Análisis de una medición":
-    st.title("📈 Análisis de una Medición")
-    
+    st.title("📈​ Análisis de una Medición")
+
     def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", fig=None):
         fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
         pdf = FPDF()
@@ -235,21 +235,24 @@ if opcion == "1️⃣ Análisis de una medición":
     
         # Helper para imprimir campos de forma robusta
         def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-            # Verifica si el valor no es None, no es una cadena vacía y no es "sin informacion" (ignorando mayúsculas)
-            if valor is not None and str(valor).strip() != "" and str(valor).lower() not in ["sin informacion", "no especificado"]:
-                if isinstance(valor, (int, float)):
-                    valor_str = str(int(valor)) if etiqueta == "Edad" else str(valor)
-                else:
-                    valor_str = str(valor)
-                pdf_obj.cell(200, 10, f"{etiqueta}: {valor_str}{unidad}", ln=True)
-    
+            # Verifica si el valor es válido y no una cadena vacía o "sin informacion"
+            if valor is not None and str(valor).strip() != "" and str(valor).lower() not in ["sin informacion", "no especificado", "nan"]:
+                pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+
         # Impresión de Datos Personales
         pdf.set_font("Arial", 'B', 14)
         pdf.cell(0, 10, "Datos del Paciente", ln=True)
         pdf.set_font("Arial", size=12)
+        
         _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("nombre"))
         _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("apellido"))
-        _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("edad"))
+        
+        edad = datos_paciente_dict.get("edad")
+        if isinstance(edad, (int, float)):
+            _imprimir_campo_pdf(pdf, "Edad", int(edad))
+        elif isinstance(edad, str) and edad.lower() != "sin informacion":
+            _imprimir_campo_pdf(pdf, "Edad", edad)
+            
         _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
         _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("diagnostico"))
         _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("tipo"))
@@ -260,14 +263,19 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.ln(5)
     
         # Impresión de Parámetros de Estimulación
-        if any(key in datos_paciente_dict and str(datos_paciente_dict[key]).lower() not in ["sin informacion", "no especificado"] for key in ["dbs", "nucleo", "voltaje_izq", "voltaje_dch"]):
+        hay_parametros_estimulacion = any(str(datos_paciente_dict.get(k, '')).lower() not in ["sin informacion", "no especificado", "nan"] for k in ["dbs", "nucleo", "voltaje_izq", "voltaje_dch"])
+
+        if hay_parametros_estimulacion:
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Configuración de Estimulación", ln=True)
             pdf.set_font("Arial", size=12)
+            
             _imprimir_campo_pdf(pdf, "DBS", datos_paciente_dict.get("dbs"))
             _imprimir_campo_pdf(pdf, "Núcleo", datos_paciente_dict.get("nucleo"))
-    
-            if datos_paciente_dict.get("voltaje_izq") and str(datos_paciente_dict.get("voltaje_izq")).lower() not in ["sin informacion", "no especificado"]:
+
+            # Impresión de configuración izquierda
+            hay_parametros_izq = str(datos_paciente_dict.get("voltaje_izq", '')).lower() not in ["sin informacion", "nan"]
+            if hay_parametros_izq:
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(0, 10, "Configuración Izquierda", ln=True)
                 pdf.set_font("Arial", size=12)
@@ -277,8 +285,10 @@ if opcion == "1️⃣ Análisis de una medición":
                 _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("frecuencia_izq"), " Hz")
                 _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("ancho_pulso_izq"), " µS")
                 pdf.ln(2)
-    
-            if datos_paciente_dict.get("voltaje_dch") and str(datos_paciente_dict.get("voltaje_dch")).lower() not in ["sin informacion", "no especificado"]:
+
+            # Impresión de configuración derecha
+            hay_parametros_dch = str(datos_paciente_dict.get("voltaje_dch", '')).lower() not in ["sin informacion", "nan"]
+            if hay_parametros_dch:
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(0, 10, "Configuración Derecha", ln=True)
                 pdf.set_font("Arial", size=12)
@@ -288,8 +298,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("frecuencia_dch"), " Hz")
                 _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("ancho_pulso_dch"), " µS")
             pdf.ln(5)
-    
-        # El resto del código del PDF se mantiene igual...
+        
         pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
         pdf.ln(10)
         pdf.set_font("Arial", "B", 12)
@@ -321,15 +330,15 @@ if opcion == "1️⃣ Análisis de una medición":
           Para las frecuencias (Hz):
         - Temblor Parkinsoniano: 3-6 Hz en reposo.
         - Temblor Esencial: 8-10 Hz en acción o postura.
-    
+        
           Para las amplitudes:
         - Mayores a 0.5 cm pueden ser clínicamente relevantes.
-    
+        
           Para el RMS (m/s2):
         - Normal/sano: menor a 0.5 m/s2.
         - PK leve: entre 0.5 y 1.5 m/s2.
         - TE o PK severo: mayor a 2 m/s2.
-    
+        
         Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica.
         
         """
