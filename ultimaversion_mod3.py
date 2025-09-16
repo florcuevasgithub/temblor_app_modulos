@@ -221,140 +221,130 @@ if st.sidebar.button("🔄 Nuevo análisis"):
     manejar_reinicio()
     
 # ------------------ MÓDULO 1: ANÁLISIS DE UNA MEDICIÓN --------------------
-
-He revisado la función generar_pdf y el problema está en cómo se extraen y se imprimen los datos del paciente. La función extraer_datos_paciente que corregimos ahora devuelve las claves del diccionario en minúsculas (por ejemplo, 'nombre'), pero la función generar_pdf está buscando las claves en mayúsculas (por ejemplo, 'Nombre'). Esto provoca que no se encuentren y, por lo tanto, no se impriman en el PDF.
-
-Para solucionar esto, necesitas hacer los siguientes ajustes en la función generar_pdf de tu Módulo 1:
-
-Cambiar las claves del diccionario a minúsculas: Las llamadas a datos_paciente_dict.get() deben usar las claves en minúsculas para coincidir con la salida de la función extraer_datos_paciente.
-
-Manejar los valores nulos: La función _imprimir_campo_pdf ya maneja los valores nulos y vacíos, pero es buena práctica asegurarse de que las claves existan antes de llamar a la función.
-
-Aquí está el código de la función generar_pdf con la corrección aplicada. Simplemente reemplaza la función actual en tu script con este código.
-
-Python
-
-def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", fig=None):
-    fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
-    pdf.set_font("Arial", size=12)
-    pdf.ln(10)
-
-    # Helper para imprimir campos de forma robusta
-    def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-        # Verifica si el valor no es None, no es una cadena vacía y no es "sin informacion" (ignorando mayúsculas)
-        if valor is not None and str(valor).strip() != "" and str(valor).lower() not in ["sin informacion", "no especificado"]:
-            if isinstance(valor, (int, float)):
-                valor_str = str(int(valor)) if etiqueta == "Edad" else str(valor)
-            else:
-                valor_str = str(valor)
-            pdf_obj.cell(200, 10, f"{etiqueta}: {valor_str}{unidad}", ln=True)
-
-    # Impresión de Datos Personales
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, "Datos del Paciente", ln=True)
-    pdf.set_font("Arial", size=12)
-    _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("nombre"))
-    _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("apellido"))
-    _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("edad"))
-    _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
-    _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("diagnostico"))
-    _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("tipo"))
-    _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("mano_medida"))
-    _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("dedo_medido"))
-    _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente_dict.get("antecedente"))
-    _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente_dict.get("medicacion"))
-    pdf.ln(5)
-
-    # Impresión de Parámetros de Estimulación
-    if any(key in datos_paciente_dict and str(datos_paciente_dict[key]).lower() not in ["sin informacion", "no especificado"] for key in ["dbs", "nucleo", "voltaje_izq", "voltaje_dch"]):
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Configuración de Estimulación", ln=True)
+if opcion == "1️⃣ Análisis de una medición":
+    st.title("📈 Análisis de una Medición")
+    
+    def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", fig=None):
+        fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
         pdf.set_font("Arial", size=12)
-        _imprimir_campo_pdf(pdf, "DBS", datos_paciente_dict.get("dbs"))
-        _imprimir_campo_pdf(pdf, "Núcleo", datos_paciente_dict.get("nucleo"))
-
-        if datos_paciente_dict.get("voltaje_izq") and str(datos_paciente_dict.get("voltaje_izq")).lower() not in ["sin informacion", "no especificado"]:
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(0, 10, "Configuración Izquierda", ln=True)
-            pdf.set_font("Arial", size=12)
-            _imprimir_campo_pdf(pdf, "Voltaje", datos_paciente_dict.get("voltaje_izq"), " mV")
-            _imprimir_campo_pdf(pdf, "Corriente", datos_paciente_dict.get("corriente_izq"), " mA")
-            _imprimir_campo_pdf(pdf, "Contacto", datos_paciente_dict.get("contacto_izq"))
-            _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("frecuencia_izq"), " Hz")
-            _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("ancho_pulso_izq"), " µS")
-            pdf.ln(2)
-
-        if datos_paciente_dict.get("voltaje_dch") and str(datos_paciente_dict.get("voltaje_dch")).lower() not in ["sin informacion", "no especificado"]:
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(0, 10, "Configuración Derecha", ln=True)
-            pdf.set_font("Arial", size=12)
-            _imprimir_campo_pdf(pdf, "Voltaje", datos_paciente_dict.get("voltaje_dch"), " mV")
-            _imprimir_campo_pdf(pdf, "Corriente", datos_paciente_dict.get("corriente_dch"), " mA")
-            _imprimir_campo_pdf(pdf, "Contacto", datos_paciente_dict.get("contacto_dch"))
-            _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("frecuencia_dch"), " Hz")
-            _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("ancho_pulso_dch"), " µS")
-        pdf.ln(5)
-
-    # El resto del código del PDF se mantiene igual...
-    pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
-    pdf.ln(10)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(30, 10, "Test", 1)
-    pdf.cell(40, 10, "Frecuencia (Hz)", 1)
-    pdf.cell(30, 10, "RMS", 1)
-    pdf.cell(50, 10, "Amplitud (cm)", 1)
-    pdf.ln(10)
-
-    pdf.set_font("Arial", "", 12)
-    for _, row in df.iterrows():
-        pdf.cell(30, 10, row['Test'], 1)
-        pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
-        pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
-        pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
         pdf.ln(10)
-
-    def limpiar_texto_para_pdf(texto):
-        return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
-
-    pdf.ln(10)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(200, 10, "Interpretación clínica:", ln=True)
-    pdf.set_font("Arial", size=10)
-    texto_original = """
-    Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
     
-    Los valores de referencia considerados son:
-      Para las frecuencias (Hz):
-    - Temblor Parkinsoniano: 3-6 Hz en reposo.
-    - Temblor Esencial: 8-10 Hz en acción o postura.
-
-      Para las amplitudes:
-    - Mayores a 0.5 cm pueden ser clínicamente relevantes.
-
-      Para el RMS (m/s2):
-    - Normal/sano: menor a 0.5 m/s2.
-    - PK leve: entre 0.5 y 1.5 m/s2.
-    - TE o PK severo: mayor a 2 m/s2.
-
-    Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica.
+        # Helper para imprimir campos de forma robusta
+        def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
+            # Verifica si el valor no es None, no es una cadena vacía y no es "sin informacion" (ignorando mayúsculas)
+            if valor is not None and str(valor).strip() != "" and str(valor).lower() not in ["sin informacion", "no especificado"]:
+                if isinstance(valor, (int, float)):
+                    valor_str = str(int(valor)) if etiqueta == "Edad" else str(valor)
+                else:
+                    valor_str = str(valor)
+                pdf_obj.cell(200, 10, f"{etiqueta}: {valor_str}{unidad}", ln=True)
     
-    """
-    texto_limpio = limpiar_texto_para_pdf(texto_original)
-    pdf.multi_cell(0, 8, texto_limpio)
-    pdf.set_font("Arial", 'B', 12)
-
-    if fig is not None:
-        import tempfile
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
-            fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
-            pdf.image(tmpfile.name, x=15, w=180)
-            os.remove(tmpfile.name)
+        # Impresión de Datos Personales
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Datos del Paciente", ln=True)
+        pdf.set_font("Arial", size=12)
+        _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("nombre"))
+        _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("apellido"))
+        _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("edad"))
+        _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
+        _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("diagnostico"))
+        _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("tipo"))
+        _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("mano_medida"))
+        _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("dedo_medido"))
+        _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente_dict.get("antecedente"))
+        _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente_dict.get("medicacion"))
+        pdf.ln(5)
     
-    pdf.output(nombre_archivo)
+        # Impresión de Parámetros de Estimulación
+        if any(key in datos_paciente_dict and str(datos_paciente_dict[key]).lower() not in ["sin informacion", "no especificado"] for key in ["dbs", "nucleo", "voltaje_izq", "voltaje_dch"]):
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Configuración de Estimulación", ln=True)
+            pdf.set_font("Arial", size=12)
+            _imprimir_campo_pdf(pdf, "DBS", datos_paciente_dict.get("dbs"))
+            _imprimir_campo_pdf(pdf, "Núcleo", datos_paciente_dict.get("nucleo"))
+    
+            if datos_paciente_dict.get("voltaje_izq") and str(datos_paciente_dict.get("voltaje_izq")).lower() not in ["sin informacion", "no especificado"]:
+                pdf.set_font("Arial", 'B', 12)
+                pdf.cell(0, 10, "Configuración Izquierda", ln=True)
+                pdf.set_font("Arial", size=12)
+                _imprimir_campo_pdf(pdf, "Voltaje", datos_paciente_dict.get("voltaje_izq"), " mV")
+                _imprimir_campo_pdf(pdf, "Corriente", datos_paciente_dict.get("corriente_izq"), " mA")
+                _imprimir_campo_pdf(pdf, "Contacto", datos_paciente_dict.get("contacto_izq"))
+                _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("frecuencia_izq"), " Hz")
+                _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("ancho_pulso_izq"), " µS")
+                pdf.ln(2)
+    
+            if datos_paciente_dict.get("voltaje_dch") and str(datos_paciente_dict.get("voltaje_dch")).lower() not in ["sin informacion", "no especificado"]:
+                pdf.set_font("Arial", 'B', 12)
+                pdf.cell(0, 10, "Configuración Derecha", ln=True)
+                pdf.set_font("Arial", size=12)
+                _imprimir_campo_pdf(pdf, "Voltaje", datos_paciente_dict.get("voltaje_dch"), " mV")
+                _imprimir_campo_pdf(pdf, "Corriente", datos_paciente_dict.get("corriente_dch"), " mA")
+                _imprimir_campo_pdf(pdf, "Contacto", datos_paciente_dict.get("contacto_dch"))
+                _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("frecuencia_dch"), " Hz")
+                _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("ancho_pulso_dch"), " µS")
+            pdf.ln(5)
+    
+        # El resto del código del PDF se mantiene igual...
+        pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
+        pdf.ln(10)
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(30, 10, "Test", 1)
+        pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+        pdf.cell(30, 10, "RMS", 1)
+        pdf.cell(50, 10, "Amplitud (cm)", 1)
+        pdf.ln(10)
+    
+        pdf.set_font("Arial", "", 12)
+        for _, row in df.iterrows():
+            pdf.cell(30, 10, row['Test'], 1)
+            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+            pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+            pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+            pdf.ln(10)
+    
+        def limpiar_texto_para_pdf(texto):
+            return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
+    
+        pdf.ln(10)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(200, 10, "Interpretación clínica:", ln=True)
+        pdf.set_font("Arial", size=10)
+        texto_original = """
+        Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
+        
+        Los valores de referencia considerados son:
+          Para las frecuencias (Hz):
+        - Temblor Parkinsoniano: 3-6 Hz en reposo.
+        - Temblor Esencial: 8-10 Hz en acción o postura.
+    
+          Para las amplitudes:
+        - Mayores a 0.5 cm pueden ser clínicamente relevantes.
+    
+          Para el RMS (m/s2):
+        - Normal/sano: menor a 0.5 m/s2.
+        - PK leve: entre 0.5 y 1.5 m/s2.
+        - TE o PK severo: mayor a 2 m/s2.
+    
+        Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica.
+        
+        """
+        texto_limpio = limpiar_texto_para_pdf(texto_original)
+        pdf.multi_cell(0, 8, texto_limpio)
+        pdf.set_font("Arial", 'B', 12)
+    
+        if fig is not None:
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+                fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
+                pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+        
+        pdf.output(nombre_archivo)
 
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
