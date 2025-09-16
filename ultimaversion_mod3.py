@@ -349,6 +349,131 @@ if opcion == "1️⃣ Análisis de una medición":
             import tempfile
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
                 fig.savefig(tmpfile.name, format='png', bbox_inches='tight
+                pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+
+        pdf.output(nombre_archivo)
+
+    st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
+    reposo_file = st.file_uploader("", type=["csv"], key="reposo")
+
+    st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba POSTURAL</div>', unsafe_allow_html=True)
+    postural_file = st.file_uploader("", type=["csv"], key="postural")
+
+    st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en ACCIÓN</div>', unsafe_allow_html=True)
+    accion_file = st.file_uploader("", type=["csv"], key="accion")
+
+    st.markdown("""
+        <style>
+        /* Ocultar el texto original de "Drag and drop file here" */
+        div[data-testid="stFileUploaderDropzoneInstructions"] span {
+            display: none !important;
+        }
+
+        /* Añadir nuestro propio texto arriba del botón */
+        div[data-testid="stFileUploaderDropzoneInstructions"]::before {
+            content: "Arrastrar archivo aquí";
+            font-weight: bold;
+            font-size: 16px;
+            color: #444;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    uploaded_files = {
+        "Reposo": reposo_file,
+        "Postural": postural_file,
+        "Acción": accion_file,
+    }
+
+    # Inicializa estas variables FUERA del bloque del botón.
+    resultados_globales = []
+    datos_paciente_para_pdf = {}  # Cambiado a diccionario para datos del paciente
+    ventanas_para_grafico = []
+    min_ventanas_count = float('inf')
+    fig = None
+
+    if st.button("Iniciar análisis"):
+        mediciones_tests = {}
+        for test, file in uploaded_files.items():
+            if file is not None:
+                file.seek(0)
+                mediciones_tests[test] = file
+
+        if not mediciones_tests:
+            st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
+        else:
+            primer_df_cargado = None
+            for test, file_object in mediciones_tests.items():
+                if file_object is not None:
+                    df = pd.read_csv(file_object, encoding='latin1', header=0)
+                    primer_df_cargado = df
+                    file_object.seek(0)
+                    break
+            
+            if primer_df_cargado is not None:
+                # Extraer todos los datos del paciente y configuración usando la función actualizada
+                datos_paciente_para_pdf = extraer_datos_paciente(primer_df_cargado)
+            
+            # Procesar cada test
+            for test, file_object in mediciones_tests.items():
+                if file_object is not None:
+                    df = pd.read_csv(file_object, encoding='latin1', header=0)
+                    df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(df, fs=100)
+                    
+                    if not df_promedio.empty:
+                        fila = df_promedio.iloc[0].to_dict()
+                        fila['Test'] = test
+                        resultados_globales.append(fila)
+
+                    if not df_ventanas.empty:
+                        df_ventanas_copy = df_ventanas.copy()
+                        df_ventanas_copy["Test"] = test
+                        ventanas_para_grafico.append(df_ventanas_copy)
+                        if len(df_ventanas_copy) < min_ventanas_count:
+                            min_ventanas_count = len(df_ventanas_copy)
+            
+            if ventanas_para_grafico:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                for df in ventanas_para_grafico:
+                    test_name = df["Test"].iloc[0]
+                    if min_ventanas_count != float('inf') and len(df) > min_ventanas_count:
+                        df_to_plot = df.iloc[:min_ventanas_count].copy()
+                    else:
+                        df_to_plot = df.copy()
+                    
+                    df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * ventana_duracion_seg
+                    ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
+
+                ax.set_title("Amplitud de Temblor por Ventana de Tiempo (Comparación Visual)")
+                ax.set_xlabel("Tiempo (segundos)")
+                ax.set_ylabel("Amplitud (cm)")
+                ax.legend()
+                ax.grid(True)
+                st.pyplot(fig)
+            else:
+                st.warning("No se generaron datos de ventanas para el gráfico.")
+
+            if resultados_globales:
+                df_resultados_final = pd.DataFrame(resultados_globales)
+                st.subheader("Resultados del Análisis de Temblor")
+                st.dataframe(df_resultados_final.set_index('Test'))
+                
+                generar_pdf(
+                    datos_paciente_para_pdf,
+                    df_resultados_final,
+                    nombre_archivo="informe_temblor.pdf",
+                    fig=fig
+                )
+
+                with open("informe_temblor.pdf", "rb") as f:
+                    st.download_button("📄 Descargar informe PDF", f, file_name="informe_temblor.pdf")
+                    st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
+            else:
+                st.warning("No se encontraron datos suficientes para el análisis.")
+
 # ------------------ MÓDULO 2: COMPARACIÓN DE MEDICIONES --------------------
 
 elif opcion == "2️⃣ Comparación de mediciones":
