@@ -348,11 +348,12 @@ if opcion == "1️⃣ Análisis de una medición":
         if fig is not None:
             import tempfile
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
-                fig.savefig(tmpfile.name, format='png', bbox_inches='tight
+                fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
                 pdf.image(tmpfile.name, x=15, w=180)
                 os.remove(tmpfile.name)
 
         pdf.output(nombre_archivo)
+
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
     reposo_file = st.file_uploader("", type=["csv"], key="reposo")
