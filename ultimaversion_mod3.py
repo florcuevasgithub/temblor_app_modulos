@@ -259,10 +259,10 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.set_font("Arial", size=12)
         pdf.ln(10)
 
-        pdf.set_font("Arial", "", 10)
+        pdf.set_font("Arial", "", 12)
         pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
-        pdf.set_font("Arial", size=8)
-        pdf.ln(10)
+        pdf.set_font("Arial", size=12)
+        pdf.ln(8)
         # Helper para imprimir campos solo si tienen valor
         def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
             if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
@@ -677,7 +677,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             def imprimir_parametros_y_config(pdf_obj, parametros_dict, titulo):
                 pdf_obj.set_font("Arial", 'B', 12)
                 pdf_obj.cell(0, 10, titulo, ln=True)
-                pdf_obj.set_font("Arial", size=10)
+                pdf_obj.set_font("Arial", size=12)
                 
                 parametros_a_imprimir_con_unidad = {
                     "Mano": "", "Dedo": "",
@@ -800,9 +800,9 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.write(conclusion)
 
             # Eliminar la llamada a pdf.add_page() para evitar el espacio
-            pdf.set_font("Arial", 'B', 12)
+            pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Conclusión", ln=True)
-            pdf.set_font("Arial", size=10)
+            pdf.set_font("Arial", size=12)
             pdf.multi_cell(0, 10, conclusion)
 
             pdf_output = BytesIO()
@@ -868,7 +868,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
     def imprimir_parametros_y_config(pdf_obj, parametros_dict, titulo):
         pdf_obj.set_font("Arial", 'B', 12)
         pdf_obj.cell(0, 10, titulo, ln=True)
-        pdf_obj.set_font("Arial", size=10)
+        pdf_obj.set_font("Arial", size=12)
         
         parametros_a_imprimir_con_unidad = {
             "Mano": "", "Dedo": ""
@@ -886,7 +886,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         pdf.cell(0, 10, "Informe de Diagnóstico de Temblor", ln=True, align="C")
         pdf.ln(5)
         
-        pdf.set_font("Arial", size=10)
+        pdf.set_font("Arial", size=12)
         pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
         
         pdf.set_font("Arial", 'B', 14)
