@@ -258,7 +258,11 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
         pdf.set_font("Arial", size=12)
         pdf.ln(10)
-    
+
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
+        pdf.set_font("Arial", size=8)
+        pdf.ln(10)
         # Helper para imprimir campos solo si tienen valor
         def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
             if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
@@ -317,8 +321,8 @@ if opcion == "1️⃣ Análisis de una medición":
             pdf.ln(5)
         
         # El resto del código del PDF se mantiene igual
-        pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
-        pdf.ln(10)
+        #pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
+        #pdf.ln(10)
         pdf.set_font("Arial", "B", 12)
         pdf.cell(30, 10, "Test", 1)
         pdf.cell(40, 10, "Frecuencia (Hz)", 1)
