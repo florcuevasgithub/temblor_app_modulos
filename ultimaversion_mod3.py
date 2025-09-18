@@ -820,6 +820,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
             
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
+# ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
 elif opcion == "3️⃣ Diagnóstico tentativo":
     st.title("🩺 Diagnóstico Tentativo")
     st.markdown("### Cargar archivos CSV para el Diagnóstico")
@@ -880,10 +881,10 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 pdf_obj.cell(200, 10, f"{param_key}: {value}{unit}", ln=True)
         pdf_obj.ln(5)
 
-    def generar_pdf(paciente_data, estimulacion_data, resultados_df, prediccion_texto, graficos_paths):
+    def generar_pdf(paciente_data, estimulacion_data, resultados_df, prediccion_texto, probabilidades_texto, graficos_paths):
         pdf = FPDF()
         pdf.add_page()
-        pdf.set_font("Arial", 'B', 14)
+        pdf.set_font("Arial", 'B', 16)
         pdf.cell(0, 10, "Informe de Diagnóstico de Temblor", ln=True, align="C")
         pdf.ln(5)
         
@@ -931,11 +932,23 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
             pdf.ln(10)
         pdf.ln(5)
+
+        # Imprimir el diagnóstico antes de los gráficos
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Diagnóstico (Predicción)", ln=True)
+        pdf.set_font("Arial", size=12)
+        pdf.multi_cell(0, 10, prediccion_texto)
+        pdf.ln(5)
+        if probabilidades_texto:
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(0, 10, "Probabilidades por clase:", ln=True)
+            pdf.set_font("Arial", size=10)
+            pdf.multi_cell(0, 5, probabilidades_texto)
+            pdf.ln(5)
         
         # Generar gráficos
         for i, img_path in enumerate(graficos_paths):
             if os.path.exists(img_path):
-                # Verificar si hay espacio para el gráfico
                 altura_grafico = 100
                 if (pdf.get_y() + altura_grafico) > (pdf.h - 20):
                     pdf.add_page()
@@ -945,15 +958,8 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 pdf.image(img_path, x=15, w=180)
             else:
                 pdf.cell(0, 10, f"Error: No se pudo cargar el gráfico {i+1}", ln=True)
+            pdf.ln(5) # Añadir un espacio entre gráficos
 
-        # Imprimir diagnóstico y conclusión después de los gráficos
-        pdf.ln(10) # Pequeño espacio para separar
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "Diagnóstico (Predicción)", ln=True)
-        pdf.set_font("Arial", size=10)
-        pdf.multi_cell(0, 10, prediccion_texto)
-        pdf.ln(5)
-            
         pdf_output = BytesIO()
         pdf_bytes = pdf.output(dest='S').encode('latin1')
         pdf_output.write(pdf_bytes)
@@ -1064,6 +1070,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
 
                 model_filename = 'tremor_prediction_model_V2.joblib'
                 prediccion_final = "No se pudo realizar el diagnóstico."
+                probabilidades_texto = ""
                 
                 try:
                     modelo_cargado = joblib.load(model_filename)
@@ -1075,10 +1082,12 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
 
                     if hasattr(modelo_cargado, 'predict_proba'):
                         probabilities = modelo_cargado.predict_proba(df_for_prediction)
-                        st.write("Probabilidades por clase:")
+                        probabilidades_list = []
                         if hasattr(modelo_cargado, 'classes_'):
                             for i, class_label in enumerate(modelo_cargado.classes_):
                                 st.write(f"- **{class_label}**: {probabilities[0][i]*100:.2f}%")
+                                probabilidades_list.append(f"- {class_label}: {probabilities[0][i]*100:.2f}%")
+                            probabilidades_texto = "\n".join(probabilidades_list)
                         else:
                             st.info("El modelo no tiene el atributo 'classes_'. No se pueden mostrar las etiquetas de clase.")
                 except FileNotFoundError:
@@ -1137,6 +1146,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     datos_estimulacion, 
                     df_metrics_display, 
                     f"El diagnóstico tentativo es: {prediccion_final}",
+                    probabilidades_texto,
                     graficos_paths
                 )
 
