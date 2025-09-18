@@ -516,174 +516,285 @@ if opcion == "1️⃣ Análisis de una medición":
                 
 # ------------------ MÓDULO 2: COMPARACIÓN DE MEDICIONES -------------------------------
 
-if opcion == "2️⃣ Comparación de mediciones":
+elif opcion == "2️⃣ Comparación de mediciones":
     st.title("📊 Comparación de Mediciones")
+
+    def extraer_datos_paciente(df_csv):
+        # Esta función ahora no extrae la mano ni el dedo
+        datos_paciente = {
+            "Nombre": df_csv.loc[0, 'Nombre'] if 'Nombre' in df_csv.columns else 'No especificado',
+            "Apellido": df_csv.loc[0, 'Apellido'] if 'Apellido' in df_csv.columns else 'No especificado',
+            "Edad": df_csv.loc[0, 'Edad'] if 'Edad' in df_csv.columns else 'No especificada',
+            "Sexo": df_csv.loc[0, 'Sexo'] if 'Sexo' in df_csv.columns else 'No especificado',
+            "Diagnostico": df_csv.loc[0, 'Diagnostico'] if 'Diagnostico' in df_csv.columns else 'No especificado',
+            "Tipo": df_csv.loc[0, 'Tipo'] if 'Tipo' in df_csv.columns else 'No especificado',
+            "Antecedente": df_csv.loc[0, 'Antecedente'] if 'Antecedente' in df_csv.columns else 'No especificado',
+            "Medicacion": df_csv.loc[0, 'Medicacion'] if 'Medicacion' in df_csv.columns else 'No especificado',
+        }
+        return datos_paciente
+
+    def extraer_datos_estimulacion(df_csv):
+        metadata_dict = {}
+        # Mapea los nombres de columna de tu CSV a los nombres que quieres en el PDF
+        column_map = {
+            "DBS": "DBS", 
+            "Nucleo": "Nucleo",
+            "Voltaje [mV]_izq": "Voltaje_izq", 
+            "Corriente [mA]_izq": "Corriente_izq",
+            "Contacto_izq": "Contacto_izq", 
+            "Frecuencia [Hz]_izq": "Frecuencia_izq",
+            "Ancho de pulso [µS]_izq": "Pulso_izq",
+            "Voltaje [mV]_dch": "Voltaje_dch", 
+            "Corriente [mA]_dch": "Corriente_dch",
+            "Contacto_dch": "Contacto_dch", 
+            "Frecuencia [Hz]_dch": "Frecuencia_dch",
+            "Ancho de pulso [µS]_dch": "Pulso_dch",
+            "Mano": "Mano",
+            "Dedo": "Dedo"
+        }
+        
+        for csv_col, pdf_label in column_map.items():
+            if csv_col in df_csv.columns:
+                value = df_csv.loc[0, csv_col]
+                metadata_dict[pdf_label] = value
+        return metadata_dict
+
+    st.markdown("### Cargar archivos de la **medición 1**")
+    config1_archivos = {
+        "Reposo": st.file_uploader("Archivo de REPOSO medición 1", type="csv", key="reposo1"),
+        "Postural": st.file_uploader("Archivo de POSTURAL medición 1", type="csv", key="postural1"),
+        "Acción": st.file_uploader("Archivo de ACCION medición 1", type="csv", key="accion1")
+    }
+
+    st.markdown("### Cargar archivos de la **medición 2**")
+    config2_archivos = {
+        "Reposo": st.file_uploader("Archivo de REPOSO medición 2", type="csv", key="reposo2"),
+        "Postural": st.file_uploader("Archivo de POSTURAL medición 2", type="csv", key="postural2"),
+        "Acción": st.file_uploader("Archivo de ACCION medición 2", type="csv", key="accion2")
+    }
     
-    def generar_pdf_comparativo(datos_paciente_dict, df_comparativo, graficos, nombre_archivo="informe_comparativo.pdf"):
-        fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", 'B', 16)
-        pdf.cell(200, 10, "Informe Comparativo de Temblor", ln=True, align='C')
-        pdf.set_font("Arial", size=12)
-        pdf.ln(10)
+    st.markdown("""
+        <style>
+        div[data-testid="stFileUploaderDropzoneInstructions"] span {
+            display: none !important;
+        }
+        div[data-testid="stFileUploaderDropzoneInstructions"]::before {
+            content: "Arrastrar archivo aquí";
+            font-weight: bold;
+            font-size: 16px;
+            color: #444;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-        def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-            if valor is not None and str(valor).strip() != "" and pd.notna(valor) and str(valor).lower() != "no especificado":
-                pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+    def analizar_configuracion(archivos, fs=100):
+        resultados = []
+        for test, archivo in archivos.items():
+            if archivo is not None:
+                archivo.seek(0)
+                df = pd.read_csv(archivo, encoding='latin1')
+                df_promedio, df_ventana = analizar_temblor_por_ventanas_resultante(df, fs=fs)
+                if isinstance(df_ventana, pd.DataFrame) and not df_ventana.empty:
+                    prom = df_promedio.iloc[0] if not df_promedio.empty else None
+                    if prom is not None:
+                        freq = prom['Frecuencia Dominante (Hz)']
+                        amp = prom['Amplitud Temblor (cm)']
+                        rms = prom['RMS (m/s2)']
+                        resultados.append({
+                            'Test': test,
+                            'Frecuencia Dominante (Hz)': round(freq, 2),
+                            'RMS (m/s2)': round(rms, 4),
+                            'Amplitud Temblor (cm)': round(amp, 2)
+                        })
+        return pd.DataFrame(resultados)
 
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Datos del Paciente", ln=True)
-        pdf.set_font("Arial", size=12)
-        _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("nombre"))
-        _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("apellido"))
-        edad_val = datos_paciente_dict.get("edad")
-        if edad_val is not None and not pd.isna(edad_val):
-            _imprimir_campo_pdf(pdf, "Edad", int(edad_val))
-        _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
-        _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("mano_medida"))
-        _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("dedo_medido"))
-        pdf.ln(5)
+    if st.button("Comparar Mediciones"):
+        archivos_cargados = all([
+            config1_archivos[test] is not None and config2_archivos[test] is not None
+            for test in ["Reposo", "Postural", "Acción"]
+        ])
 
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Resultados Comparativos", ln=True)
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(50, 10, "Condicion", 1)
-        pdf.cell(40, 10, "Frecuencia (Hz)", 1)
-        pdf.cell(40, 10, "Amplitud (cm)", 1)
-        pdf.ln(10)
-    
-        pdf.set_font("Arial", "", 12)
-        for _, row in df_comparativo.iterrows():
-            pdf.cell(50, 10, str(row['Condicion']), 1)
-            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
-            pdf.cell(40, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
-            pdf.ln(10)
-        
-        pdf.ln(10)
-        
-        for titulo_grafico, fig in graficos.items():
-            pdf.set_font("Arial", 'B', 14)
-            altura_grafico = 100
-            if (pdf.get_y() + altura_grafico) > (pdf.h - 20):
-                pdf.add_page()
-            
-            pdf.cell(0, 10, titulo_grafico, ln=True, align="C")
-            
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
-                fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
-                pdf.image(tmpfile.name, x=25, w=150)
-                os.remove(tmpfile.name)
-        
-        pdf_output = BytesIO()
-        pdf_bytes = pdf.output(dest='S').encode('latin1')
-        pdf_output.write(pdf_bytes)
-        pdf_output.seek(0)
-        return pdf_output
-
-
-    num_mediciones = st.number_input(
-        "¿Cuántas mediciones deseas comparar?",
-        min_value=2,
-        max_value=10,
-        value=2
-    )
-
-    uploaded_files_list = []
-    condiciones_list = []
-
-    for i in range(num_mediciones):
-        st.markdown(f"---")
-        st.subheader(f"Medición {i+1}")
-        
-        # Subida de archivo individual
-        file_uploader_key = f"file_uploader_{i}"
-        uploaded_file = st.file_uploader(f"Carga el archivo CSV para la Medición {i+1}", type=["csv"], key=file_uploader_key)
-        uploaded_files_list.append(uploaded_file)
-
-        # Entrada para la condición
-        condicion_key = f"condicion_{i}"
-        condicion_input = st.text_input(f"Ingresa el nombre de la medición {i+1} (ej: 'pre-medicación', 'post-medicación')", key=condicion_key)
-        condiciones_list.append(condicion_input)
-
-    if st.button("Iniciar Comparación"):
-        uploaded_files_comparacion = [f for f in uploaded_files_list if f is not None]
-        condiciones = [c if c else f"Medición {i+1}" for i, c in enumerate(condiciones_list)]
-
-        if len(uploaded_files_comparacion) < 2:
-            st.warning("Por favor, sube al menos dos archivos para la comparación.")
+        if not archivos_cargados:
+            st.warning("Por favor, cargue los 3 archivos para ambas mediciones.")
         else:
-            resultados_comparativos = []
-            ventanas_para_graficos = {}
-            graficos = {}
+            df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
+            df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
 
-            primer_df_cargado = None
-            for file_object in uploaded_files_comparacion:
-                file_object.seek(0)
-                primer_df_cargado = pd.read_csv(file_object, encoding='latin1', header=0)
-                file_object.seek(0)
-                break
+            datos_paciente = extraer_datos_paciente(df_config1_meta)
+            config1_params = extraer_datos_estimulacion(df_config1_meta)
+            config2_params = extraer_datos_estimulacion(df_config2_meta)
 
-            if primer_df_cargado is not None:
-                datos_paciente_para_pdf = extraer_datos_paciente(primer_df_cargado)
+            df_resultados_config1 = analizar_configuracion(config1_archivos)
+            df_resultados_config2 = analizar_configuracion(config2_archivos)
+
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Informe Comparativo de Mediciones", ln=True, align="C")
+
+            pdf.set_font("Arial", size=10)
+            pdf.ln(10)
+            pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
+            
+            def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
+                if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+                    pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
+
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Datos del Paciente", ln=True)
+            pdf.set_font("Arial", size=12)
+
+            _imprimir_campo_pdf(pdf, "Nombre", datos_paciente.get("Nombre"))
+            _imprimir_campo_pdf(pdf, "Apellido", datos_paciente.get("Apellido"))
+            _imprimir_campo_pdf(pdf, "Edad", datos_paciente.get("Edad"))
+            _imprimir_campo_pdf(pdf, "Sexo", datos_paciente.get("Sexo"))
+            _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente.get("Diagnostico"))
+            _imprimir_campo_pdf(pdf, "Tipo", datos_paciente.get("Tipo"))
+            _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente.get("Antecedente"))
+            _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente.get("Medicacion"))
+            pdf.ln(5)
+
+            def imprimir_parametros_y_config(pdf_obj, parametros_dict, titulo):
+                pdf_obj.set_font("Arial", 'B', 12)
+                pdf_obj.cell(0, 10, titulo, ln=True)
+                pdf_obj.set_font("Arial", size=10)
                 
-                if datos_paciente_para_pdf.get("sexo"):
-                    datos_paciente_para_pdf["sexo"] = datos_paciente_para_pdf["sexo"].lower()
-                if datos_paciente_para_pdf.get("mano_medida"):
-                    datos_paciente_para_pdf["mano_medida"] = datos_paciente_para_pdf["mano_medida"].lower()
-                if datos_paciente_para_pdf.get("dedo_medido"):
-                    datos_paciente_para_pdf["dedo_medido"] = datos_paciente_para_pdf["dedo_medido"].lower()
+                parametros_a_imprimir_con_unidad = {
+                    "Mano": "", "Dedo": "",
+                    "DBS": "", "Nucleo": "",
+                    "Voltaje_izq": " mV", "Corriente_izq": " mA", "Contacto_izq": "",
+                    "Frecuencia_izq": " Hz", "Pulso_izq": " µS",
+                    "Voltaje_dch": " mV", "Corriente_dch": " mA", "Contacto_dch": "",
+                    "Frecuencia_dch": " Hz", "Pulso_dch": " µS"
+                }
 
-            for i, file_object in enumerate(uploaded_files_comparacion):
-                file_object.seek(0)
-                df = pd.read_csv(file_object, encoding='latin1', header=0)
-                condicion = condiciones[i]
-                
-                df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(df, fs=100)
+                for param_key, unit in parametros_a_imprimir_con_unidad.items():
+                    value = parametros_dict.get(param_key)
+                    if value is not None and str(value).strip() != "" and str(value).lower() != "no especificado":
+                        pdf_obj.cell(200, 10, f"{param_key}: {value}{unit}", ln=True)
+                pdf_obj.ln(5)
 
-                if not df_promedio.empty:
-                    df_promedio['Condicion'] = condicion
-                    resultados_comparativos.append(df_promedio)
-                
-                if not df_ventanas.empty:
-                    df_ventanas_copy = df_ventanas.copy()
-                    df_ventanas_copy['Condicion'] = condicion
-                    ventanas_para_graficos[condicion] = df_ventanas_copy
+            imprimir_parametros_y_config(pdf, config1_params, "Configuración Medición 1")
+            imprimir_parametros_y_config(pdf, config2_params, "Configuración Medición 2")
 
-            if resultados_comparativos:
-                df_final = pd.concat(resultados_comparativos, ignore_index=True)
-                st.subheader("Resultados Comparativos")
-                st.dataframe(df_final.set_index('Condicion'))
+            def imprimir_resultados(pdf_obj, df_res, titulo):
+                pdf_obj.set_font("Arial", 'B', 14)
+                pdf_obj.cell(0, 10, titulo, ln=True)
+                pdf_obj.set_font("Arial", 'B', 12)
+                pdf_obj.cell(30, 10, "Test", 1)
+                pdf_obj.cell(40, 10, "Frecuencia (Hz)", 1)
+                pdf_obj.cell(30, 10, "RMS", 1)
+                pdf_obj.cell(50, 10, "Amplitud (cm)", 1)
+                pdf_obj.ln(10)
+                pdf_obj.set_font("Arial", "", 10)
 
-                # Gráfico de barras comparativo de Amplitud
-                fig_amplitud, ax_amplitud = plt.subplots()
-                amplitudes = df_final['Amplitud Temblor (cm)'].values
-                condiciones_plot = df_final['Condicion'].values
-                ax_amplitud.bar(condiciones_plot, amplitudes, color=['skyblue', 'salmon', 'lightgreen', 'orange', 'purple'])
-                ax_amplitud.set_title("Amplitud de Temblor por Condición")
-                ax_amplitud.set_ylabel("Amplitud (cm)")
-                ax_amplitud.grid(axis='y', linestyle='--')
-                st.pyplot(fig_amplitud)
-                graficos["Gráfico de Amplitud (cm)"] = fig_amplitud
+                for _, row in df_res.iterrows():
+                    pdf_obj.cell(30, 10, row['Test'], 1)
+                    pdf_obj.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+                    pdf_obj.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+                    pdf_obj.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+                    pdf_obj.ln(10)
+                pdf_obj.ln(5)
 
-                # Gráfico de barras comparativo de Frecuencia
-                fig_frecuencia, ax_frecuencia = plt.subplots()
-                frecuencias = df_final['Frecuencia Dominante (Hz)'].values
-                ax_frecuencia.bar(condiciones_plot, frecuencias, color=['skyblue', 'salmon', 'lightgreen', 'orange', 'purple'])
-                ax_frecuencia.set_title("Frecuencia Dominante por Condición")
-                ax_frecuencia.set_ylabel("Frecuencia (Hz)")
-                ax_frecuencia.grid(axis='y', linestyle='--')
-                st.pyplot(fig_frecuencia)
-                graficos["Gráfico de Frecuencia (Hz)"] = fig_frecuencia
+            imprimir_resultados(pdf, df_resultados_config1, "Resultados Medición 1")
+            imprimir_resultados(pdf, df_resultados_config2, "Resultados Medición 2")
+            
+            amp_avg_config1 = df_resultados_config1['Amplitud Temblor (cm)'].mean()
+            amp_avg_config2 = df_resultados_config2['Amplitud Temblor (cm)'].mean()
 
-                pdf_output = generar_pdf_comparativo(datos_paciente_para_pdf, df_final, graficos)
-
-                st.download_button("📄 Descargar Informe Comparativo", pdf_output, file_name="informe_comparativo.pdf")
-                st.info("El archivo se descargará en tu carpeta de descargas.")
+            conclusion = ""
+            if amp_avg_config1 < amp_avg_config2:
+                conclusion = (
+                    f"La Medición 1 muestra una amplitud de temblor promedio ({amp_avg_config1:.2f} cm) "
+                    f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor."
+                )
+            elif amp_avg_config2 < amp_avg_config1:
+                conclusion = (
+                    f"La Medición 2 muestra una amplitud de temblor promedio ({amp_avg_config2:.2f} cm) "
+                    f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor."
+                )
             else:
-                st.warning("No se encontraron datos suficientes para el análisis comparativo.")
+                conclusion = (
+                    f"Ambas mediciones muestran amplitudes de temblor promedio muy similares ({amp_avg_config1:.2f} cm)."
+                )
 
-    st.markdown('<div class="prueba-titulo">Sube dos o más archivos, y asigna un nombre a cada medición.</div>', unsafe_allow_html=True)
+            st.subheader("Resultados Medición 1")
+            st.dataframe(df_resultados_config1)
+
+            st.subheader("Resultados Medición 2")
+            st.dataframe(df_resultados_config2)
+
+            st.subheader("Comparación Gráfica de Amplitud por Ventana")
+            nombres_test = ["Reposo", "Postural", "Acción"]
+
+            for test in nombres_test:
+                archivo1 = config1_archivos[test]
+                archivo2 = config2_archivos[test]
+
+                if archivo1 is not None and archivo2 is not None:
+                    archivo1.seek(0)
+                    archivo2.seek(0)
+                    df1 = pd.read_csv(archivo1, encoding='latin1')
+                    df2 = pd.read_csv(archivo2, encoding='latin1')
+
+                    df1_promedio, df1_ventanas = analizar_temblor_por_ventanas_resultante(df1, fs=100)
+                    df2_promedio, df2_ventanas = analizar_temblor_por_ventanas_resultante(df2, fs=100)
+
+                    if not df1_ventanas.empty and not df2_ventanas.empty:
+                        fig, ax = plt.subplots(figsize=(10, 5))
+
+                        df1_ventanas["Tiempo (segundos)"] = df1_ventanas["Ventana"] * ventana_duracion_seg
+                        df2_ventanas["Tiempo (segundos)"] = df2_ventanas["Ventana"] * ventana_duracion_seg
+
+                        ax.plot(df1_ventanas["Tiempo (segundos)"], df1_ventanas["Amplitud Temblor (cm)"], label="Configuración 1", color="blue")
+                        ax.plot(df2_ventanas["Tiempo (segundos)"], df2_ventanas["Amplitud Temblor (cm)"], label="Configuración 2", color="orange")
+                        ax.set_title(f"Amplitud por Ventana - {test}")
+                        ax.set_xlabel("Tiempo (segundos)")
+                        ax.set_ylabel("Amplitud (cm)")
+                        ax.legend()
+                        ax.grid(True)
+                        st.pyplot(fig)
+
+                        import tempfile
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
+                            fig.savefig(tmp_img.name, format='png', bbox_inches='tight')
+                            image_path_for_pdf = tmp_img.name
+                        try:
+                            pdf.add_page()
+                            pdf.set_font("Arial", 'B', 14)
+                            pdf.cell(0, 10, f"Gráfico Comparativo: {test}", ln=True, align="C")
+                            pdf.image(image_path_for_pdf, x=15, w=180)
+                        finally:
+                            os.remove(image_path_for_pdf)
+                        plt.close(fig)
+                    else:
+                        st.warning(f"No hay suficientes datos de ventanas para graficar el test: {test}")
+                else:
+                    st.warning(f"Faltan archivos para el test {test} en al menos una Medición.")
+            
+            st.subheader("Conclusión del Análisis Comparativo")
+            st.write(conclusion)
+
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(0, 10, "Conclusión", ln=True)
+            pdf.set_font("Arial", size=10)
+            pdf.multi_cell(0, 10, conclusion)
+
+            pdf_output = BytesIO()
+            pdf_bytes = pdf.output(dest='S').encode('latin1')
+            pdf_output.write(pdf_bytes)
+            pdf_output.seek(0)
+
+            st.download_button(
+                label="Descargar Informe PDF",
+                data=pdf_output.getvalue(),
+                file_name="informe_comparativo_temblor.pdf",
+                mime="application/pdf"
+            )
+            st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
             
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
 elif opcion == "3️⃣ Diagnóstico tentativo":
