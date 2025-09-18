@@ -66,74 +66,59 @@ ventana_duracion_seg = 2
 
 # --------- Funciones compartidas ----------
 # Función para extraer datos del paciente de un DataFrame
-def extraer_datos_paciente(df):
+def extraer_datos_csv(df):
     """
-    Extrae datos personales del paciente y parámetros de configuración de DBS
-    desde un DataFrame, sin modificar las columnas originales del DataFrame.
+    Extrae todos los metadatos de un DataFrame de CSV, normalizando
+    las claves a minúsculas y limpiando los valores.
     """
-    col_map = {col.lower().strip(): col for col in df.columns}
+    if df.empty or df.shape[0] == 0:
+        return {}
 
-    datos = {
-        "sexo": "No especificado", "edad": 0,
-        "mano_medida": "No especificada", "dedo_medido": "No especificado",
-        "Nombre": None, "Apellido": None, "Diagnostico": None,
-        "Antecedente": None, "Medicacion": None, "Tipo": None,
-        "DBS": None, "Nucleo": None,
-        "Voltaje_izq": None, "Corriente_izq": None, "Contacto_izq": None, "Frecuencia_izq": None, "Ancho_pulso_izq": None,
-        "Voltaje_dch": None, "Corriente_dch": None, "Contacto_dch": None, "Frecuencia_dch": None, "Ancho_pulso_dch": None,
+    # Mapeo de columnas de CSV a claves normalizadas en minúsculas
+    column_map = {
+        'nombre': 'nombre', 'apellido': 'apellido', 'edad': 'edad',
+        'sexo': 'sexo', 'diagnostico': 'diagnostico', 'tipo': 'tipo',
+        'antecedente': 'antecedente', 'medicacion': 'medicacion',
+        'mano': 'mano_medida', 'dedo': 'dedo_medido',
+        'dbs': 'dbs', 'nucleo': 'nucleo',
+        'voltaje [mv]_izq': 'voltaje_izq', 'corriente [ma]_izq': 'corriente_izq',
+        'contacto_izq': 'contacto_izq', 'frecuencia [hz]_izq': 'frecuencia_izq',
+        'ancho de pulso [µs]_izq': 'ancho_pulso_izq',
+        'voltaje [mv]_dch': 'voltaje_dch', 'corriente [ma]_dch': 'corriente_dch',
+        'contacto_dch': 'contacto_dch', 'frecuencia [hz]_dch': 'frecuencia_dch',
+        'ancho de pulso [µs]_dch': 'ancho_pulso_dch'
     }
 
-    if not df.empty:
-        # Extraer datos personales usando el mapeo
-        if "sexo" in col_map and pd.notna(df.at[0, col_map["sexo"]]):
-            datos["sexo"] = str(df.at[0, col_map["sexo"]]).strip()
-        if "edad" in col_map and pd.notna(df.at[0, col_map["edad"]]):
-            try:
-                datos["edad"] = int(float(str(df.at[0, col_map["edad"]]).replace(',', '.')))
-            except (ValueError, TypeError):
-                datos["edad"] = 0
-        if "mano" in col_map and pd.notna(df.at[0, col_map["mano"]]):
-            datos["mano_medida"] = str(df.at[0, col_map["mano"]]).strip()
-        if "dedo" in col_map and pd.notna(df.at[0, col_map["dedo"]]):
-            datos["dedo_medido"] = str(df.at[0, col_map["dedo"]]).strip()
+    # Inicializa el diccionario de datos con valores por defecto
+    datos = {v: None for v in column_map.values()}
 
-        for key in ["Nombre", "Apellido", "Diagnostico", "Antecedente", "Medicacion", "Tipo"]:
-            key_l = key.lower()
-            if key_l in col_map and pd.notna(df.at[0, col_map[key_l]]):
-                datos[key] = str(df.at[0, col_map[key_l]])
+    # Procesar la primera fila del DataFrame (metadatos)
+    row = df.iloc[0]
+    
+    # Crear un diccionario de mapeo de columnas del DataFrame a sus nombres en minúsculas
+    df_cols_lower = {col.lower(): col for col in df.columns}
 
-        # Extraer campos de estimulación con los nombres exactos proporcionados
-        # General
-        if "dbs" in col_map and pd.notna(df.at[0, col_map["dbs"]]):
-            datos["DBS"] = str(df.at[0, col_map["dbs"]])
-        if "nucleo" in col_map and pd.notna(df.at[0, col_map["nucleo"]]):
-            datos["Nucleo"] = str(df.at[0, col_map["nucleo"]])
-
-        # Izquierda
-        if "voltaje [mv]_izq" in col_map and pd.notna(df.at[0, col_map["voltaje [mv]_izq"]]):
-            datos["Voltaje_izq"] = str(df.at[0, col_map["voltaje [mv]_izq"]]).replace(',', '.')
-        if "corriente [ma]_izq" in col_map and pd.notna(df.at[0, col_map["corriente [ma]_izq"]]):
-            datos["Corriente_izq"] = str(df.at[0, col_map["corriente [ma]_izq"]]).replace(',', '.')
-        if "contacto_izq" in col_map and pd.notna(df.at[0, col_map["contacto_izq"]]):
-            datos["Contacto_izq"] = str(df.at[0, col_map["contacto_izq"]])
-        if "frecuencia [hz]_izq" in col_map and pd.notna(df.at[0, col_map["frecuencia [hz]_izq"]]):
-            datos["Frecuencia_izq"] = str(df.at[0, col_map["frecuencia [hz]_izq"]]).replace(',', '.')
-        if "ancho de pulso [µs]_izq" in col_map and pd.notna(df.at[0, col_map["ancho de pulso [µs]_izq"]]):
-            datos["Ancho_pulso_izq"] = str(df.at[0, col_map["ancho de pulso [µs]_izq"]]).replace(',', '.')
-
-        # Derecha
-        if "voltaje [mv]_dch" in col_map and pd.notna(df.at[0, col_map["voltaje [mv]_dch"]]):
-            datos["Voltaje_dch"] = str(df.at[0, col_map["voltaje [mv]_dch"]]).replace(',', '.')
-        if "corriente [ma]_dch" in col_map and pd.notna(df.at[0, col_map["corriente [ma]_dch"]]):
-            datos["Corriente_dch"] = str(df.at[0, col_map["corriente [ma]_dch"]]).replace(',', '.')
-        if "contacto_dch" in col_map and pd.notna(df.at[0, col_map["contacto_dch"]]):
-            datos["Contacto_dch"] = str(df.at[0, col_map["contacto_dch"]])
-        if "frecuencia [hz]_dch" in col_map and pd.notna(df.at[0, col_map["frecuencia [hz]_dch"]]):
-            datos["Frecuencia_dch"] = str(df.at[0, col_map["frecuencia [hz]_dch"]]).replace(',', '.')
-        if "ancho de pulso [µs]_dch" in col_map and pd.notna(df.at[0, col_map["ancho de pulso [µs]_dch"]]):
-            datos["Ancho_pulso_dch"] = str(df.at[0, col_map["ancho de pulso [µs]_dch"]]).replace(',', '.')
-
+    for csv_col_lower, dict_key in column_map.items():
+        if csv_col_lower in df_cols_lower:
+            original_col = df_cols_lower[csv_col_lower]
+            val = row[original_col]
+            
+            # Limpiar valores NaN o vacíos
+            if pd.notna(val) and str(val).strip().lower() not in ['', 'no especificado', 'sin informacion']:
+                if dict_key == 'edad':
+                    try:
+                        datos[dict_key] = int(float(str(val).replace(',', '.')))
+                    except (ValueError, TypeError):
+                        datos[dict_key] = None
+                else:
+                    datos[dict_key] = str(val).strip()
     return datos
+
+def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
+    # Esta función ya no necesita una validación compleja.
+    # La función de extracción de datos ya devuelve None si el valor no es válido.
+    if valor is not None:
+        pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
 
 
 def filtrar_temblor(signal, fs=100):
@@ -241,76 +226,67 @@ if st.sidebar.button("🔄 Nuevo análisis"):
 # ------------------ MÓDULO 1: ANÁLISIS DE UNA MEDICIÓN --------------------
 
 if opcion == "1️⃣ Análisis de una medición":
-    st.title("📈​ Análisis de una Medición")
+    st.title("📈 Análisis de una Medición")
 
-    def generar_pdf(datos_paciente_dict, df, nombre_archivo="informe_temblor.pdf", fig=None):
-        fecha_hora = (datetime.now() - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
+    def generar_pdf(datos_completos, df_resultados, nombre_archivo="informe_temblor.pdf", fig=None):
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", 'B', 16)
         pdf.cell(200, 10, "Informe de Análisis de Temblor", ln=True, align='C')
         pdf.set_font("Arial", size=12)
         pdf.ln(10)
-    
-        # Helper para imprimir campos solo si tienen valor
-        def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-            if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
-                pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
-    
+
         # Impresión de Datos Personales
         pdf.set_font("Arial", 'B', 14)
         pdf.cell(0, 10, "Datos del Paciente", ln=True)
         pdf.set_font("Arial", size=12)
-        _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("Nombre"))
-        _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("Apellido"))
-        edad_val = datos_paciente_dict.get("edad")
-        if isinstance(edad_val, (int, float)):
-            _imprimir_campo_pdf(pdf, "Edad", int(edad_val))
-        _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
-        _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente_dict.get("Diagnostico"))
-        _imprimir_campo_pdf(pdf, "Tipo", datos_paciente_dict.get("Tipo"))
-        _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("mano_medida"))
-        _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("dedo_medido"))
-        _imprimir_campo_pdf(pdf, "Antecedente", datos_paciente_dict.get("Antecedente"))
-        _imprimir_campo_pdf(pdf, "Medicacion", datos_paciente_dict.get("Medicacion"))
+        _imprimir_campo_pdf(pdf, "Nombre", datos_completos.get("nombre"))
+        _imprimir_campo_pdf(pdf, "Apellido", datos_completos.get("apellido"))
+        _imprimir_campo_pdf(pdf, "Edad", datos_completos.get("edad"))
+        _imprimir_campo_pdf(pdf, "Sexo", datos_completos.get("sexo"))
+        _imprimir_campo_pdf(pdf, "Diagnóstico", datos_completos.get("diagnostico"))
+        _imprimir_campo_pdf(pdf, "Tipo", datos_completos.get("tipo"))
+        _imprimir_campo_pdf(pdf, "Mano", datos_completos.get("mano_medida"))
+        _imprimir_campo_pdf(pdf, "Dedo", datos_completos.get("dedo_medido"))
+        _imprimir_campo_pdf(pdf, "Antecedente", datos_completos.get("antecedente"))
+        _imprimir_campo_pdf(pdf, "Medicacion", datos_completos.get("medicacion"))
         pdf.ln(5)
-    
+
         # Impresión de Parámetros de Estimulación
-        hay_parametros_estimulacion = datos_paciente_dict.get("DBS") is not None or datos_paciente_dict.get("Nucleo") is not None
-        hay_parametros_izq = datos_paciente_dict.get("Voltaje_izq") is not None
-        hay_parametros_dch = datos_paciente_dict.get("Voltaje_dch") is not None
+        hay_parametros_estimulacion = datos_completos.get("dbs") is not None or datos_completos.get("nucleo") is not None
+        hay_parametros_izq = datos_completos.get("voltaje_izq") is not None
+        hay_parametros_dch = datos_completos.get("voltaje_dch") is not None
         
         if hay_parametros_estimulacion or hay_parametros_izq or hay_parametros_dch:
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Configuración de Estimulación", ln=True)
             pdf.set_font("Arial", size=12)
-            _imprimir_campo_pdf(pdf, "DBS", datos_paciente_dict.get("DBS"))
-            _imprimir_campo_pdf(pdf, "Núcleo", datos_paciente_dict.get("Nucleo"))
-    
+            _imprimir_campo_pdf(pdf, "DBS", datos_completos.get("dbs"))
+            _imprimir_campo_pdf(pdf, "Núcleo", datos_completos.get("nucleo"))
+
             if hay_parametros_izq:
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(0, 10, "Configuración Izquierda", ln=True)
                 pdf.set_font("Arial", size=12)
-                _imprimir_campo_pdf(pdf, "Voltaje", datos_paciente_dict.get("Voltaje_izq"), " mV")
-                _imprimir_campo_pdf(pdf, "Corriente", datos_paciente_dict.get("Corriente_izq"), " mA")
-                _imprimir_campo_pdf(pdf, "Contacto", datos_paciente_dict.get("Contacto_izq"))
-                _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("Frecuencia_izq"), " Hz")
-                _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("Ancho_pulso_izq"), " µS")
+                _imprimir_campo_pdf(pdf, "Voltaje", datos_completos.get("voltaje_izq"), " mV")
+                _imprimir_campo_pdf(pdf, "Corriente", datos_completos.get("corriente_izq"), " mA")
+                _imprimir_campo_pdf(pdf, "Contacto", datos_completos.get("contacto_izq"))
+                _imprimir_campo_pdf(pdf, "Frecuencia", datos_completos.get("frecuencia_izq"), " Hz")
+                _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_completos.get("ancho_pulso_izq"), " µS")
                 pdf.ln(2)
-    
+        
             if hay_parametros_dch:
                 pdf.set_font("Arial", 'B', 12)
                 pdf.cell(0, 10, "Configuración Derecha", ln=True)
                 pdf.set_font("Arial", size=12)
-                _imprimir_campo_pdf(pdf, "Voltaje", datos_paciente_dict.get("Voltaje_dch"), " mV")
-                _imprimir_campo_pdf(pdf, "Corriente", datos_paciente_dict.get("Corriente_dch"), " mA")
-                _imprimir_campo_pdf(pdf, "Contacto", datos_paciente_dict.get("Contacto_dch"))
-                _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("Frecuencia_dch"), " Hz")
-                _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("Ancho_pulso_dch"), " µS")
+                _imprimir_campo_pdf(pdf, "Voltaje", datos_completos.get("voltaje_dch"), " mV")
+                _imprimir_campo_pdf(pdf, "Corriente", datos_completos.get("corriente_dch"), " mA")
+                _imprimir_campo_pdf(pdf, "Contacto", datos_completos.get("contacto_dch"))
+                _imprimir_campo_pdf(pdf, "Frecuencia", datos_completos.get("frecuencia_dch"), " Hz")
+                _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_completos.get("ancho_pulso_dch"), " µS")
             pdf.ln(5)
-        
-        # El resto del código del PDF se mantiene igual
-        pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
+
+        pdf.cell(200, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
         pdf.ln(10)
         pdf.set_font("Arial", "B", 12)
         pdf.cell(30, 10, "Test", 1)
@@ -318,17 +294,14 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.cell(30, 10, "RMS", 1)
         pdf.cell(50, 10, "Amplitud (cm)", 1)
         pdf.ln(10)
-    
+        
         pdf.set_font("Arial", "", 12)
-        for _, row in df.iterrows():
+        for _, row in df_resultados.iterrows():
             pdf.cell(30, 10, row['Test'], 1)
             pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
             pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
             pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
             pdf.ln(10)
-    
-        def limpiar_texto_para_pdf(texto):
-            return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
         
         pdf.ln(10)
         pdf.set_font("Arial", 'B', 12)
@@ -353,19 +326,27 @@ if opcion == "1️⃣ Análisis de una medición":
         Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica.
     
         """
+        # La función de normalización de texto se mantiene para la interpretación
+        def limpiar_texto_para_pdf(texto):
+             return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
         texto_limpio = limpiar_texto_para_pdf(texto_original)
         pdf.multi_cell(0, 8, texto_limpio)
         pdf.set_font("Arial", 'B', 12)
-    
+        
         if fig is not None:
-            import tempfile
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "Gráfico Comparativo de Amplitud de Temblor", ln=True, align="C")
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
                 fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
                 pdf.image(tmpfile.name, x=15, w=180)
                 os.remove(tmpfile.name)
-    
-        pdf.output(nombre_archivo)
-
+        
+        pdf_output = BytesIO()
+        pdf_bytes = pdf.output(dest='S').encode('latin1')
+        pdf_output.write(pdf_bytes)
+        pdf_output.seek(0)
+        return pdf_output
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
     reposo_file = st.file_uploader("", type=["csv"], key="reposo")
@@ -395,109 +376,78 @@ if opcion == "1️⃣ Análisis de una medición":
         </style>
     """, unsafe_allow_html=True)
 
-
-    uploaded_files = {
-        "Reposo": reposo_file,
-        "Postural": postural_file,
-        "Acción": accion_file,
-    }
-
-    # Inicializa estas variables FUERA del bloque del botón.
-    resultados_globales = []
-    datos_paciente_para_pdf = {} # Cambiado a diccionario para datos del paciente
-    ventanas_para_grafico = []
-    min_ventanas_count = float('inf')
-    fig = None
-
     if st.button("Iniciar análisis"):
-        mediciones_tests = {}
-        # MODIFICACIÓN: En lugar de leer el CSV, pasamos el objeto file_uploader directamente
-        for test, file in uploaded_files.items():
-            if file is not None:
-                file.seek(0)
-                # Aquí, ya no leemos el CSV. Simplemente guardamos el objeto file
-                mediciones_tests[test] = file
+        uploaded_files = {
+            "Reposo": reposo_file,
+            "Postural": postural_file,
+            "Acción": accion_file,
+        }
 
-
-        if not mediciones_tests:
+        if not any(uploaded_files.values()):
             st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
         else:
-            # Extraer datos del paciente y de estimulación de la primera medición (o de la que se cargue primero)
-            # Asegurarse de que solo se extraigan una vez y de un archivo válido
-            primer_df_cargado = None
-            for test, file_object in mediciones_tests.items():
+            resultados_globales = []
+            datos_completos = {}
+            ventanas_para_grafico = []
+            min_ventanas_count = float('inf')
+            
+            # Procesar archivos y extraer datos
+            for test, file_object in uploaded_files.items():
                 if file_object is not None:
-                    # Leemos el archivo una sola vez para extraer los datos
-                    df = pd.read_csv(file_object, encoding='latin1', header=0)
-                    primer_df_cargado = df
-                    # Mover el puntero del archivo al principio para que pueda ser leído de nuevo
                     file_object.seek(0)
-                    break
-            
-            if primer_df_cargado is not None:
-                # Extraer todos los datos del paciente y configuración usando la función actualizada
-                datos_paciente_para_pdf = extraer_datos_paciente(primer_df_cargado)
-            
-            # Procesar cada test
-            for test, file_object in mediciones_tests.items():
-                # Leer el archivo dentro de este bucle para cada test
-                if file_object is not None:
                     df = pd.read_csv(file_object, encoding='latin1', header=0)
-
+                    
+                    if not datos_completos: # Solo extraer de la primera medición
+                        datos_completos = extraer_datos_csv(df)
+                    
                     df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(df, fs=100)
-
+                    
                     if not df_promedio.empty:
                         fila = df_promedio.iloc[0].to_dict()
                         fila['Test'] = test
                         resultados_globales.append(fila)
-
+                    
                     if not df_ventanas.empty:
                         df_ventanas_copy = df_ventanas.copy()
                         df_ventanas_copy["Test"] = test
                         ventanas_para_grafico.append(df_ventanas_copy)
-                        if len(df_ventanas_copy) < min_ventanas_count:
-                            min_ventanas_count = len(df_ventanas_copy)
+                        min_ventanas_count = min(min_ventanas_count, len(df_ventanas_copy))
 
-            if ventanas_para_grafico:
-                fig, ax = plt.subplots(figsize=(10, 6))
-                for df in ventanas_para_grafico:
-                    test_name = df["Test"].iloc[0]
-                    if min_ventanas_count != float('inf') and len(df) > min_ventanas_count:
-                        df_to_plot = df.iloc[:min_ventanas_count].copy()
-                    else:
-                        df_to_plot = df.copy()
-                    
-                    df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * ventana_duracion_seg
-                    ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
-
-                ax.set_title("Amplitud de Temblor por Ventana de Tiempo (Comparación Visual)")
-                ax.set_xlabel("Tiempo (segundos)")
-                ax.set_ylabel("Amplitud (cm)")
-                ax.legend()
-                ax.grid(True)
-                st.pyplot(fig)
+            if not resultados_globales:
+                st.error("No se encontraron datos suficientes para el análisis.")
             else:
-                st.warning("No se generaron datos de ventanas para el gráfico.")
-
-            if resultados_globales:
                 df_resultados_final = pd.DataFrame(resultados_globales)
-                # Eliminada la llamada a la función diagnosticar
-
                 st.subheader("Resultados del Análisis de Temblor")
                 st.dataframe(df_resultados_final.set_index('Test'))
 
-                generar_pdf(
-                    datos_paciente_para_pdf, # Ahora pasamos el diccionario
+                fig = None
+                if ventanas_para_grafico:
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    for df_plot in ventanas_para_grafico:
+                        test_name = df_plot["Test"].iloc[0]
+                        df_to_plot = df_plot.iloc[:min_ventanas_count].copy()
+                        df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * ventana_duracion_seg
+                        ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
+                    
+                    ax.set_title("Amplitud de Temblor por Ventana de Tiempo (Comparación Visual)")
+                    ax.set_xlabel("Tiempo (segundos)")
+                    ax.set_ylabel("Amplitud (cm)")
+                    ax.legend()
+                    ax.grid(True)
+                    st.pyplot(fig)
+                else:
+                    st.warning("No se generaron datos de ventanas para el gráfico.")
+                
+                pdf_output = generar_pdf(
+                    datos_completos,
                     df_resultados_final,
                     nombre_archivo="informe_temblor.pdf",
                     fig=fig
                 )
 
-                with open("informe_temblor.pdf", "rb") as f:
-                    st.download_button("📄 Descargar informe PDF", f, file_name="informe_temblor.pdf")
-                    st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
-            else:
-                st.warning("No se encontraron datos suficientes para el análisis.")
+                st.download_button("📄 Descargar informe PDF", pdf_output, file_name="informe_temblor.pdf")
+                st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
+
                 
 # ------------------ MÓDULO 2: COMPARACIÓN DE MEDICIONES --------------------
 
