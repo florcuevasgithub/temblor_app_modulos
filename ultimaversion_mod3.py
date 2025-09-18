@@ -824,24 +824,28 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
     st.title("🩺 Diagnóstico Tentativo")
     st.markdown("### Cargar archivos CSV para el Diagnóstico")
 
-    # Definiciones de funciones para el PDF, fuera del botón
     def extraer_datos_paciente(df_csv):
         datos_paciente = {
             "Nombre": df_csv.loc[0, 'Nombre'] if 'Nombre' in df_csv.columns else 'No especificado',
             "Apellido": df_csv.loc[0, 'Apellido'] if 'Apellido' in df_csv.columns else 'No especificado',
-            "Edad": df_csv.loc[0, 'Edad'] if 'Edad' in df_csv.columns else 'No especificada',
+            "Edad": df_csv.loc[0, 'Edad'] if 'Edad' in df_csv.columns else None,
             "Sexo": df_csv.loc[0, 'Sexo'] if 'Sexo' in df_csv.columns else 'No especificado',
             "Diagnostico": df_csv.loc[0, 'Diagnostico'] if 'Diagnostico' in df_csv.columns else 'No especificado',
             "Tipo": df_csv.loc[0, 'Tipo'] if 'Tipo' in df_csv.columns else 'No especificado',
             "Antecedente": df_csv.loc[0, 'Antecedente'] if 'Antecedente' in df_csv.columns else 'No especificado',
             "Medicacion": df_csv.loc[0, 'Medicacion'] if 'Medicacion' in df_csv.columns else 'No especificado',
         }
+        # Convertir a minúsculas
+        if datos_paciente["Sexo"] is not None:
+            datos_paciente["Sexo"] = str(datos_paciente["Sexo"]).lower()
+        if datos_paciente["Diagnostico"] is not None:
+            datos_paciente["Diagnostico"] = str(datos_paciente["Diagnostico"]).lower()
+            
         return datos_paciente
 
     def extraer_datos_estimulacion(df_csv):
         metadata_dict = {}
         column_map = {
-            # Solo se extrae mano y dedo, ya que no hay estimulación en este caso
             "Mano": "Mano",
             "Dedo": "Dedo"
         }
@@ -849,10 +853,17 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             if csv_col in df_csv.columns:
                 value = df_csv.loc[0, csv_col]
                 metadata_dict[pdf_label] = value
+        
+        # Convertir a minúsculas
+        if "Mano" in metadata_dict and metadata_dict["Mano"] is not None:
+            metadata_dict["Mano"] = str(metadata_dict["Mano"]).lower()
+        if "Dedo" in metadata_dict and metadata_dict["Dedo"] is not None:
+            metadata_dict["Dedo"] = str(metadata_dict["Dedo"]).lower()
+            
         return metadata_dict
 
     def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-        if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+        if pd.notna(valor) and valor is not None and str(valor).strip() != "" and str(valor).lower() not in ["no especificado", "nan"]:
             pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
 
     def imprimir_parametros_y_config(pdf_obj, parametros_dict, titulo):
@@ -860,13 +871,12 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         pdf_obj.cell(0, 10, titulo, ln=True)
         pdf_obj.set_font("Arial", size=10)
         
-        # Solo se imprimen la mano y el dedo, el resto de campos no existen en este contexto
         parametros_a_imprimir_con_unidad = {
             "Mano": "", "Dedo": ""
         }
-        for param_key, unit in parametros_dict.items():
+        for param_key, unit in parametros_a_imprimir_con_unidad.items():
             value = parametros_dict.get(param_key)
-            if value is not None and str(value).strip() != "" and str(value).lower() != "no especificado":
+            if pd.notna(value) and value is not None and str(value).strip() != "" and str(value).lower() not in ["no especificado", "nan"]:
                 pdf_obj.cell(200, 10, f"{param_key}: {value}{unit}", ln=True)
         pdf_obj.ln(5)
 
@@ -883,9 +893,18 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         pdf.set_font("Arial", 'B', 14)
         pdf.cell(0, 10, "Datos del Paciente", ln=True)
         pdf.set_font("Arial", size=12)
+
         _imprimir_campo_pdf(pdf, "Nombre", paciente_data.get("Nombre"))
         _imprimir_campo_pdf(pdf, "Apellido", paciente_data.get("Apellido"))
-        _imprimir_campo_pdf(pdf, "Edad", paciente_data.get("Edad"))
+        
+        edad_val = paciente_data.get("Edad")
+        if pd.notna(edad_val) and edad_val is not None and str(edad_val).strip() != "":
+            try:
+                edad_int = int(float(str(edad_val).replace(',', '.')))
+                _imprimir_campo_pdf(pdf, "Edad", edad_int)
+            except (ValueError, TypeError):
+                pass
+                
         _imprimir_campo_pdf(pdf, "Sexo", paciente_data.get("Sexo"))
         _imprimir_campo_pdf(pdf, "Diagnóstico", paciente_data.get("Diagnostico"))
         _imprimir_campo_pdf(pdf, "Tipo", paciente_data.get("Tipo"))
@@ -913,21 +932,28 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             pdf.ln(10)
         pdf.ln(5)
         
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "Diagnóstico (Predicción)", ln=True)
-        pdf.set_font("Arial", size=10)
-        pdf.multi_cell(0, 10, prediccion_texto)
-        pdf.ln(5)
-
+        # Generar gráficos
         for i, img_path in enumerate(graficos_paths):
             if os.path.exists(img_path):
-                pdf.add_page()
+                # Verificar si hay espacio para el gráfico
+                altura_grafico = 100
+                if (pdf.get_y() + altura_grafico) > (pdf.h - 20):
+                    pdf.add_page()
+                    
                 pdf.set_font("Arial", 'B', 14)
                 pdf.cell(0, 10, f"Gráfico {i+1}", ln=True, align="C")
                 pdf.image(img_path, x=15, w=180)
             else:
                 pdf.cell(0, 10, f"Error: No se pudo cargar el gráfico {i+1}", ln=True)
-        
+
+        # Imprimir diagnóstico y conclusión después de los gráficos
+        pdf.ln(10) # Pequeño espacio para separar
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, "Diagnóstico (Predicción)", ln=True)
+        pdf.set_font("Arial", size=10)
+        pdf.multi_cell(0, 10, prediccion_texto)
+        pdf.ln(5)
+            
         pdf_output = BytesIO()
         pdf_bytes = pdf.output(dest='S').encode('latin1')
         pdf_output.write(pdf_bytes)
@@ -997,7 +1023,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 st.error("No se pudo procesar ningún archivo cargado para el diagnóstico. Asegúrate de que los archivos contengan datos válidos.")
             else:
                 st.subheader("Datos de Temblor Calculados para el Diagnóstico:")
-                # Se crea el DataFrame y se convierte el índice en una columna 'Test'
                 df_metrics_display = pd.DataFrame.from_dict(avg_tremor_metrics, orient='index').reset_index()
                 df_metrics_display = df_metrics_display.rename(columns={'index': 'Test'})
                 st.dataframe(df_metrics_display)
@@ -1063,7 +1088,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     st.error(f"Ocurrió un error al usar el modelo: {e}")
                     st.error("Verifica que el DataFrame `df_for_prediction` coincida con lo que espera el modelo.")
 
-                # Generación de gráficos y guardado en archivos temporales
                 all_ventanas_for_plot = []
                 current_min_ventanas = float('inf')
                 graficos_paths = []
@@ -1101,7 +1125,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     ax.grid(True)
                     st.pyplot(fig)
 
-                    # Guardar el gráfico en un archivo temporal
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
                         fig.savefig(tmp_img.name, format='png', bbox_inches='tight')
                         graficos_paths.append(tmp_img.name)
@@ -1109,7 +1132,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 else:
                     st.warning("No hay suficientes datos de ventanas para graficar los archivos de predicción.")
 
-                # Generar el PDF y mostrar el botón de descarga
                 pdf_output = generar_pdf(
                     datos_paciente, 
                     datos_estimulacion, 
@@ -1125,7 +1147,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     mime="application/pdf"
                 )
                 
-                # Limpiar los archivos temporales después de la descarga
                 for path in graficos_paths:
                     if os.path.exists(path):
                         os.remove(path)
