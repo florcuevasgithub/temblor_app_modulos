@@ -800,6 +800,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.subheader("Conclusión del Análisis Comparativo")
             st.write(conclusion)
 
+            pdf.set_y(pdf.get_y() + 10) # Ajuste para asegurar que la conclusión se imprima después del último gráfico
             pdf.add_page()
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(0, 10, "Conclusión", ln=True)
