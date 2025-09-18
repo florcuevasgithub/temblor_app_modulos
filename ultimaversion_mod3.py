@@ -537,7 +537,9 @@ if opcion == "2️⃣ Comparación de mediciones":
         pdf.set_font("Arial", size=12)
         _imprimir_campo_pdf(pdf, "Nombre", datos_paciente_dict.get("nombre"))
         _imprimir_campo_pdf(pdf, "Apellido", datos_paciente_dict.get("apellido"))
-        _imprimir_campo_pdf(pdf, "Edad", datos_paciente_dict.get("edad"))
+        edad_val = datos_paciente_dict.get("edad")
+        if edad_val is not None and not pd.isna(edad_val):
+            _imprimir_campo_pdf(pdf, "Edad", int(edad_val))
         _imprimir_campo_pdf(pdf, "Sexo", datos_paciente_dict.get("sexo"))
         _imprimir_campo_pdf(pdf, "Mano", datos_paciente_dict.get("mano_medida"))
         _imprimir_campo_pdf(pdf, "Dedo", datos_paciente_dict.get("dedo_medido"))
@@ -560,12 +562,9 @@ if opcion == "2️⃣ Comparación de mediciones":
         
         pdf.ln(10)
         
-        # Iterar sobre los gráficos generados para el PDF
         for titulo_grafico, fig in graficos.items():
             pdf.set_font("Arial", 'B', 14)
-            
-            # Verificar si hay espacio suficiente en la página antes de agregar el gráfico
-            altura_grafico = 100 # Altura estimada del gráfico en mm
+            altura_grafico = 100
             if (pdf.get_y() + altura_grafico) > (pdf.h - 20):
                 pdf.add_page()
             
@@ -582,47 +581,63 @@ if opcion == "2️⃣ Comparación de mediciones":
         pdf_output.seek(0)
         return pdf_output
 
-    uploaded_files_comparacion = st.file_uploader(
-        "Sube los archivos CSV para comparar",
-        type=["csv"],
-        accept_multiple_files=True
+
+    num_mediciones = st.number_input(
+        "¿Cuántas mediciones deseas comparar?",
+        min_value=2,
+        max_value=10,
+        value=2
     )
 
-    if uploaded_files_comparacion:
-        if st.button("Iniciar Comparación"):
+    uploaded_files_list = []
+    condiciones_list = []
+
+    for i in range(num_mediciones):
+        st.markdown(f"---")
+        st.subheader(f"Medición {i+1}")
+        
+        # Subida de archivo individual
+        file_uploader_key = f"file_uploader_{i}"
+        uploaded_file = st.file_uploader(f"Carga el archivo CSV para la Medición {i+1}", type=["csv"], key=file_uploader_key)
+        uploaded_files_list.append(uploaded_file)
+
+        # Entrada para la condición
+        condicion_key = f"condicion_{i}"
+        condicion_input = st.text_input(f"Ingresa el nombre de la medición {i+1} (ej: 'pre-medicación', 'post-medicación')", key=condicion_key)
+        condiciones_list.append(condicion_input)
+
+    if st.button("Iniciar Comparación"):
+        uploaded_files_comparacion = [f for f in uploaded_files_list if f is not None]
+        condiciones = [c if c else f"Medición {i+1}" for i, c in enumerate(condiciones_list)]
+
+        if len(uploaded_files_comparacion) < 2:
+            st.warning("Por favor, sube al menos dos archivos para la comparación.")
+        else:
             resultados_comparativos = []
-            etiquetas = []
             ventanas_para_graficos = {}
             graficos = {}
 
             primer_df_cargado = None
-            if uploaded_files_comparacion:
-                for file_object in uploaded_files_comparacion:
-                    file_object.seek(0)
-                    primer_df_cargado = pd.read_csv(file_object, encoding='latin1', header=0)
-                    file_object.seek(0)
-                    break
+            for file_object in uploaded_files_comparacion:
+                file_object.seek(0)
+                primer_df_cargado = pd.read_csv(file_object, encoding='latin1', header=0)
+                file_object.seek(0)
+                break
 
             if primer_df_cargado is not None:
                 datos_paciente_para_pdf = extraer_datos_paciente(primer_df_cargado)
                 
-                # Conversión a minúsculas
                 if datos_paciente_para_pdf.get("sexo"):
                     datos_paciente_para_pdf["sexo"] = datos_paciente_para_pdf["sexo"].lower()
                 if datos_paciente_para_pdf.get("mano_medida"):
                     datos_paciente_para_pdf["mano_medida"] = datos_paciente_para_pdf["mano_medida"].lower()
                 if datos_paciente_para_pdf.get("dedo_medido"):
                     datos_paciente_para_pdf["dedo_medido"] = datos_paciente_para_pdf["dedo_medido"].lower()
-                
+
             for i, file_object in enumerate(uploaded_files_comparacion):
                 file_object.seek(0)
                 df = pd.read_csv(file_object, encoding='latin1', header=0)
-                
-                nombre_archivo = file_object.name
-                condicion = st.text_input(f"Ingresa el nombre para la medición '{nombre_archivo}'", key=f"condicion_{i}")
-                
-                if not condicion:
-                    condicion = f"Medición {i+1}"
+                condicion = condiciones[i]
                 
                 df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(df, fs=100)
 
@@ -643,8 +658,8 @@ if opcion == "2️⃣ Comparación de mediciones":
                 # Gráfico de barras comparativo de Amplitud
                 fig_amplitud, ax_amplitud = plt.subplots()
                 amplitudes = df_final['Amplitud Temblor (cm)'].values
-                condiciones = df_final['Condicion'].values
-                ax_amplitud.bar(condiciones, amplitudes, color=['skyblue', 'salmon', 'lightgreen'])
+                condiciones_plot = df_final['Condicion'].values
+                ax_amplitud.bar(condiciones_plot, amplitudes, color=['skyblue', 'salmon', 'lightgreen', 'orange', 'purple'])
                 ax_amplitud.set_title("Amplitud de Temblor por Condición")
                 ax_amplitud.set_ylabel("Amplitud (cm)")
                 ax_amplitud.grid(axis='y', linestyle='--')
@@ -654,7 +669,7 @@ if opcion == "2️⃣ Comparación de mediciones":
                 # Gráfico de barras comparativo de Frecuencia
                 fig_frecuencia, ax_frecuencia = plt.subplots()
                 frecuencias = df_final['Frecuencia Dominante (Hz)'].values
-                ax_frecuencia.bar(condiciones, frecuencias, color=['skyblue', 'salmon', 'lightgreen'])
+                ax_frecuencia.bar(condiciones_plot, frecuencias, color=['skyblue', 'salmon', 'lightgreen', 'orange', 'purple'])
                 ax_frecuencia.set_title("Frecuencia Dominante por Condición")
                 ax_frecuencia.set_ylabel("Frecuencia (Hz)")
                 ax_frecuencia.grid(axis='y', linestyle='--')
@@ -668,7 +683,7 @@ if opcion == "2️⃣ Comparación de mediciones":
             else:
                 st.warning("No se encontraron datos suficientes para el análisis comparativo.")
 
-    st.markdown('<div class="prueba-titulo">Sube uno o más archivos para comparar.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="prueba-titulo">Sube dos o más archivos, y asigna un nombre a cada medición.</div>', unsafe_allow_html=True)
             
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
 elif opcion == "3️⃣ Diagnóstico tentativo":
