@@ -520,22 +520,26 @@ elif opcion == "2️⃣ Comparación de mediciones":
     st.title("📊 Comparación de Mediciones")
 
     def extraer_datos_paciente(df_csv):
-        # Esta función ahora no extrae la mano ni el dedo
         datos_paciente = {
             "Nombre": df_csv.loc[0, 'Nombre'] if 'Nombre' in df_csv.columns else 'No especificado',
             "Apellido": df_csv.loc[0, 'Apellido'] if 'Apellido' in df_csv.columns else 'No especificado',
-            "Edad": df_csv.loc[0, 'Edad'] if 'Edad' in df_csv.columns else 'No especificada',
+            "Edad": df_csv.loc[0, 'Edad'] if 'Edad' in df_csv.columns else None,
             "Sexo": df_csv.loc[0, 'Sexo'] if 'Sexo' in df_csv.columns else 'No especificado',
             "Diagnostico": df_csv.loc[0, 'Diagnostico'] if 'Diagnostico' in df_csv.columns else 'No especificado',
             "Tipo": df_csv.loc[0, 'Tipo'] if 'Tipo' in df_csv.columns else 'No especificado',
             "Antecedente": df_csv.loc[0, 'Antecedente'] if 'Antecedente' in df_csv.columns else 'No especificado',
             "Medicacion": df_csv.loc[0, 'Medicacion'] if 'Medicacion' in df_csv.columns else 'No especificado',
         }
+        # Convertir a minúsculas
+        if datos_paciente["Sexo"] is not None:
+            datos_paciente["Sexo"] = str(datos_paciente["Sexo"]).lower()
+        if datos_paciente["Diagnostico"] is not None:
+            datos_paciente["Diagnostico"] = str(datos_paciente["Diagnostico"]).lower()
+            
         return datos_paciente
 
     def extraer_datos_estimulacion(df_csv):
         metadata_dict = {}
-        # Mapea los nombres de columna de tu CSV a los nombres que quieres en el PDF
         column_map = {
             "DBS": "DBS", 
             "Nucleo": "Nucleo",
@@ -557,6 +561,13 @@ elif opcion == "2️⃣ Comparación de mediciones":
             if csv_col in df_csv.columns:
                 value = df_csv.loc[0, csv_col]
                 metadata_dict[pdf_label] = value
+        
+        # Convertir a minúsculas
+        if "Mano" in metadata_dict and metadata_dict["Mano"] is not None:
+            metadata_dict["Mano"] = str(metadata_dict["Mano"]).lower()
+        if "Dedo" in metadata_dict and metadata_dict["Dedo"] is not None:
+            metadata_dict["Dedo"] = str(metadata_dict["Dedo"]).lower()
+            
         return metadata_dict
 
     st.markdown("### Cargar archivos de la **medición 1**")
@@ -639,7 +650,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
             
             def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-                if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+                if pd.notna(valor) and valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
                     pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
 
             pdf.set_font("Arial", 'B', 14)
@@ -648,7 +659,15 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
             _imprimir_campo_pdf(pdf, "Nombre", datos_paciente.get("Nombre"))
             _imprimir_campo_pdf(pdf, "Apellido", datos_paciente.get("Apellido"))
-            _imprimir_campo_pdf(pdf, "Edad", datos_paciente.get("Edad"))
+            
+            edad_val = datos_paciente.get("Edad")
+            if pd.notna(edad_val) and edad_val is not None and str(edad_val).strip() != "":
+                try:
+                    edad_int = int(float(str(edad_val).replace(',', '.')))
+                    _imprimir_campo_pdf(pdf, "Edad", edad_int)
+                except (ValueError, TypeError):
+                    pass
+                    
             _imprimir_campo_pdf(pdf, "Sexo", datos_paciente.get("Sexo"))
             _imprimir_campo_pdf(pdf, "Diagnóstico", datos_paciente.get("Diagnostico"))
             _imprimir_campo_pdf(pdf, "Tipo", datos_paciente.get("Tipo"))
@@ -672,7 +691,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
                 for param_key, unit in parametros_a_imprimir_con_unidad.items():
                     value = parametros_dict.get(param_key)
-                    if value is not None and str(value).strip() != "" and str(value).lower() != "no especificado":
+                    if pd.notna(value) and value is not None and str(value).strip() != "":
                         pdf_obj.cell(200, 10, f"{param_key}: {value}{unit}", ln=True)
                 pdf_obj.ln(5)
 
@@ -762,7 +781,11 @@ elif opcion == "2️⃣ Comparación de mediciones":
                             fig.savefig(tmp_img.name, format='png', bbox_inches='tight')
                             image_path_for_pdf = tmp_img.name
                         try:
-                            pdf.add_page()
+                            # Verificar si hay espacio para el gráfico
+                            altura_grafico = 100
+                            if (pdf.get_y() + altura_grafico) > (pdf.h - 20):
+                                pdf.add_page()
+                                
                             pdf.set_font("Arial", 'B', 14)
                             pdf.cell(0, 10, f"Gráfico Comparativo: {test}", ln=True, align="C")
                             pdf.image(image_path_for_pdf, x=15, w=180)
