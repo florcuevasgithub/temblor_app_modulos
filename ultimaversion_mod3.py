@@ -259,7 +259,7 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.set_font("Arial", size=12)
         pdf.ln(10)
 
-        pdf.set_font("Arial", 10)
+        pdf.set_font("Arial", "", 10)
         pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
         pdf.set_font("Arial", size=8)
         pdf.ln(10)
@@ -819,8 +819,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             )
             st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
             
-# ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
-# ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO --------------------
+# ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO -----------------------------------------------------------------
 elif opcion == "3️⃣ Diagnóstico tentativo":
     st.title("🩺 Diagnóstico Tentativo")
     st.markdown("### Cargar archivos CSV para el Diagnóstico")
