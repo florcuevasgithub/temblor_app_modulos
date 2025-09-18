@@ -259,7 +259,7 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.set_font("Arial", size=12)
         pdf.ln(10)
 
-        pdf.set_font("Arial", 'B', 10)
+        pdf.set_font("Arial", 10)
         pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
         pdf.set_font("Arial", size=8)
         pdf.ln(10)
