@@ -319,7 +319,6 @@ if opcion == "1️⃣ Análisis de una medición":
                 _imprimir_campo_pdf(pdf, "Frecuencia", datos_paciente_dict.get("frecuencia_dch"), " Hz")
                 _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("ancho_pulso_dch"), " µS")
             pdf.ln(5)
-        
     
         pdf.set_font("Arial", "B", 12)
         pdf.cell(30, 10, "Test", 1)
@@ -339,7 +338,7 @@ if opcion == "1️⃣ Análisis de una medición":
         def limpiar_texto_para_pdf(texto):
             return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
         
-        pdf.ln(10)
+        pdf.ln(5)
         pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 10, "Interpretación clínica:", ln=True)
         pdf.set_font("Arial", size=10)
@@ -381,7 +380,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
                 pdf.image(tmpfile.name, x=15, w=180)
                 os.remove(tmpfile.name)
-     
+        
         pdf_output = BytesIO()
         pdf_bytes = pdf.output(dest='S').encode('latin1')
         pdf_output.write(pdf_bytes)
@@ -429,7 +428,7 @@ if opcion == "1️⃣ Análisis de una medición":
             st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
         else:
             resultados_globales = []
-            datos_paciente_para_pdf = {} 
+            datos_paciente_para_pdf = {}  
             ventanas_para_grafico = []
             min_ventanas_count = float('inf')
             
