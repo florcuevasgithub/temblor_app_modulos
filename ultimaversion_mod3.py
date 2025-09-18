@@ -745,6 +745,20 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.subheader("Resultados Medición 2")
             st.dataframe(df_resultados_config2)
 
+            st.subheader("Conclusión del Análisis Comparativo")
+            st.write(conclusion)
+
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(0, 10, "Conclusión", ln=True)
+            pdf.set_font("Arial", size=10)
+            pdf.multi_cell(0, 10, conclusion)
+
+            pdf_output = BytesIO()
+            pdf_bytes = pdf.output(dest='S').encode('latin1')
+            pdf_output.write(pdf_bytes)
+            pdf_output.seek(0)
+            
             st.subheader("Comparación Gráfica de Amplitud por Ventana")
             nombres_test = ["Reposo", "Postural", "Acción"]
 
@@ -797,19 +811,19 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 else:
                     st.warning(f"Faltan archivos para el test {test} en al menos una Medición.")
             
-            st.subheader("Conclusión del Análisis Comparativo")
-            st.write(conclusion)
+            #st.subheader("Conclusión del Análisis Comparativo")
+            #st.write(conclusion)
 
-            pdf.add_page()
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(0, 10, "Conclusión", ln=True)
-            pdf.set_font("Arial", size=10)
-            pdf.multi_cell(0, 10, conclusion)
+            #pdf.add_page()
+            #pdf.set_font("Arial", 'B', 12)
+            #pdf.cell(0, 10, "Conclusión", ln=True)
+            #pdf.set_font("Arial", size=10)
+            #pdf.multi_cell(0, 10, conclusion)
 
-            pdf_output = BytesIO()
-            pdf_bytes = pdf.output(dest='S').encode('latin1')
-            pdf_output.write(pdf_bytes)
-            pdf_output.seek(0)
+            #pdf_output = BytesIO()
+            #pdf_bytes = pdf.output(dest='S').encode('latin1')
+            #pdf_output.write(pdf_bytes)
+            #pdf_output.seek(0)
 
             st.download_button(
                 label="Descargar Informe PDF",
