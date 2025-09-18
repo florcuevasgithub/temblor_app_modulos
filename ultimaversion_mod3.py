@@ -320,9 +320,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("ancho_pulso_dch"), " µS")
             pdf.ln(5)
         
-        # El resto del código del PDF se mantiene igual
-        #pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
-        #pdf.ln(10)
+    
         pdf.set_font("Arial", "B", 12)
         pdf.cell(30, 10, "Test", 1)
         pdf.cell(40, 10, "Frecuencia (Hz)", 1)
@@ -369,20 +367,27 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.set_font("Arial", 'B', 12)
     
         if fig is not None:
-            import tempfile
-            pdf.add_page()
+        # Altura estimada que ocupará el gráfico (ajusta este valor si es necesario).
+        altura_grafico = 150 # Altura de la imagen + título
+            
+            # Comprobar si queda suficiente espacio en la página actual
+            # Se verifica si la posición actual + la altura del gráfico excede la altura de la página.
+            if (pdf.get_y() + altura_grafico) > (pdf.h - 20):  # Se resta 20mm para un margen de seguridad
+                pdf.add_page()
+                
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Gráfico Comparativo de Amplitud de Temblor", ln=True, align="C")
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
                 fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
                 pdf.image(tmpfile.name, x=15, w=180)
                 os.remove(tmpfile.name)
-    
+     
         pdf_output = BytesIO()
         pdf_bytes = pdf.output(dest='S').encode('latin1')
         pdf_output.write(pdf_bytes)
         pdf_output.seek(0)
         return pdf_output
+
 
     st.markdown('<div class="prueba-titulo">Subir archivo CSV para prueba en REPOSO</div>', unsafe_allow_html=True)
     reposo_file = st.file_uploader("", type=["csv"], key="reposo")
