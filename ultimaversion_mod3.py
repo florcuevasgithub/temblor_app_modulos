@@ -516,16 +516,6 @@ if opcion == "1️⃣ Análisis de una medición":
                 
 # ------------------ MÓDULO 2: COMPARACIÓN DE MEDICIONES -------------------------------
 
-Me disculpo de nuevo por no haberte dado el código completo. Es mi error y entiendo tu frustración. Aquí está la sección del Módulo 2 con las correcciones implementadas para que funcione exactamente como quieres:
-
-Manejo de valores NaN: Los campos nulos, incluyendo Diagnostico y Edad, no se imprimirán en el PDF.
-
-Conversión a minúsculas: Los campos Sexo, Mano y Dedo ahora se convierten a minúsculas para una presentación uniforme.
-
-Posición de la conclusión: La conclusión ahora se agregará al PDF inmediatamente después del último gráfico, eliminando el espacio en blanco intermedio.
-
-Python
-
 elif opcion == "2️⃣ Comparación de mediciones":
     st.title("📊 Comparación de Mediciones")
 
