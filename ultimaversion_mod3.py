@@ -650,7 +650,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
             
             def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-                if pd.notna(valor) and valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
+                if pd.notna(valor) and valor is not None and str(valor).strip() != "" and str(valor).lower() not in ["no especificado", "nan"]:
                     pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
 
             pdf.set_font("Arial", 'B', 14)
@@ -729,7 +729,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
                     f"La Medición 1 muestra una amplitud de temblor promedio ({amp_avg_config1:.2f} cm) "
                     f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor."
                 )
-            elif amp_avg_config2 < amp_avg_config1:
+            elif amp_avg_config2 < amp_avg_avg_config1:
                 conclusion = (
                     f"La Medición 2 muestra una amplitud de temblor promedio ({amp_avg_config2:.2f} cm) "
                     f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor."
@@ -745,20 +745,6 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.subheader("Resultados Medición 2")
             st.dataframe(df_resultados_config2)
 
-            st.subheader("Conclusión del Análisis Comparativo")
-            st.write(conclusion)
-
-            pdf.add_page()
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(0, 10, "Conclusión", ln=True)
-            pdf.set_font("Arial", size=10)
-            pdf.multi_cell(0, 10, conclusion)
-
-            pdf_output = BytesIO()
-            pdf_bytes = pdf.output(dest='S').encode('latin1')
-            pdf_output.write(pdf_bytes)
-            pdf_output.seek(0)
-            
             st.subheader("Comparación Gráfica de Amplitud por Ventana")
             nombres_test = ["Reposo", "Postural", "Acción"]
 
@@ -811,19 +797,19 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 else:
                     st.warning(f"Faltan archivos para el test {test} en al menos una Medición.")
             
-            #st.subheader("Conclusión del Análisis Comparativo")
-            #st.write(conclusion)
+            st.subheader("Conclusión del Análisis Comparativo")
+            st.write(conclusion)
 
-            #pdf.add_page()
-            #pdf.set_font("Arial", 'B', 12)
-            #pdf.cell(0, 10, "Conclusión", ln=True)
-            #pdf.set_font("Arial", size=10)
-            #pdf.multi_cell(0, 10, conclusion)
+            # Eliminar la llamada a pdf.add_page() para evitar el espacio
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(0, 10, "Conclusión", ln=True)
+            pdf.set_font("Arial", size=10)
+            pdf.multi_cell(0, 10, conclusion)
 
-            #pdf_output = BytesIO()
-            #pdf_bytes = pdf.output(dest='S').encode('latin1')
-            #pdf_output.write(pdf_bytes)
-            #pdf_output.seek(0)
+            pdf_output = BytesIO()
+            pdf_bytes = pdf.output(dest='S').encode('latin1')
+            pdf_output.write(pdf_bytes)
+            pdf_output.seek(0)
 
             st.download_button(
                 label="Descargar Informe PDF",
