@@ -367,9 +367,9 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.set_font("Arial", 'B', 12)
     
         if fig is not None:
-        # Altura estimada que ocupará el gráfico (ajusta este valor si es necesario).
-        altura_grafico = 150 # Altura de la imagen + título
-            
+            # Altura estimada que ocupará el gráfico (ajusta este valor si es necesario).
+            altura_grafico = 150 # Altura de la imagen + título
+                
             # Comprobar si queda suficiente espacio en la página actual
             # Se verifica si la posición actual + la altura del gráfico excede la altura de la página.
             if (pdf.get_y() + altura_grafico) > (pdf.h - 20):  # Se resta 20mm para un margen de seguridad
