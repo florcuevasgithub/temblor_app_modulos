@@ -351,22 +351,29 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.cell(200, 10, "Interpretación clínica:", ln=True)
         pdf.set_font("Arial", size=10)
         texto_original = """
-        Este informe analiza tres tipos de temblores: en reposo, postural y de acción.
-    
-        Los valores de referencia considerados son:
-          Para las frecuencias (Hz):
-        - Temblor Parkinsoniano: 3-6 Hz en reposo.
-        - Temblor Esencial: 8-10 Hz en acción o postura.
-    
-          Para las amplitudes:
-        - Mayores a 0.5 cm pueden ser clínicamente relevantes.
-    
-          Para el RMS (m/s2):
-        - Normal/sano: menor a 0.5 m/s2.
-        - PK leve: entre 0.5 y 1.5 m/s2.
-        - TE o PK severo: mayor a 2 m/s2.
-    
-        Nota clínica: Los valores de referencia presentados a continuación se basan en literatura científica.
+            Valores de Referencia para el Análisis Cuantitativo:
+            
+            Para las Frecuencias Dominantes (Hz):
+            
+            - Temblor Parkinsoniano (EP):
+                - En Reposo: Clásico en el rango 4-7 Hz.
+                - Postural/Cinético: Varía entre 4-9 Hz.
+            - Temblor Esencial (TE):
+                - Rango Global (Extremidades): 4-12 Hz. Frecuencias medias postural/cinético son ~6.2 Hz y ~6.5 Hz.
+            
+            Para la Amplitud de Desplazamiento (cm):
+            
+            - Amplitudes mayores a 0.5 cm se consideran clínicamente relevantes.
+            
+            Para el RMS (Root Mean Square, m/s2):
+            
+            - Normal/sano: menor a 0.5 m/s2.
+            - PK leve: entre 0.5 y 1.5 m/s2.
+            - TE o PK severo: mayor a 2.0 m/s2.
+            
+            Nota clínica: El diagnóstico se fundamenta en el patrón de activación (ej. Reposo vs. Acción), no solo en la frecuencia.
+                          Este informe analiza la cuantificación del temblor en tres condiciones de activación: reposo, postural y de acción. 
+                          Los resultados se interpretan usando rangos de referencia de la Movement Disorder Society (MDS) y literatura especializada.
     
         """
         texto_limpio = limpiar_texto_para_pdf(texto_original)
