@@ -189,7 +189,16 @@ def analizar_temblor_por_ventanas_resultante(df, fs=100, ventana_seg=ventana_dur
         segmento = señal_filtrada[i*tamaño_ventana:(i+1)*tamaño_ventana]
         segmento = segmento - np.mean(segmento)
 
-        f, Pxx = welch(segmento, fs=fs, nperseg=tamaño_ventana)
+        noverlap_val = int(tamaño_ventana * 0.5)
+
+        f, Pxx = welch(
+            segmento, 
+            fs=fs, 
+            nperseg=tamaño_ventana,
+            window='hann',        
+            noverlap=noverlap_val # 50% de traslape
+        )
+       
         if len(Pxx) > 0:
             freq_dominante = f[np.argmax(Pxx)]
         else:
