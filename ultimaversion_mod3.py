@@ -247,48 +247,62 @@ def manejar_reinicio():
         st.experimental_rerun()
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def parsear_metadatos_del_nombre(nombre_archivo):
-    """Extrae Mano, Dedo y el estado de DBS del nombre del archivo."""
-    # Ejemplo: 'juan_perez_DERECHA_INDICE_REPOSO_DBS_16-septiembre-2025.csv'
-    
+    """Extrae Mano, Dedo, Tipo de Test, Estado DBS y FECHA mediante tokens."""
     nombre_upper = nombre_archivo.upper()
-    partes = nombre_upper.replace(".CSV", "").split('_')
+    # Separar por guiones bajos y eliminar la extensión .CSV
+    tokens = nombre_upper.replace(".CSV", "").split('_')
     
-    try:
-        # Extraer Mano y Dedo (lógica anterior)
-        mano = next((p for p in partes if p in ('DERECHA', 'IZQUIERDA')), 'MANO NO ENCONTRADA')
-        dedo = next((p for p in partes if p in ('INDICE', 'PULGAR', 'MEDIO', 'ANULAR', 'MENIQUE')), 'DEDO NO ENCONTRADO')
+    # Lista de tokens válidos
+    manos_validas = ('DERECHA', 'IZQUIERDA')
+    dedos_validos = ('INDICE', 'PULGAR', 'MEDIO', 'ANULAR', 'MENIQUE')
+    tipos_validos = ('REPOSO', 'POSTURAL', 'ACCION') 
+    
+    mano = 'MANO NO ENCONTRADA'
+    dedo = 'DEDO NO ENCONTRADO'
+    tipo_test_en_nombre = 'TIPO NO ENCONTRADO'
+    fecha = 'FECHA NO ENCONTRADA'
+    
+    # Intentar identificar la fecha: asumimos que es el token que contiene guiones (-)
+    for token in tokens:
+        if token in manos_validas:
+            mano = token
+        elif token in dedos_validos:
+            dedo = token
+        elif token in tipos_validos:
+            tipo_test_en_nombre = token
+        elif '-' in token and any(c.isdigit() for c in token): # Buscamos una cadena con números y guiones (ej: 16-SEPTIEMBRE-2025)
+            # Solo guardamos la primera parte que parezca ser una fecha
+            if fecha == 'FECHA NO ENCONTRADA':
+                fecha = token.replace(' ', '') # Eliminar posibles espacios
+            
+    # Chequear la presencia de DBS
+    tiene_dbs = 'DBS' in tokens
         
-        # NUEVA LÓGICA: Chequear la presencia de DBS
-        tiene_dbs = 'DBS' in nombre_upper
-        
-        return {
-            'Mano': mano.lower(),
-            'Dedo': dedo.lower(),
-            'Tiene_DBS': tiene_dbs # True o False
-        }
-    except Exception:
-        return {
-            'Mano': 'ERROR EN FORMATO',
-            'Dedo': 'ERROR EN FORMATO',
-            'Tiene_DBS': None
-        }
-
+    return {
+        'Mano': mano.lower(),
+        'Dedo': dedo.lower(),
+        'Tiene_DBS': tiene_dbs,
+        'Tipo_en_Nombre': tipo_test_en_nombre.lower(),
+        'Fecha': fecha.lower(), # <-- INCLUIDA
+        'Nombre_Tokens': tokens
+    }
 def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
     """
-    Verifica coherencia interna (Mano/Dedo/DBS) y Coincidencia de Tipo de Test (CORREGIDA).
+    Verifica:
+    1. Coherencia interna (Mano/Dedo/DBS/Fecha deben ser los mismos en todos los archivos).
+    2. Coincidencia de Tipo de Test (Tipo extraído del nombre debe ser igual al slot de carga).
     """
     metadata_list = []
     
-    # 1. Extracción de metadatos y preparación
+    # 1. Extracción de metadatos del nombre del archivo
     for test_carga, archivo in archivos_dict.items():
         if archivo is not None:
             archivo.seek(0)
             
             meta = parsear_metadatos_del_nombre(archivo.name)
-            meta['Test_Carga'] = test_carga # Reposo, Postural o Acción
+            meta['Test_Carga'] = test_carga # Reposo, Postural o Acción (slot esperado)
             
             metadata_list.append(meta)
-            
             archivo.seek(0)
     
     if not metadata_list:
@@ -298,34 +312,39 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
     mano_ref = metadata_list[0]['Mano']
     dedo_ref = metadata_list[0]['Dedo']
     dbs_ref = metadata_list[0]['Tiene_DBS']
+    fecha_ref = metadata_list[0]['Fecha'] # <-- NUEVA REFERENCIA
     
-    # 3. Comprobar la coherencia y Tipo de Test (Bucle principal)
+    # 3. Comprobar la coherencia en todo el conjunto
     for meta in metadata_list:
         
-        # Obtener los tokens del nombre del archivo para una validación precisa del tipo
-        nombre_tokens = meta['Test_Carga'].upper().split('_') # Ejemplo: ['REPOSO'] o ['POSTURAL']
+        # A. Validación de Coherencia (Mano/Dedo)
+        if meta['Mano'] != mano_ref or 'no encontrada' in meta['Mano']:
+            return False, f"Error de Consistencia de **Mano** en {nombre_medicion} ({meta['Test_Carga']}). Toda la medición debe ser de la mano {mano_ref.upper()}."
+        if meta['Dedo'] != dedo_ref or 'no encontrado' in meta['Dedo']:
+            return False, f"Error de Consistencia de **Dedo** en {nombre_medicion} ({meta['Test_Carga']}). Toda la medición debe ser del dedo {dedo_ref.upper()}."
         
-        # --- A. Validación de Mano/Dedo/DBS (COHERENCIA INTERNA) ---
-        if meta['Mano'] != mano_ref or meta['Mano'] == 'ERROR EN FORMATO':
-            return False, f"Error de Mano/Dedo/Formato en {nombre_medicion} ({meta['Test_Carga']})."
-        if meta['Dedo'] != dedo_ref or meta['Dedo'] == 'ERROR EN FORMATO':
-            return False, f"Error de Mano/Dedo/Formato en {nombre_medicion} ({meta['Test_Carga']})."
+        # B. Validación de Coherencia de DBS
         if meta['Tiene_DBS'] != dbs_ref:
             estado_ref = "con DBS" if dbs_ref else "sin DBS"
             estado_actual = "con DBS" if meta['Tiene_DBS'] else "sin DBS"
-            return False, (f"Error de Coherencia DBS en {nombre_medicion} ({meta['Test_Carga']}): "
+            return False, (f"Error de Coherencia DBS en {nombre_medicion} ({meta['Test_Carga']}). "
                            f"Se compara un archivo {estado_actual} con otros {estado_ref}.")
 
-        # --- B. VALIDACIÓN CORREGIDA DE TIPO DE TEST (Coincidencia con el Slot) ---
-        # El tipo de test *esperado* debe estar contenido en el nombre del archivo *actual*.
-        
-        test_carga_lower = meta['Test_Carga'].lower() # 'reposo', 'postural', 'acción'
-        nombre_archivo_lower = [p.lower() for p in meta['Test_Carga'].split('_')] # Tokens del nombre del archivo subido
+        # C. Validación de Coherencia de FECHA
+        if meta['Fecha'] != fecha_ref or 'no encontrada' in meta['Fecha']:
+            return False, (f"Error de Consistencia de **Fecha** en {nombre_medicion} ({meta['Test_Carga']}). "
+                           f"La medición debe ser del mismo día ({fecha_ref.upper()}).")
+                           
+        # D. VALIDACIÓN ESTRICTA DE TIPO DE TEST
+        test_carga_lower = meta['Test_Carga'].lower() # Tipo de slot (esperado)
+        tipo_en_nombre_lower = meta['Tipo_en_Nombre'] # Tipo extraído (real)
 
-        # Verificamos si la palabra clave del slot de carga está en los tokens del nombre del archivo
-        if test_carga_lower not in archivo.name.lower():
-             return False, (f"Error de Archivo: El slot de carga '{meta['Test_Carga']}' no coincide con "
-                            f"el tipo de archivo '{archivo.name}' encontrado en el nombre.")
+        if tipo_en_nombre_lower == 'tipo no encontrado':
+             return False, f"Error de Archivo: No se pudo identificar el tipo de test (REPOSO/POSTURAL/ACCION) en el nombre del archivo."
+        
+        if tipo_en_nombre_lower != test_carga_lower:
+             return False, (f"Error de Archivo: El slot de carga ('{meta['Test_Carga'].upper()}') no coincide con "
+                            f"el tipo de archivo real ('{tipo_en_nombre_lower.upper()}') encontrado en el nombre.")
             
     return True
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
