@@ -246,49 +246,82 @@ def manejar_reinicio():
         st.session_state.clear()
         st.experimental_rerun()
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-def validar_consistencia_metadatos(archivos_dict, nombre_medicion):
+def parsear_metadatos_del_nombre(nombre_archivo):
+    """Extrae Mano, Dedo y el estado de DBS del nombre del archivo."""
+    # Ejemplo: 'juan_perez_DERECHA_INDICE_REPOSO_DBS_16-septiembre-2025.csv'
+    
+    nombre_upper = nombre_archivo.upper()
+    partes = nombre_upper.replace(".CSV", "").split('_')
+    
+    try:
+        # Extraer Mano y Dedo (lógica anterior)
+        mano = next((p for p in partes if p in ('DERECHA', 'IZQUIERDA')), 'MANO NO ENCONTRADA')
+        dedo = next((p for p in partes if p in ('INDICE', 'PULGAR', 'MEDIO', 'ANULAR', 'MENIQUE')), 'DEDO NO ENCONTRADO')
+        
+        # NUEVA LÓGICA: Chequear la presencia de DBS
+        tiene_dbs = 'DBS' in nombre_upper
+        
+        return {
+            'Mano': mano.lower(),
+            'Dedo': dedo.lower(),
+            'Tiene_DBS': tiene_dbs # True o False
+        }
+    except Exception:
+        return {
+            'Mano': 'ERROR EN FORMATO',
+            'Dedo': 'ERROR EN FORMATO',
+            'Tiene_DBS': None
+        }
+
+def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
     """
-    Verifica: 1) Coherencia interna (Mano/Dedo deben ser los mismos en todos los archivos).
-    2) Coincidencia de Tipo de Test (el tipo en el CSV debe coincidir con el slot de carga).
+    Verifica: 1) Coherencia interna (Mano/Dedo/DBS deben ser los mismos en todos los archivos)
+    2) Coincidencia de Tipo de Test (Tipo en el nombre vs. Slot de carga).
     """
     metadata_list = []
     
     # 1. Extraer metadatos y rebobinar archivos
     for test_carga, archivo in archivos_dict.items():
         if archivo is not None:
+            # Rebobinar (necesario si luego se lee el CSV, aunque ahora solo usemos el nombre)
             archivo.seek(0)
-            df = pd.read_csv(archivo, encoding='latin1')
-            metadata_paciente = extraer_datos_paciente(df)
-            metadata_estimulacion = extraer_datos_estimulacion(df)
             
-            metadata = {
-                'Test_Carga': test_carga,
-                'Tipo_en_CSV': str(metadata_paciente.get('Tipo', 'No especificado')).lower(),
-                'Mano': metadata_estimulacion.get('Mano'),
-                'Dedo': metadata_estimacion.get('Dedo')
-            }
-            metadata_list.append(metadata)
-            archivo.seek(0) # ¡Importante! Rebobinar para el procesamiento posterior
+            meta = parsear_metadatos_del_nombre(archivo.name)
+            meta['Test_Carga'] = test_carga
+            
+            metadata_list.append(meta)
+            
+            archivo.seek(0) # Rebobinar de nuevo
     
     if not metadata_list:
         return False, f"Error: No se cargaron archivos para {nombre_medicion}."
         
-    # 2. Establecer referencias de Mano y Dedo (del primer archivo cargado)
+    # 2. Establecer referencias (del primer archivo cargado)
     mano_ref = metadata_list[0]['Mano']
     dedo_ref = metadata_list[0]['Dedo']
+    dbs_ref = metadata_list[0]['Tiene_DBS'] # <-- NUEVA REFERENCIA
     
     # 3. Comprobar la coherencia en todo el conjunto
     for meta in metadata_list:
-        # A. Validación de Mano/Dedo (Coherencia Interna)
-        if meta['Mano'] != mano_ref:
-            return False, f"Error en {nombre_medicion} ({meta['Test_Carga']}): La 'Mano' ({meta['Mano']}) es inconsistente con el resto de la medición ({mano_ref})."
-        if meta['Dedo'] != dedo_ref:
-            return False, f"Error en {nombre_medicion} ({meta['Test_Carga']}): El 'Dedo' ({meta['Dedo']}) es inconsistente con el resto de la medición ({dedo_ref})."
+        nombre_lower = archivo.name.lower()
+        
+        # A. Validación de Mano/Dedo (COHERENCIA INTERNA)
+        if meta['Mano'] != mano_ref or meta['Mano'] == 'ERROR EN FORMATO':
+            return False, f"Error en {nombre_medicion} ({meta['Test_Carga']}): La 'Mano' ({meta['Mano']}) es inconsistente o el formato de nombre es incorrecto ({mano_ref})."
+        if meta['Dedo'] != dedo_ref or meta['Dedo'] == 'ERROR EN FORMATO':
+            return False, f"Error en {nombre_medicion} ({meta['Test_Carga']}): El 'Dedo' ({meta['Dedo']}) es inconsistente o el formato de nombre es incorrecto ({dedo_ref})."
 
-        # B. Validación de Tipo de Test (Coincidencia con el Slot)
-        if meta['Tipo_en_CSV'] not in ('no especificado', 'nan', ''):
-            if meta['Tipo_en_CSV'] != meta['Test_Carga'].lower():
-                return False, f"Error de Archivo en {nombre_medicion} ({meta['Test_Carga']}): El archivo subido como '{meta['Test_Carga']}' tiene el 'Tipo' '{meta['Tipo_en_CSV']}' en sus metadatos."
+        # B. Validación de Coherencia de DBS (TODOS deben tener DBS o TODOS no tenerlo)
+        if meta['Tiene_DBS'] != dbs_ref:
+            estado_ref = "con DBS" if dbs_ref else "sin DBS"
+            estado_actual = "con DBS" if meta['Tiene_DBS'] else "sin DBS"
+            return False, (f"Error de Coherencia DBS en {nombre_medicion} ({meta['Test_Carga']}): "
+                           f"Se está comparando un archivo {estado_actual} con otros {estado_ref}. "
+                           f"Toda la medición debe ser consistente en el estado DBS.")
+
+        # C. Validación de Tipo de Test (COINCIDENCIA CON EL SLOT)
+        if meta['Test_Carga'].lower() not in nombre_lower:
+             return False, f"Error de Archivo en {nombre_medicion} ({meta['Test_Carga']}): El nombre del archivo no contiene la condición '{meta['Test_Carga']}'. ¡Archivos mezclados!"
             
     return True
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -489,10 +522,7 @@ if opcion == "1️⃣ Análisis de una medición":
             st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
         else:
             # --- APLICAR VALIDACIÓN  -----------------------------------------------------------------------------
-            is_consistent, error_msg = validar_consistencia_metadatos(uploaded_files, "Medición Individual")
-            if not is_consistent:
-                st.error(error_msg)
-                st.stop()
+            is_consistent, error_msg = validar_consistencia_por_nombre_archivo(uploaded_files, "Medición Individual")
             # -----------------------------------------------------------------------------------------------------
             resultados_globales = []
             datos_paciente_para_pdf = {}  
@@ -697,17 +727,12 @@ elif opcion == "2️⃣ Comparación de mediciones":
             st.warning("Por favor, cargue los 3 archivos para ambas mediciones.")
         else:
             #----------------------------------------------------------------------------------------------------
-            # --- 1. VALIDACIÓN INTERNA (MEDICIÓN 1) ---
-            is_consistent_1, error_msg_1 = validar_consistencia_metadatos(config1_archivos, "Medición 1")
-            if not is_consistent_1:
-                st.error(f"Error de Consistencia en **Medición 1**: {error_msg_1}")
-                st.stop()
-    
-            # --- 2. VALIDACIÓN INTERNA (MEDICIÓN 2) ---
-            is_consistent_2, error_msg_2 = validar_consistencia_metadatos(config2_archivos, "Medición 2")
-            if not is_consistent_2:
-                st.error(f"Error de Consistencia en **Medición 2**: {error_msg_2}")
-                st.stop()
+           
+            # Medicion 1
+            is_consistent_1, error_msg_1 = validar_consistencia_por_nombre_archivo(config1_archivos, "Medición 1")
+            # Medicion 2
+            is_consistent_2, error_msg_2 = validar_consistencia_por_nombre_archivo(config2_archivos, "Medición 2")
+
             #------------------------------------------------------------------------------------------------------
             df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
             df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
@@ -1076,12 +1101,9 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         if not any_file_uploaded:
             st.warning("Por favor, sube al menos un archivo CSV para realizar el diagnóstico.")
         else:
-            # APLICACIÓN DE LA VALIDACIÓN INTERNA---------------------------------------------------------------------
-            is_consistent, error_msg = validar_consistencia_metadatos(prediccion_files_correctas, "Diagnóstico")
-            if not is_consistent:
-                st.error(error_msg)
-                st.stop()
-            # ---------------------------------------------------------------------------------------------------------
+            # ---------------------------------------VALIDACIÓN INTERNA--------------------------------------------------
+            is_consistent, error_msg = validar_consistencia_por_nombre_archivo(prediccion_files_correctas, "Diagnóstico")
+            # -----------------------------------------------------------------------------------------------------------
             avg_tremor_metrics = {}
             datos_paciente = {}
             datos_estimulacion = {}
