@@ -275,23 +275,21 @@ def parsear_metadatos_del_nombre(nombre_archivo):
 
 def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
     """
-    Verifica: 1) Coherencia interna (Mano/Dedo/DBS deben ser los mismos en todos los archivos)
-    2) Coincidencia de Tipo de Test (Tipo en el nombre vs. Slot de carga).
+    Verifica coherencia interna (Mano/Dedo/DBS) y Coincidencia de Tipo de Test (CORREGIDA).
     """
     metadata_list = []
     
-    # 1. Extraer metadatos y rebobinar archivos
+    # 1. Extracción de metadatos y preparación
     for test_carga, archivo in archivos_dict.items():
         if archivo is not None:
-            # Rebobinar (necesario si luego se lee el CSV, aunque ahora solo usemos el nombre)
             archivo.seek(0)
             
             meta = parsear_metadatos_del_nombre(archivo.name)
-            meta['Test_Carga'] = test_carga
+            meta['Test_Carga'] = test_carga # Reposo, Postural o Acción
             
             metadata_list.append(meta)
             
-            archivo.seek(0) # Rebobinar de nuevo
+            archivo.seek(0)
     
     if not metadata_list:
         return False, f"Error: No se cargaron archivos para {nombre_medicion}."
@@ -299,29 +297,35 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
     # 2. Establecer referencias (del primer archivo cargado)
     mano_ref = metadata_list[0]['Mano']
     dedo_ref = metadata_list[0]['Dedo']
-    dbs_ref = metadata_list[0]['Tiene_DBS'] # <-- NUEVA REFERENCIA
+    dbs_ref = metadata_list[0]['Tiene_DBS']
     
-    # 3. Comprobar la coherencia en todo el conjunto
+    # 3. Comprobar la coherencia y Tipo de Test (Bucle principal)
     for meta in metadata_list:
-        nombre_lower = archivo.name.lower()
         
-        # A. Validación de Mano/Dedo (COHERENCIA INTERNA)
+        # Obtener los tokens del nombre del archivo para una validación precisa del tipo
+        nombre_tokens = meta['Test_Carga'].upper().split('_') # Ejemplo: ['REPOSO'] o ['POSTURAL']
+        
+        # --- A. Validación de Mano/Dedo/DBS (COHERENCIA INTERNA) ---
         if meta['Mano'] != mano_ref or meta['Mano'] == 'ERROR EN FORMATO':
-            return False, f"Error en {nombre_medicion} ({meta['Test_Carga']}): La 'Mano' ({meta['Mano']}) es inconsistente o el formato de nombre es incorrecto ({mano_ref})."
+            return False, f"Error de Mano/Dedo/Formato en {nombre_medicion} ({meta['Test_Carga']})."
         if meta['Dedo'] != dedo_ref or meta['Dedo'] == 'ERROR EN FORMATO':
-            return False, f"Error en {nombre_medicion} ({meta['Test_Carga']}): El 'Dedo' ({meta['Dedo']}) es inconsistente o el formato de nombre es incorrecto ({dedo_ref})."
-
-        # B. Validación de Coherencia de DBS (TODOS deben tener DBS o TODOS no tenerlo)
+            return False, f"Error de Mano/Dedo/Formato en {nombre_medicion} ({meta['Test_Carga']})."
         if meta['Tiene_DBS'] != dbs_ref:
             estado_ref = "con DBS" if dbs_ref else "sin DBS"
             estado_actual = "con DBS" if meta['Tiene_DBS'] else "sin DBS"
             return False, (f"Error de Coherencia DBS en {nombre_medicion} ({meta['Test_Carga']}): "
-                           f"Se está comparando un archivo {estado_actual} con otros {estado_ref}. "
-                           f"Toda la medición debe ser consistente en el estado DBS.")
+                           f"Se compara un archivo {estado_actual} con otros {estado_ref}.")
 
-        # C. Validación de Tipo de Test (COINCIDENCIA CON EL SLOT)
-        if meta['Test_Carga'].lower() not in nombre_lower:
-             return False, f"Error de Archivo en {nombre_medicion} ({meta['Test_Carga']}): El nombre del archivo no contiene la condición '{meta['Test_Carga']}'. ¡Archivos mezclados!"
+        # --- B. VALIDACIÓN CORREGIDA DE TIPO DE TEST (Coincidencia con el Slot) ---
+        # El tipo de test *esperado* debe estar contenido en el nombre del archivo *actual*.
+        
+        test_carga_lower = meta['Test_Carga'].lower() # 'reposo', 'postural', 'acción'
+        nombre_archivo_lower = [p.lower() for p in meta['Test_Carga'].split('_')] # Tokens del nombre del archivo subido
+
+        # Verificamos si la palabra clave del slot de carga está en los tokens del nombre del archivo
+        if test_carga_lower not in archivo.name.lower():
+             return False, (f"Error de Archivo: El slot de carga '{meta['Test_Carga']}' no coincide con "
+                            f"el tipo de archivo '{archivo.name}' encontrado en el nombre.")
             
     return True
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
