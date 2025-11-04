@@ -246,6 +246,51 @@ def manejar_reinicio():
         st.session_state.clear()
         st.experimental_rerun()
 
+def validar_consistencia_metadatos(archivos_dict, nombre_medicion):
+    """
+    Verifica que la Mano y el Dedo medidos sean consistentes EN TRE todos los archivos cargados 
+    (coherencia interna), y que el Tipo de Test coincida con el slot de carga.
+    """
+    metadata_list = []
+    
+    # 1. Extraer metadatos de los archivos cargados
+    for test_carga, archivo in archivos_dict.items():
+        if archivo is not None:
+            archivo.seek(0)
+            df = pd.read_csv(archivo, encoding='latin1')
+            metadata_paciente = extraer_datos_paciente(df)
+            metadata_estimulacion = extraer_datos_estimulacion(df)
+            
+            metadata = {
+                'Test_Carga': test_carga,
+                'Tipo_en_CSV': str(metadata_paciente.get('Tipo', 'No especificado')).lower(),
+                'Mano': metadata_estimulacion.get('Mano'),
+                'Dedo': metadata_estimulacion.get('Dedo')
+            }
+            metadata_list.append(metadata)
+            archivo.seek(0) # Rebovinar para que el procesamiento posterior pueda leer desde el inicio
+    
+    if not metadata_list:
+        return False, f"Error: No se cargaron archivos para {nombre_medicion}."
+        
+    # 2. Establecer referencias de Mano y Dedo (del primer archivo cargado)
+    mano_ref = metadata_list[0]['Mano']
+    dedo_ref = metadata_list[0]['Dedo']
+    
+    # 3. Comprobar la coherencia en todo el conjunto
+    for meta in metadata_list:
+        # A. Validación de Mano/Dedo (COHERENCIA INTERNA: deben ser los mismos en Reposo, Postural y Acción)
+        if meta['Mano'] != mano_ref:
+            return False, f"Error en {nombre_medicion} ({meta['Test_Carga']}): La 'Mano' medida ({meta['Mano']}) es inconsistente con el resto de la medición ({mano_ref})."
+        if meta['Dedo'] != dedo_ref:
+            return False, f"Error en {nombre_medicion} ({meta['Test_Carga']}): El 'Dedo' medido ({meta['Dedo']}) es inconsistente con el resto de la medición ({dedo_ref})."
+
+        # B. Validación de Tipo de Test (COINCIDENCIA CON EL SLOT: Postural en el slot Postural)
+        if meta['Tipo_en_CSV'] not in ('no especificado', 'nan', ''):
+            if meta['Tipo_en_CSV'] != meta['Test_Carga'].lower():
+                return False, f"Error de Archivo en {nombre_medicion} ({meta['Test_Carga']}): El archivo subido como '{meta['Test_Carga']}' tiene el 'Tipo' '{meta['Tipo_en_CSV']}' en sus metadatos. ¡Archivos mezclados!"
+            
+    return True
 
 # ------------------ MODO PRINCIPAL ---------------------------------------
 
@@ -442,6 +487,12 @@ if opcion == "1️⃣ Análisis de una medición":
         if not any(uploaded_files.values()):
             st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
         else:
+            # --- APLICAR VALIDACIÓN  ---
+            is_consistent, error_msg = validar_consistencia_metadatos(config_archivos, "Medición Individual")
+            if not is_consistent:
+                st.error(error_msg)
+                return
+            # -------------------------------------
             resultados_globales = []
             datos_paciente_para_pdf = {}  
             ventanas_para_grafico = []
@@ -644,6 +695,19 @@ elif opcion == "2️⃣ Comparación de mediciones":
         if not archivos_cargados:
             st.warning("Por favor, cargue los 3 archivos para ambas mediciones.")
         else:
+            #----------------------------------------------------------------------------------------------------
+            # --- 1. VALIDACIÓN INTERNA (MEDICIÓN 1) ---
+            is_consistent_1, error_msg_1 = validar_consistencia_metadatos(config1_archivos, "Medición 1")
+            if not is_consistent_1:
+                st.error(f"Error de Consistencia en **Medición 1**: {error_msg_1}")
+                return
+    
+            # --- 2. VALIDACIÓN INTERNA (MEDICIÓN 2) ---
+            is_consistent_2, error_msg_2 = validar_consistencia_metadatos(config2_archivos, "Medición 2")
+            if not is_consistent_2:
+                st.error(f"Error de Consistencia en **Medición 2**: {error_msg_2}")
+                return
+            #------------------------------------------------------------------------------------------------------
             df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
             df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
 
@@ -1011,6 +1075,12 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         if not any_file_uploaded:
             st.warning("Por favor, sube al menos un archivo CSV para realizar el diagnóstico.")
         else:
+            # APLICACIÓN DE LA VALIDACIÓN INTERNA---------------------------------------------------------------------
+            is_consistent, error_msg = validar_consistencia_metadatos(prediccion_files_correctas, "Diagnóstico")
+            if not is_consistent:
+                st.error(error_msg)
+                return
+            # ---------------------------------------------------------------------------------------------------------
             avg_tremor_metrics = {}
             datos_paciente = {}
             datos_estimulacion = {}
