@@ -489,7 +489,7 @@ if opcion == "1️⃣ Análisis de una medición":
             st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
         else:
             # --- APLICAR VALIDACIÓN  -----------------------------------------------------------------------------
-            is_consistent, error_msg = validar_consistencia_metadatos(config_archivos, "Medición Individual")
+            is_consistent, error_msg = validar_consistencia_metadatos(uploaded_files, "Medición Individual")
             if not is_consistent:
                 st.error(error_msg)
                 st.stop()
