@@ -546,6 +546,10 @@ if opcion == "1️⃣ Análisis de una medición":
         else:
             # --- APLICAR VALIDACIÓN  -----------------------------------------------------------------------------
             is_consistent, error_msg = validar_consistencia_por_nombre_archivo(uploaded_files, "Medición Individual")
+
+            if not is_consistent:
+                st.error(error_msg)
+                st.stop() # Detiene la ejecución si los archivos son inconsistentes
             # -----------------------------------------------------------------------------------------------------
             resultados_globales = []
             datos_paciente_para_pdf = {}  
@@ -755,6 +759,10 @@ elif opcion == "2️⃣ Comparación de mediciones":
             is_consistent_1, error_msg_1 = validar_consistencia_por_nombre_archivo(config1_archivos, "Medición 1")
             # Medicion 2
             is_consistent_2, error_msg_2 = validar_consistencia_por_nombre_archivo(config2_archivos, "Medición 2")
+
+            if not is_consistent:
+                st.error(error_msg)
+                st.stop() # Detiene la ejecución si los archivos son inconsistentes
 
             #------------------------------------------------------------------------------------------------------
             df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
@@ -1126,6 +1134,10 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         else:
             # ---------------------------------------VALIDACIÓN INTERNA--------------------------------------------------
             is_consistent, error_msg = validar_consistencia_por_nombre_archivo(prediccion_files_correctas, "Diagnóstico")
+
+            if not is_consistent:
+                st.error(error_msg)
+                st.stop() # Detiene la ejecución si los archivos son inconsistentes
             # -----------------------------------------------------------------------------------------------------------
             avg_tremor_metrics = {}
             datos_paciente = {}
