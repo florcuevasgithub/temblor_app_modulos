@@ -491,7 +491,7 @@ if opcion == "1️⃣ Análisis de una medición":
             is_consistent, error_msg = validar_consistencia_metadatos(config_archivos, "Medición Individual")
             if not is_consistent:
                 st.error(error_msg)
-                return
+                st.stop()
             # -------------------------------------
             resultados_globales = []
             datos_paciente_para_pdf = {}  
@@ -700,13 +700,13 @@ elif opcion == "2️⃣ Comparación de mediciones":
             is_consistent_1, error_msg_1 = validar_consistencia_metadatos(config1_archivos, "Medición 1")
             if not is_consistent_1:
                 st.error(f"Error de Consistencia en **Medición 1**: {error_msg_1}")
-                return
+                st.stop()
     
             # --- 2. VALIDACIÓN INTERNA (MEDICIÓN 2) ---
             is_consistent_2, error_msg_2 = validar_consistencia_metadatos(config2_archivos, "Medición 2")
             if not is_consistent_2:
                 st.error(f"Error de Consistencia en **Medición 2**: {error_msg_2}")
-                return
+                st.stop()
             #------------------------------------------------------------------------------------------------------
             df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
             df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
@@ -1079,7 +1079,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             is_consistent, error_msg = validar_consistencia_metadatos(prediccion_files_correctas, "Diagnóstico")
             if not is_consistent:
                 st.error(error_msg)
-                return
+                st.stop()
             # ---------------------------------------------------------------------------------------------------------
             avg_tremor_metrics = {}
             datos_paciente = {}
