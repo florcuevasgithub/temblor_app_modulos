@@ -258,93 +258,112 @@ def normalizar_cadena(cadena):
     return cadena_sin_acento.lower()
 
 def parsear_metadatos_del_nombre(nombre_archivo):
-    """Extrae Mano, Dedo, Tipo de Test, Estado DBS y FECHA mediante tokens."""
+    """Extrae metadatos (Identidad, Mano, Dedo, Tipo, DBS, Fecha) del nombre del archivo."""
+    
     nombre_upper = nombre_archivo.upper()
     
-    # 1. Normalización de la cadena: Elimina la extensión, dobles guiones y espacios.
+    # Normalización: Elimina la extensión, dobles guiones y espacios.
     nombre_normalizado = nombre_upper.replace(".CSV", "").replace('__', '_').replace(' ', '')
     tokens = nombre_normalizado.split('_') 
     
     # Listas de tokens válidos
-    manos_validas = ('DERECHA', 'IZQUIERDA')
-    dedos_validos = ('INDICE', 'PULGAR', 'MEDIO', 'ANULAR', 'MENIQUE')
-    tipos_validos = ('REPOSO', 'POSTURAL', 'ACCION') 
+    tokens_mano = ('DERECHA', 'IZQUIERDA')
     
     # Valores de retorno por defecto
     mano = 'MANO NO ENCONTRADA'
     dedo = 'DEDO NO ENCONTRADO'
     tipo_test_en_nombre = 'TIPO NO ENCONTRADO'
     fecha = 'FECHA NO ENCONTRADA'
-    tiene_dbs = False # Valor por defecto seguro
+    tiene_dbs = False 
+    nombre_paciente_compuesto = 'IDENTIDAD NO ENCONTRADA'
     
-    for token in tokens:
-        if token in manos_validas:
-            mano = token
-        elif token in dedos_validos:
+    indice_delimitador = len(tokens)
+    
+    # 1. Encontrar el índice donde aparece DERECHA o IZQUIERDA (DELIMITADOR CLAVE)
+    for i, token in enumerate(tokens):
+        if token in tokens_mano:
+            indice_delimitador = i
+            mano = token 
+            break
+        
+    # 2. La identidad del paciente es la unión de todos los tokens antes del delimitador.
+    if indice_delimitador > 0:
+        identidad_tokens = tokens[:indice_delimitador]
+        # Filtramos tokens vacíos o que parezcan fechas/IDs numéricos sueltos
+        identidad_tokens = [t for t in identidad_tokens if t and not (t.isdigit() or '-' in t)]
+        
+        if identidad_tokens:
+            nombre_paciente_compuesto = '_'.join(identidad_tokens)
+        else:
+            nombre_paciente_compuesto = 'NOMBRE NO ENCONTRADO'
+            
+    # 3. Extracción de los otros metadatos (a partir del índice de la mano)
+    for token in tokens[indice_delimitador:]:
+        if token in ('INDICE', 'PULGAR', 'MEDIO', 'ANULAR', 'MENIQUE'):
             dedo = token
-        elif token in tipos_validos:
+        elif token in ('REPOSO', 'POSTURAL', 'ACCION'):
             tipo_test_en_nombre = token
         elif '-' in token and any(c.isdigit() for c in token):
             if fecha == 'FECHA NO ENCONTRADA':
                 fecha = token
-        
-    # Chequear la presencia de DBS
-    if 'DBS' in tokens:
-        tiene_dbs = True
-        
+        elif token == 'DBS':
+            tiene_dbs = True
+
     return {
         'Mano': mano.lower(),
         'Dedo': dedo.lower(),
         'Tiene_DBS': tiene_dbs,
         'Tipo_en_Nombre': tipo_test_en_nombre.lower(),
         'Fecha': fecha.lower(),
-        'Nombre_Tokens': tokens 
+        'Nombre_Paciente': nombre_paciente_compuesto.lower() # Identidad compuesta
     }
 def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
+    """
+    Valida la consistencia de los metadatos de los archivos cargados:
+    Identidad, Mano, Dedo, Estado DBS y Fecha deben ser iguales.
+    El Tipo de Test debe coincidir con el slot de carga (Reposo, Postural, Acción).
+    """
     metadata_list = []
     
     # 1. Extracción de metadatos del nombre del archivo
     for test_carga, archivo in archivos_dict.items():
-        
-        # 🚨 Seguridad reforzada 🚨
         if archivo is None:
-            # Esto NO debería suceder si usamos all() en el main, 
-            # pero es un buen punto de control.
-            continue 
+            continue
 
-        # 🚨 Verificación crítica del tipo 🚨
-        # Comprobamos que el objeto tenga el atributo 'name' (propio de un archivo cargado)
         if not hasattr(archivo, 'name'):
-            # Si no es un archivo cargado válido, devolvemos un error explícito.
-            return False, f"Error interno: La entrada para '{test_carga}' no es un un objeto de archivo válido."
+            return False, f"Error interno: La entrada para '{test_carga}' no es un objeto de archivo válido."
 
         try:
             archivo.seek(0)
-            
-            # La función parsear_metadatos_del_nombre requiere el atributo .name
             meta = parsear_metadatos_del_nombre(archivo.name)
             meta['Test_Carga'] = test_carga 
-            
             metadata_list.append(meta)
-            archivo.seek(0)
+            archivo.seek(0) # Rebobinar para el procesamiento posterior
 
         except Exception as e:
-            # 🚨 CORRECCIÓN FINAL: La comilla de cierre que faltaba 🚨
             return False, f"Error al procesar el archivo de {test_carga}: {e}"
             
     if not metadata_list:
         return False, f"Error: No se cargaron archivos para {nombre_medicion}."
 
     # 2. Establecer referencias (del primer archivo cargado)
-    mano_ref = metadata_list[0]['Mano']
-    dedo_ref = metadata_list[0]['Dedo']
-    dbs_ref = metadata_list[0]['Tiene_DBS']
-    fecha_ref = metadata_list[0]['Fecha'] # <-- NUEVA REFERENCIA
-    
+    ref = metadata_list[0]
+    mano_ref = ref['Mano']
+    dedo_ref = ref['Dedo']
+    dbs_ref = ref['Tiene_DBS']
+    fecha_ref = ref['Fecha']
+    nombre_ref = ref['Nombre_Paciente'] # Referencia de la Identidad Compuesta
+
     # 3. Comprobar la coherencia en todo el conjunto
     for meta in metadata_list:
         
-        # A. Validación de Coherencia (Mano/Dedo)
+        # A.1. VALIDACIÓN DE IDENTIDAD DEL PACIENTE (CRÍTICO)
+        if meta['Nombre_Paciente'] != nombre_ref or 'no encontrado' in meta['Nombre_Paciente']:
+            return False, (f"Error de Consistencia de **Identidad de Paciente** en {nombre_medicion} ({meta['Test_Carga']}). "
+                           f"Se compara un archivo del paciente '{meta['Nombre_Paciente'].upper()}' con otros del paciente '{nombre_ref.upper()}'. "
+                           f"Asegúrese que la parte inicial del nombre de los 3 archivos sea idéntica.")
+
+        # A.2. Validación de Coherencia (Mano/Dedo)
         if meta['Mano'] != mano_ref or 'no encontrada' in meta['Mano']:
             return False, f"Error de Consistencia de **Mano** en {nombre_medicion} ({meta['Test_Carga']}). Toda la medición debe ser de la mano {mano_ref.upper()}."
         if meta['Dedo'] != dedo_ref or 'no encontrado' in meta['Dedo']:
@@ -362,7 +381,7 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
             return False, (f"Error de Consistencia de **Fecha** en {nombre_medicion} ({meta['Test_Carga']}). "
                            f"La medición debe ser del mismo día ({fecha_ref.upper()}).")
                            
-        # D. VALIDACIÓN ESTRICTA DE TIPO DE TEST
+        # D. VALIDACIÓN ESTRICTA DE TIPO DE TEST (Maneja Acentos/Mayúsculas)
         test_carga_normalizado = normalizar_cadena(meta['Test_Carga'])
         tipo_en_nombre_lower = meta['Tipo_en_Nombre']
 
@@ -373,7 +392,8 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
             return False, (f"Error de Archivo: El slot de carga ('{meta['Test_Carga'].upper()}') no coincide con "
                            f"el tipo de archivo real ('{tipo_en_nombre_lower.upper()}') encontrado en el nombre.")
             
-    return True, "Metadatos, Tipos de Pruebas y Estado DBS/Fecha consistentes."
+    # FINAL: Si todas las validaciones pasan, devuelve True y un mensaje de éxito.
+    return True, "Metadatos, Tipos de Pruebas e Identidad del Paciente consistentes."
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # ------------------ MODO PRINCIPAL ---------------------------------------
