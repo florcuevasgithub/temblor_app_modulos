@@ -496,29 +496,41 @@ if opcion == "1️⃣ Análisis de una medición":
             return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
         
        
-        # 1. Definimos la ruta de la imagen (debe estar en el mismo directorio que el script)
+        # 🚨 SECCIÓN: IMAGEN DE REFERENCIA (Ajuste Inteligente)
+        # ---------------------------------------------------------------------------------------------------------
+        
         RUTA_IMAGEN_REFERENCIA = "valores_de_referencia.jpeg"
-        ANCHO_IMAGEN_MM = 180 # 180mm de ancho para que encaje bien en los márgenes de una hoja A4/Carta
-    
+        MARGEN_HORIZONTAL = 20  # Margen deseado a cada lado (en mm)
+        ANCHO_PAGINA_TOTAL = 210  # Ancho estándar de página A4/Carta en mm (aprox)
+        
+        # ANCHO MÁXIMO DISPONIBLE (170 mm es seguro)
+        ANCHO_MAXIMO_MM = ANCHO_PAGINA_TOTAL - (MARGEN_HORIZONTAL * 2) # 210 - 40 = 170 mm
+        
+        # Estimamos la altura que ocupará la imagen, manteniendo la proporción (ej. si es 170x100mm)
+        # **ESTE VALOR DEBE SER AJUSTADO EMPÍRICAMENTE PARA TU IMAGEN**
+        ALTURA_ESTIMADA_IMAGEN = 100  # Asumimos que la tabla ocupa unos 100 mm de alto, ¡ajustálo!
+        
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 10, "Cuadro Comparativo de Interpretación Clínica:", ln=True)
-        pdf.set_font("Arial", size=10)
-    
-        # 2. Comprobación de espacio antes de insertar
-        # Si la página se va a terminar con la imagen, saltamos a una nueva página.
-        ALTURA_ESTIMADA_IMAGEN = 120 # Valor estimado en mm para tu imagen
+        
+        # 1. VERIFICACIÓN DE ESPACIO RESTANTE
+        # Si la posición actual + altura estimada de la imagen excede el margen inferior (20mm):
         if (pdf.get_y() + ALTURA_ESTIMADA_IMAGEN) > (pdf.h - 20):
             pdf.add_page()
+            pdf.ln(5) # Añadir espacio al inicio de la nueva página
         
         try:
-            # FPDF.image(nombre, x, y, ancho, alto)
-            # x=15 mm centra una imagen de 180 mm en una página de 210 mm
-            # h=0 le dice a FPDF que calcule la altura automáticamente manteniendo la proporción
-            pdf.image(RUTA_IMAGEN_REFERENCIA, x=15, w=ANCHO_IMAGEN_MM, h=0)
+            # 2. Insertar la imagen con el ANCHO MÁXIMO y centrado
+            POSICION_X = (ANCHO_PAGINA_TOTAL - ANCHO_MAXIMO_MM) / 2 # Calcula X para centrar
+            
+            # h=0 para mantener la proporción y evitar pérdida de nitidez
+            pdf.image(RUTA_IMAGEN_REFERENCIA, x=POSICION_X, w=ANCHO_MAXIMO_MM, h=0)
+            
         except Exception as e:
-            pdf.multi_cell(0, 8, f"ADVERTENCIA: No se pudo cargar el archivo de referencia '{RUTA_IMAGEN_REFERENCIA}'. Asegúrese de que existe en el directorio correcto. Error: {e}")
-        
+            # Manejo de error si el JPG sigue siendo ilegible o no se encuentra
+            pdf.multi_cell(0, 8, f"ADVERTENCIA: No se pudo cargar o procesar el archivo de referencia '{RUTA_IMAGEN_REFERENCIA}'. Error: {e}")
+            
         pdf.ln(5) # Espacio después de la imagen
     
     # ---------------------------------------------------------------------------------------------------------
