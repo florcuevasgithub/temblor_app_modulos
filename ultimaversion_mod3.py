@@ -804,11 +804,15 @@ elif opcion == "2️⃣ Comparación de mediciones":
            
             # Medicion 1
             is_consistent_1, error_msg_1 = validar_consistencia_por_nombre_archivo(config1_archivos, "Medición 1")
+
+            if not is_consistent:
+                st.error(error_msg_1)
+                st.stop() # Detiene la ejecución si los archivos son inconsistentes
             # Medicion 2
             is_consistent_2, error_msg_2 = validar_consistencia_por_nombre_archivo(config2_archivos, "Medición 2")
 
             if not is_consistent:
-                st.error(error_msg)
+                st.error(error_msg_2)
                 st.stop() # Detiene la ejecución si los archivos son inconsistentes
 
             #------------------------------------------------------------------------------------------------------
