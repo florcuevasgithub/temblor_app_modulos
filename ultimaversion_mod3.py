@@ -506,15 +506,15 @@ if opcion == "1️⃣ Análisis de una medición":
         # ANCHO MÁXIMO SEGURO: 190 mm (deja 10 mm a cada lado)
         ANCHO_MAXIMO_MM = ANCHO_PAGINA_TOTAL - (MARGEN_HORIZONTAL * 2) # 210 - 20 = 190 mm
         
-        # ALTURA ESTIMADA: Debes usar un valor un poco mayor a la altura real (a 190 mm de ancho)
-        # La tabla de referencia es relativamente corta, pero 120 mm es un margen seguro para el salto de página.
-        ALTURA_ESTIMADA_IMAGEN = 120 
+        # Esto garantiza que el salto de página solo ocurra si realmente queda muy poco espacio.
+        ALTURA_ESTIMADA_IMAGEN = 50 # REDUCIR ESTE VALOR 
         
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 10, "Cuadro Comparativo de Interpretación Clínica:", ln=True)
         
         # 1. VERIFICACIÓN DE ESPACIO RESTANTE
+        # Ahora solo saltará si quedan menos de 50mm, lo cual es mucho menos que tu espacio actual.
         if (pdf.get_y() + ALTURA_ESTIMADA_IMAGEN) > (pdf.h - 20):
             pdf.add_page()
             pdf.ln(5)
