@@ -17,7 +17,10 @@ import os
 import glob
 import streamlit as st
 import joblib
-
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch # Para definir tamaños
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet
 
 
 # Inicializar una variable en el estado de sesión para controlar el reinicio
