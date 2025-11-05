@@ -496,7 +496,7 @@ if opcion == "1️⃣ Análisis de una medición":
             return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
         
        
-        # 🚨 SECCIÓN: IMAGEN DE REFERENCIA (Ajuste Inteligente)
+        # SECCIÓN: IMAGEN DE REFERENCIA (Ajuste Inteligente)
         # ---------------------------------------------------------------------------------------------------------
         
         RUTA_IMAGEN_REFERENCIA = "valores_de_referencia.jpeg"
