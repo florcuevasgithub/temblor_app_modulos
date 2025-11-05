@@ -260,20 +260,23 @@ def normalizar_cadena(cadena):
 def parsear_metadatos_del_nombre(nombre_archivo):
     """Extrae Mano, Dedo, Tipo de Test, Estado DBS y FECHA mediante tokens."""
     nombre_upper = nombre_archivo.upper()
-    # Separar por guiones bajos y eliminar la extensión .CSV
-    tokens = nombre_upper.replace(".CSV", "").split('_')
     
-    # Lista de tokens válidos
+    # 1. Normalización de la cadena: Elimina la extensión, dobles guiones y espacios.
+    nombre_normalizado = nombre_upper.replace(".CSV", "").replace('__', '_').replace(' ', '')
+    tokens = nombre_normalizado.split('_') 
+    
+    # Listas de tokens válidos
     manos_validas = ('DERECHA', 'IZQUIERDA')
-    dedos_validos = ('INDICE', 'PULGAR')
+    dedos_validos = ('INDICE', 'PULGAR', 'MEDIO', 'ANULAR', 'MENIQUE')
     tipos_validos = ('REPOSO', 'POSTURAL', 'ACCION') 
     
+    # Valores de retorno por defecto
     mano = 'MANO NO ENCONTRADA'
     dedo = 'DEDO NO ENCONTRADO'
     tipo_test_en_nombre = 'TIPO NO ENCONTRADO'
     fecha = 'FECHA NO ENCONTRADA'
+    tiene_dbs = False # Valor por defecto seguro
     
-    # Intentar identificar la fecha: asumimos que es el token que contiene guiones (-)
     for token in tokens:
         if token in manos_validas:
             mano = token
@@ -281,21 +284,21 @@ def parsear_metadatos_del_nombre(nombre_archivo):
             dedo = token
         elif token in tipos_validos:
             tipo_test_en_nombre = token
-        elif '-' in token and any(c.isdigit() for c in token): # Buscamos una cadena con números y guiones (ej: 16-SEPTIEMBRE-2025)
-            # Solo guardamos la primera parte que parezca ser una fecha
+        elif '-' in token and any(c.isdigit() for c in token):
             if fecha == 'FECHA NO ENCONTRADA':
-                fecha = token.replace(' ', '') # Eliminar posibles espacios
-            
+                fecha = token
+        
     # Chequear la presencia de DBS
-    tiene_dbs = 'DBS' in tokens
+    if 'DBS' in tokens:
+        tiene_dbs = True
         
     return {
         'Mano': mano.lower(),
         'Dedo': dedo.lower(),
         'Tiene_DBS': tiene_dbs,
         'Tipo_en_Nombre': tipo_test_en_nombre.lower(),
-        'Fecha': fecha.lower(), # <-- INCLUIDA
-        'Nombre_Tokens': tokens
+        'Fecha': fecha.lower(),
+        'Nombre_Tokens': tokens 
     }
 def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
     """
