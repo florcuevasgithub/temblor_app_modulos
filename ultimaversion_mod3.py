@@ -497,7 +497,7 @@ if opcion == "1️⃣ Análisis de una medición":
         
        
         # 1. Definimos la ruta de la imagen (debe estar en el mismo directorio que el script)
-        RUTA_IMAGEN_REFERENCIA = "valores_de_referencia.jpg"
+        RUTA_IMAGEN_REFERENCIA = "valores_de_referencia.jpeg"
         ANCHO_IMAGEN_MM = 180 # 180mm de ancho para que encaje bien en los márgenes de una hoja A4/Carta
     
         pdf.ln(5)
