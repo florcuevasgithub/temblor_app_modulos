@@ -361,13 +361,13 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
         if meta['Nombre_Paciente'] != nombre_ref or 'no encontrado' in meta['Nombre_Paciente']:
             return False, (f"Error de Consistencia de **Identidad de Paciente** en {nombre_medicion} ({meta['Test_Carga']}). "
                            f"Se compara un archivo del paciente '{meta['Nombre_Paciente'].upper()}' con otros del paciente '{nombre_ref.upper()}'. "
-                           f"Asegúrese que la parte inicial del nombre de los 3 archivos sea idéntica.")
+                           f"Asegúrese que sea el mismo paciente en todos los archivos.")
 
         # A.2. Validación de Coherencia (Mano/Dedo)
         if meta['Mano'] != mano_ref or 'no encontrada' in meta['Mano']:
-            return False, f"Error de Consistencia de **Mano** en {nombre_medicion} ({meta['Test_Carga']}). Toda la medición debe ser de la mano {mano_ref.upper()}."
+            return False, f"Error de Consistencia de **Mano** en {nombre_medicion} ({meta['Test_Carga']}). Todos los archivos de la misma medicion deben ser de la misma mano}."
         if meta['Dedo'] != dedo_ref or 'no encontrado' in meta['Dedo']:
-            return False, f"Error de Consistencia de **Dedo** en {nombre_medicion} ({meta['Test_Carga']}). Toda la medición debe ser del dedo {dedo_ref.upper()}."
+            return False, f"Error de Consistencia de **Dedo** en {nombre_medicion} ({meta['Test_Carga']}). Todos los archivos de la misma medicion deben ser del mismo dedo}."
         
         # B. Validación de Coherencia de DBS
         if meta['Tiene_DBS'] != dbs_ref:
@@ -389,8 +389,8 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
             return False, f"Error de Archivo: No se pudo identificar el tipo de test (REPOSO/POSTURAL/ACCION) en el nombre del archivo."
     
         if tipo_en_nombre_lower != test_carga_normalizado:
-            return False, (f"Error de Archivo: El slot de carga ('{meta['Test_Carga'].upper()}') no coincide con "
-                           f"el tipo de archivo real ('{tipo_en_nombre_lower.upper()}') encontrado en el nombre.")
+            return False, (f"Error de Archivo: El espacio para cargar el archivo de ('{meta['Test_Carga'].upper()}') no coincide con "
+                           f"el tipo de archivo cargado ('{tipo_en_nombre_lower.upper()}').")
             
     # FINAL: Si todas las validaciones pasan, devuelve True y un mensaje de éxito.
     return True, "Metadatos, Tipos de Pruebas e Identidad del Paciente consistentes."
@@ -589,7 +589,7 @@ if opcion == "1️⃣ Análisis de una medición":
         }
 
         if not all(uploaded_files.values()):
-            st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
+            st.warning("Por favor, sube todos los archivos para iniciar el análisis.")
         else:
             # --- APLICAR VALIDACIÓN  -----------------------------------------------------------------------------
             is_consistent, error_msg = validar_consistencia_por_nombre_archivo(uploaded_files, "Medición Individual")
