@@ -373,7 +373,7 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
             return False, (f"Error de Archivo: El slot de carga ('{meta['Test_Carga'].upper()}') no coincide con "
                            f"el tipo de archivo real ('{tipo_en_nombre_lower.upper()}') encontrado en el nombre.")
             
-    return True
+    return True, "Metadatos, Tipos de Pruebas y Estado DBS/Fecha consistentes."
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # ------------------ MODO PRINCIPAL ---------------------------------------
