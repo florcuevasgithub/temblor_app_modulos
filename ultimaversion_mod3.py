@@ -301,26 +301,36 @@ def parsear_metadatos_del_nombre(nombre_archivo):
         'Nombre_Tokens': tokens 
     }
 def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
-    """
-    Verifica:
-    1. Coherencia interna (Mano/Dedo/DBS/Fecha deben ser los mismos en todos los archivos).
-    2. Coincidencia de Tipo de Test (Tipo extraído del nombre debe ser igual al slot de carga).
-    """
     metadata_list = []
     
     # 1. Extracción de metadatos del nombre del archivo
     for test_carga, archivo in archivos_dict.items():
-        if archivo is not None:
+        
+        # 🚨 Seguridad reforzada 🚨
+        if archivo is None:
+            # Esto NO debería suceder si usamos all() en el main, 
+            # pero es un buen punto de control.
+            continue 
+
+        # 🚨 Verificación crítica del tipo 🚨
+        # Comprobamos que el objeto tenga el atributo 'name' (propio de un archivo cargado)
+        if not hasattr(archivo, 'name'):
+            # Si no es un archivo cargado válido, devolvemos un error explícito.
+            return False, f"Error interno: La entrada para '{test_carga}' no es un objeto de archivo válido."
+
+        try:
             archivo.seek(0)
             
+            # La función parsear_metadatos_del_nombre requiere el atributo .name
             meta = parsear_metadatos_del_nombre(archivo.name)
-            meta['Test_Carga'] = test_carga # Reposo, Postural o Acción (slot esperado)
+            meta['Test_Carga'] = test_carga 
             
             metadata_list.append(meta)
             archivo.seek(0)
-    
-    if not metadata_list:
-        return False, f"Error: No se cargaron archivos para {nombre_medicion}."
+
+        except Exception as e:
+            # Captura cualquier error que pueda ocurrir al leer el nombre o buscar el archivo.
+            return False, f"Error al procesar el archivo de {test_carga}: {e}
         
     # 2. Establecer referencias (del primer archivo cargado)
     mano_ref = metadata_list[0]['Mano']
