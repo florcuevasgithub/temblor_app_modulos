@@ -246,6 +246,17 @@ def manejar_reinicio():
         st.session_state.clear()
         st.experimental_rerun()
 #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+def normalizar_cadena(cadena):
+    """Convierte la cadena a minúsculas y elimina acentos y diacríticos."""
+    # 1. Normaliza la cadena a su forma NFD (Descompone acentos)
+    cadena_nfd = unicodedata.normalize('NFD', cadena)
+    
+    # 2. Filtra los caracteres no básicos (acentos)
+    cadena_sin_acento = ''.join(c for c in cadena_nfd if unicodedata.category(c) != 'Mn')
+    
+    # 3. Convierte a minúsculas (para consistencia)
+    return cadena_sin_acento.lower()
+
 def parsear_metadatos_del_nombre(nombre_archivo):
     """Extrae Mano, Dedo, Tipo de Test, Estado DBS y FECHA mediante tokens."""
     nombre_upper = nombre_archivo.upper()
