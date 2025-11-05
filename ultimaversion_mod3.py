@@ -365,9 +365,9 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
 
         # A.2. Validación de Coherencia (Mano/Dedo)
         if meta['Mano'] != mano_ref or 'no encontrada' in meta['Mano']:
-            return False, f"Error de Consistencia de **Mano** en {nombre_medicion} ({meta['Test_Carga']}). Todos los archivos de la misma medicion deben ser de la misma mano}."
+            return False, f"Error de Consistencia de **Mano** en {nombre_medicion} ({meta['Test_Carga']}). Todos los archivos de la misma medicion deben ser de la misma mano."
         if meta['Dedo'] != dedo_ref or 'no encontrado' in meta['Dedo']:
-            return False, f"Error de Consistencia de **Dedo** en {nombre_medicion} ({meta['Test_Carga']}). Todos los archivos de la misma medicion deben ser del mismo dedo}."
+            return False, f"Error de Consistencia de **Dedo** en {nombre_medicion} ({meta['Test_Carga']}). Todos los archivos de la misma medicion deben ser del mismo dedo."
         
         # B. Validación de Coherencia de DBS
         if meta['Tiene_DBS'] != dbs_ref:
