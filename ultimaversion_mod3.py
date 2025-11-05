@@ -254,7 +254,7 @@ def parsear_metadatos_del_nombre(nombre_archivo):
     
     # Lista de tokens válidos
     manos_validas = ('DERECHA', 'IZQUIERDA')
-    dedos_validos = ('INDICE', 'PULGAR', 'MEDIO', 'ANULAR', 'MENIQUE')
+    dedos_validos = ('INDICE', 'PULGAR')
     tipos_validos = ('REPOSO', 'POSTURAL', 'ACCION') 
     
     mano = 'MANO NO ENCONTRADA'
@@ -335,16 +335,21 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
             return False, (f"Error de Consistencia de **Fecha** en {nombre_medicion} ({meta['Test_Carga']}). "
                            f"La medición debe ser del mismo día ({fecha_ref.upper()}).")
                            
-        # D. VALIDACIÓN ESTRICTA DE TIPO DE TEST
-        test_carga_lower = meta['Test_Carga'].lower() # Tipo de slot (esperado)
-        tipo_en_nombre_lower = meta['Tipo_en_Nombre'] # Tipo extraído (real)
+        # D. VALIDACIÓN ESTRICTA DE TIPO DE TEST (CORREGIDO PARA ACENTOS/MAYÚSCULAS)
+
+        # 1. Normalizar el tipo de slot esperado (Ej: 'Acción' -> 'accion')
+        test_carga_normalizado = normalizar_cadena(meta['Test_Carga']) # El tipo de slot (esperado)
+
+        # 2. El tipo extraído del nombre ya viene en minúsculas y sin acento (Tipo_en_Nombre)
+        tipo_en_nombre_lower = meta['Tipo_en_Nombre'] 
 
         if tipo_en_nombre_lower == 'tipo no encontrado':
-             return False, f"Error de Archivo: No se pudo identificar el tipo de test (REPOSO/POSTURAL/ACCION) en el nombre del archivo."
-        
-        if tipo_en_nombre_lower != test_carga_lower:
-             return False, (f"Error de Archivo: El slot de carga ('{meta['Test_Carga'].upper()}') no coincide con "
-                            f"el tipo de archivo real ('{tipo_en_nombre_lower.upper()}') encontrado en el nombre.")
+            return False, f"Error de Archivo: No se pudo identificar el tipo de test (REPOSO/POSTURAL/ACCION) en el nombre del archivo."
+    
+        # Comprobación de que el tipo extraído del nombre (ej: 'accion') coincide con el slot normalizado (ej: 'accion').
+        if tipo_en_nombre_lower != test_carga_normalizado:
+            return False, (f"Error de Archivo: El slot de carga ('{meta['Test_Carga'].upper()}') no coincide con "
+                    f"el tipo de archivo real ('{tipo_en_nombre_lower.upper()}') encontrado en el nombre.")
             
     return True
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -541,7 +546,7 @@ if opcion == "1️⃣ Análisis de una medición":
             "Acción": accion_file,
         }
 
-        if not any(uploaded_files.values()):
+        if not all(uploaded_files.values()):
             st.warning("Por favor, sube al menos un archivo para iniciar el análisis.")
         else:
             # --- APLICAR VALIDACIÓN  -----------------------------------------------------------------------------
@@ -1127,10 +1132,10 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             "Acción": prediccion_accion_file
         }
 
-        any_file_uploaded = any(file is not None for file in prediccion_files_correctas.values())
+        all_files_uploaded = all(file is not None for file in prediccion_files_correctas.values())
 
-        if not any_file_uploaded:
-            st.warning("Por favor, sube al menos un archivo CSV para realizar el diagnóstico.")
+        if not all_files_uploaded:
+            st.warning("Por favor, sube los 3 archivos para realizar el diagnóstico.")
         else:
             # ---------------------------------------VALIDACIÓN INTERNA--------------------------------------------------
             is_consistent, error_msg = validar_consistencia_por_nombre_archivo(prediccion_files_correctas, "Diagnóstico")
