@@ -335,21 +335,25 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
             return False, (f"Error de Consistencia de **Fecha** en {nombre_medicion} ({meta['Test_Carga']}). "
                            f"La medición debe ser del mismo día ({fecha_ref.upper()}).")
                            
-        # D. VALIDACIÓN ESTRICTA DE TIPO DE TEST (CORREGIDO PARA ACENTOS/MAYÚSCULAS)
+        # D. VALIDACIÓN ESTRICTA DE TIPO DE TEST
 
         # 1. Normalizar el tipo de slot esperado (Ej: 'Acción' -> 'accion')
-        test_carga_normalizado = normalizar_cadena(meta['Test_Carga']) # El tipo de slot (esperado)
+        # Usamos la función normalizar_cadena() para quitar el acento al slot de Streamlit
+        test_carga_normalizado = normalizar_cadena(meta['Test_Carga']) # Resultado: 'accion' (sin acento)
 
-        # 2. El tipo extraído del nombre ya viene en minúsculas y sin acento (Tipo_en_Nombre)
+        # 2. El tipo extraído del nombre (ya está en minúsculas y sin acento: 'accion')
         tipo_en_nombre_lower = meta['Tipo_en_Nombre'] 
 
         if tipo_en_nombre_lower == 'tipo no encontrado':
             return False, f"Error de Archivo: No se pudo identificar el tipo de test (REPOSO/POSTURAL/ACCION) en el nombre del archivo."
     
-        # Comprobación de que el tipo extraído del nombre (ej: 'accion') coincide con el slot normalizado (ej: 'accion').
+        # Comprobación de la igualdad de cadenas normalizadas: 'accion' == 'accion'
         if tipo_en_nombre_lower != test_carga_normalizado:
+        # Este error solo debería ocurrir si el usuario puso un archivo de REPOSO en el slot ACCIÓN
             return False, (f"Error de Archivo: El slot de carga ('{meta['Test_Carga'].upper()}') no coincide con "
                     f"el tipo de archivo real ('{tipo_en_nombre_lower.upper()}') encontrado en el nombre.")
+
+        # Si son iguales, pasa la validación.
             
     return True
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
