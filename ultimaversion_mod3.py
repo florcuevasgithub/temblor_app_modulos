@@ -500,38 +500,36 @@ if opcion == "1️⃣ Análisis de una medición":
         # ---------------------------------------------------------------------------------------------------------
         
         RUTA_IMAGEN_REFERENCIA = "cuadro_referencia_sin_texto.jpeg"
-        MARGEN_HORIZONTAL = 20  # Margen deseado a cada lado (en mm)
-        ANCHO_PAGINA_TOTAL = 210  # Ancho estándar de página A4/Carta en mm (aprox)
+        MARGEN_HORIZONTAL = 10  # Margen deseado a cada lado (10 mm)
+        ANCHO_PAGINA_TOTAL = 210  # Ancho de página estándar
         
-        # ANCHO MÁXIMO DISPONIBLE (170 mm es seguro)
-        ANCHO_MAXIMO_MM = ANCHO_PAGINA_TOTAL - (MARGEN_HORIZONTAL * 2) # 210 - 40 = 170 mm
+        # ANCHO MÁXIMO SEGURO: 190 mm (deja 10 mm a cada lado)
+        ANCHO_MAXIMO_MM = ANCHO_PAGINA_TOTAL - (MARGEN_HORIZONTAL * 2) # 210 - 20 = 190 mm
         
-        # Estimamos la altura que ocupará la imagen, manteniendo la proporción (ej. si es 170x100mm)
-        # **ESTE VALOR DEBE SER AJUSTADO EMPÍRICAMENTE PARA TU IMAGEN**
-        ALTURA_ESTIMADA_IMAGEN = 100  # Asumimos que la tabla ocupa unos 100 mm de alto, ¡ajustálo!
+        # ALTURA ESTIMADA: Debes usar un valor un poco mayor a la altura real (a 190 mm de ancho)
+        # La tabla de referencia es relativamente corta, pero 120 mm es un margen seguro para el salto de página.
+        ALTURA_ESTIMADA_IMAGEN = 120 
         
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 10, "Cuadro Comparativo de Interpretación Clínica:", ln=True)
         
         # 1. VERIFICACIÓN DE ESPACIO RESTANTE
-        # Si la posición actual + altura estimada de la imagen excede el margen inferior (20mm):
         if (pdf.get_y() + ALTURA_ESTIMADA_IMAGEN) > (pdf.h - 20):
             pdf.add_page()
-            pdf.ln(5) # Añadir espacio al inicio de la nueva página
+            pdf.ln(5)
         
         try:
-            # 2. Insertar la imagen con el ANCHO MÁXIMO y centrado
-            POSICION_X = (ANCHO_PAGINA_TOTAL - ANCHO_MAXIMO_MM) / 2 # Calcula X para centrar
+            # 2. Insertar la imagen con el ANCHO MÁXIMO (190 mm) y centrado
+            POSICION_X = (ANCHO_PAGINA_TOTAL - ANCHO_MAXIMO_MM) / 2 # 20 / 2 = 10 mm
             
-            # h=0 para mantener la proporción y evitar pérdida de nitidez
+            # w=190 mm (máxima legibilidad) y h=0 (mantiene proporción, evita distorsión)
             pdf.image(RUTA_IMAGEN_REFERENCIA, x=POSICION_X, w=ANCHO_MAXIMO_MM, h=0)
             
         except Exception as e:
-            # Manejo de error si el JPG sigue siendo ilegible o no se encuentra
             pdf.multi_cell(0, 8, f"ADVERTENCIA: No se pudo cargar o procesar el archivo de referencia '{RUTA_IMAGEN_REFERENCIA}'. Error: {e}")
             
-        pdf.ln(5) # Espacio después de la imagen
+        pdf.ln(5)
     
     # ---------------------------------------------------------------------------------------------------------
     
