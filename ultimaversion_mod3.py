@@ -499,7 +499,7 @@ if opcion == "1️⃣ Análisis de una medición":
         # SECCIÓN: IMAGEN DE REFERENCIA (Ajuste Inteligente)
         # ---------------------------------------------------------------------------------------------------------
         
-        RUTA_IMAGEN_REFERENCIA = "valores_de_referencia.jpeg"
+        RUTA_IMAGEN_REFERENCIA = "cuadro_valores_de_referencia.jpeg"
         MARGEN_HORIZONTAL = 20  # Margen deseado a cada lado (en mm)
         ANCHO_PAGINA_TOTAL = 210  # Ancho estándar de página A4/Carta en mm (aprox)
         
