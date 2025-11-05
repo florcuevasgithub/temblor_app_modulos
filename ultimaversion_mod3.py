@@ -316,7 +316,7 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
         # Comprobamos que el objeto tenga el atributo 'name' (propio de un archivo cargado)
         if not hasattr(archivo, 'name'):
             # Si no es un archivo cargado válido, devolvemos un error explícito.
-            return False, f"Error interno: La entrada para '{test_carga}' no es un objeto de archivo válido."
+            return False, f"Error interno: La entrada para '{test_carga}' no es un un objeto de archivo válido."
 
         try:
             archivo.seek(0)
@@ -329,9 +329,12 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
             archivo.seek(0)
 
         except Exception as e:
-            # Captura cualquier error que pueda ocurrir al leer el nombre o buscar el archivo.
-            return False, f"Error al procesar el archivo de {test_carga}: {e}
-        
+            # 🚨 CORRECCIÓN FINAL: La comilla de cierre que faltaba 🚨
+            return False, f"Error al procesar el archivo de {test_carga}: {e}"
+            
+    if not metadata_list:
+        return False, f"Error: No se cargaron archivos para {nombre_medicion}."
+
     # 2. Establecer referencias (del primer archivo cargado)
     mano_ref = metadata_list[0]['Mano']
     dedo_ref = metadata_list[0]['Dedo']
@@ -360,24 +363,15 @@ def validar_consistencia_por_nombre_archivo(archivos_dict, nombre_medicion):
                            f"La medición debe ser del mismo día ({fecha_ref.upper()}).")
                            
         # D. VALIDACIÓN ESTRICTA DE TIPO DE TEST
-
-        # 1. Normalizar el tipo de slot esperado (Ej: 'Acción' -> 'accion')
-        # Usamos la función normalizar_cadena() para quitar el acento al slot de Streamlit
-        test_carga_normalizado = normalizar_cadena(meta['Test_Carga']) # Resultado: 'accion' (sin acento)
-
-        # 2. El tipo extraído del nombre (ya está en minúsculas y sin acento: 'accion')
-        tipo_en_nombre_lower = meta['Tipo_en_Nombre'] 
+        test_carga_normalizado = normalizar_cadena(meta['Test_Carga'])
+        tipo_en_nombre_lower = meta['Tipo_en_Nombre']
 
         if tipo_en_nombre_lower == 'tipo no encontrado':
             return False, f"Error de Archivo: No se pudo identificar el tipo de test (REPOSO/POSTURAL/ACCION) en el nombre del archivo."
     
-        # Comprobación de la igualdad de cadenas normalizadas: 'accion' == 'accion'
         if tipo_en_nombre_lower != test_carga_normalizado:
-        # Este error solo debería ocurrir si el usuario puso un archivo de REPOSO en el slot ACCIÓN
             return False, (f"Error de Archivo: El slot de carga ('{meta['Test_Carga'].upper()}') no coincide con "
-                    f"el tipo de archivo real ('{tipo_en_nombre_lower.upper()}') encontrado en el nombre.")
-
-        # Si son iguales, pasa la validación.
+                           f"el tipo de archivo real ('{tipo_en_nombre_lower.upper()}') encontrado en el nombre.")
             
     return True
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
