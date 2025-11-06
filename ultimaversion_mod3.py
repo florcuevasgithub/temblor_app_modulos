@@ -1264,7 +1264,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 st.subheader("DataFrame preparado para el Modelo de Predicción:")
                 st.dataframe(df_for_prediction)
 
-                model_filename = 'tremor_prediction_model_OPTIMIZADO_FINAL.joblib'
+                model_filename = 'tremor_prediction_model_con_sanos_OPTIMO_POR_F1.joblib'
                 prediccion_final = "No se pudo realizar el diagnóstico."
                 probabilidades_texto = ""
                 
