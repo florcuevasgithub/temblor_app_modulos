@@ -1,5 +1,5 @@
 ## Aplicación para Análisis Cuantitativo del Temblor
-Esta aplicación es una herramienta de soporte al diagnóstico y monitoreo terapéutico, desarrollada para la tesis de Ingenieria Biomedica. 
+Esta aplicación es una herramienta de soporte al diagnóstico y monitoreo terapéutico, desarrollada para la tesis de Ingeniería Biomédica. 
 Utiliza el procesamiento avanzado de señales y técnicas de Machine Learning para cuantificar y clasificar el temblor en pacientes con Parkinson (PK) y Temblor Esencial (TE).
 
 ## Tecnologías Clave
