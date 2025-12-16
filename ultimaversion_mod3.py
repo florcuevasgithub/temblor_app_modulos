@@ -1029,14 +1029,14 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 "Esta herramienta solo provee soporte cuantitativo."
             )
         
-        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
-        pdf.set_font("Arial", 'B', 9) # Fuente en negrita para el título "NOTA IMPORTANTE"
-        pdf.set_text_color(150, 0, 0) # Color rojo apagado para la advertencia
-        pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
-                       leyenda_nota, 
-                       align='C')
-        pdf.set_text_color(0, 0, 0) 
-        pdf.ln(5)
+            pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
+            pdf.set_font("Arial", 'B', 9) # Fuente en negrita para el título "NOTA IMPORTANTE"
+            pdf.set_text_color(150, 0, 0) # Color rojo apagado para la advertencia
+            pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
+                           leyenda_nota, 
+                           align='C')
+            pdf.set_text_color(0, 0, 0) 
+            pdf.ln(5)
 
             st.download_button(
                 label="Descargar Informe PDF",
