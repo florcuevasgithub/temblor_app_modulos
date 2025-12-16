@@ -528,8 +528,16 @@ if opcion == "1️⃣ Análisis de una medición":
             
         except Exception as e:
             pdf.multi_cell(0, 8, f"ADVERTENCIA: No se pudo cargar o procesar el archivo de referencia '{RUTA_IMAGEN_REFERENCIA}'. Error: {e}")
-            
-        pdf.ln(5)
+
+        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
+        pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
+        pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
+        pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
+               "**NOTA IMPORTANTE:** El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista. Esta herramienta solo provee soporte cuantitativo.", 
+               align='C')
+        pdf.set_text_color(0, 0, 0) # Volver al color negro estándar
+        pdf.ln(5) # Salto de línea estándar para continuar
+        
     
     # ---------------------------------------------------------------------------------------------------------
     
@@ -1272,6 +1280,14 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     modelo_cargado = joblib.load(model_filename)
                     prediction = modelo_cargado.predict(df_for_prediction)
                     prediccion_final = prediction[0]
+
+
+                    prediccion_final_display = prediccion_final # Valor por defecto
+    
+                    if prediccion_final.lower() in ['parkinson', 'pk']:
+                    prediccion_final_display = "Enfermedad de Parkinson (EP)"
+                    elif prediccion_final.lower() in ['temblor esencial', 'te']:
+                    prediccion_final_display = "Temblor Esencial (TE)"
 
                     st.subheader("Resultados del Diagnóstico:")
                     st.success(f"El diagnóstico tentativo es: **{prediccion_final}**")
