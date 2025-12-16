@@ -546,7 +546,7 @@ if opcion == "1️⃣ Análisis de una medición":
                        leyenda_nota, 
                        align='C')
         pdf.set_text_color(0, 0, 0) 
-        pdf.ln(5) #
+        pdf.ln(5) 
         
     
     # ---------------------------------------------------------------------------------------------------------
@@ -1018,6 +1018,25 @@ elif opcion == "2️⃣ Comparación de mediciones":
             pdf_bytes = pdf.output(dest='S').encode('latin1')
             pdf_output.write(pdf_bytes)
             pdf_output.seek(0)
+
+            pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
+            pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
+            pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
+            leyenda_nota = (
+                "**NOTA IMPORTANTE:** Los valores de referencia están sacados de diferentes papers científicos como: "
+                "“Motion characteristics of subclinical tremors in Parkinson’s disease and normal subjects” y también de la UPDRS.\n\n" # Dos saltos de línea para espacio
+                "El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista.\n" # Un salto de línea
+                "Esta herramienta solo provee soporte cuantitativo."
+            )
+        
+        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
+        pdf.set_font("Arial", 'B', 9) # Fuente en negrita para el título "NOTA IMPORTANTE"
+        pdf.set_text_color(150, 0, 0) # Color rojo apagado para la advertencia
+        pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
+                       leyenda_nota, 
+                       align='C')
+        pdf.set_text_color(0, 0, 0) 
+        pdf.ln(5)
 
             st.download_button(
                 label="Descargar Informe PDF",
