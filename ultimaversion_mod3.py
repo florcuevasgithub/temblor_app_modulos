@@ -420,10 +420,9 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.set_font("Arial", "", 12)
         pdf.cell(200, 10, f"Fecha y hora del análisis: {fecha_hora}", ln=True)
         pdf.set_font("Arial", size=12)
-        
         # Helper para imprimir campos solo si tienen valor
         def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
-            if valor is not None and str(valor).strip() != "" and str(valor).lower() not in ["no especificado", "nan"]:
+            if valor is not None and str(valor).strip() != "" and str(valor).lower() != "no especificado":
                 pdf_obj.cell(200, 10, f"{etiqueta}: {valor}{unidad}", ln=True)
     
         # Impresión de Datos Personales
@@ -478,97 +477,98 @@ if opcion == "1️⃣ Análisis de una medición":
                 _imprimir_campo_pdf(pdf, "Ancho de pulso", datos_paciente_dict.get("ancho_pulso_dch"), " µS")
             pdf.ln(5)
     
-        # Sección de Resultados (Tabla)
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(30, 10, "Test", 1, 0, 'C')
-        pdf.cell(40, 10, "Frecuencia (Hz)", 1, 0, 'C')
-        pdf.cell(30, 10, "RMS", 1, 0, 'C')
-        pdf.cell(50, 10, "Amplitud (cm)", 1, 1, 'C') # 1 al final para salto de línea
-        
+        pdf.cell(30, 10, "Test", 1)
+        pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+        pdf.cell(30, 10, "RMS", 1)
+        pdf.cell(50, 10, "Amplitud (cm)", 1)
+        pdf.ln(10)
+    
         pdf.set_font("Arial", "", 12)
         for _, row in df.iterrows():
             pdf.cell(30, 10, row['Test'], 1)
-            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1, 0, 'C')
-            pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1, 0, 'C')
-            pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1, 1, 'C')
+            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+            pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+            pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+            pdf.ln(10)
     
-        # Función Limpiar Texto (Aunque no se usa en el código visible, la dejamos por si acaso)
-        # def limpiar_texto_para_pdf(texto):
-        #     return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
+        def limpiar_texto_para_pdf(texto):
+            return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
         
-        
-        # SECCIÓN: IMAGEN DE REFERENCIA 
+       
+        # SECCIÓN: IMAGEN DE REFERENCIA (Ajuste Inteligente)
         # ---------------------------------------------------------------------------------------------------------
         
         RUTA_IMAGEN_REFERENCIA = "cuadro_valores_referencia.jpeg"
-        MARGEN_HORIZONTAL = 10  
-        ANCHO_PAGINA_TOTAL = 210  
-        ANCHO_MAXIMO_MM = ANCHO_PAGINA_TOTAL - (MARGEN_HORIZONTAL * 2) 
+        MARGEN_HORIZONTAL = 10  # Margen deseado a cada lado (10 mm)
+        ANCHO_PAGINA_TOTAL = 210  # Ancho de página estándar
         
-        # Este valor puede variar, asumimos 50mm para el espacio
-        ALTURA_ESTIMADA_IMAGEN = 50 
+        # ANCHO MÁXIMO SEGURO: 190 mm (deja 10 mm a cada lado)
+        ANCHO_MAXIMO_MM = ANCHO_PAGINA_TOTAL - (MARGEN_HORIZONTAL * 2) # 210 - 20 = 190 mm
+        
+        # Esto garantiza que el salto de página solo ocurra si realmente queda muy poco espacio.
+        ALTURA_ESTIMADA_IMAGEN = 50 # REDUCIR ESTE VALOR 
         
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "Cuadro Comparativo de Interpretación Clínica:", ln=True, align='C')
+        pdf.cell(200, 10, "Cuadro Comparativo de Interpretación Clínica:", ln=True)
         
-        # Verificación de espacio restante
+        # 1. VERIFICACIÓN DE ESPACIO RESTANTE
+        # Ahora solo saltará si quedan menos de 50mm, lo cual es mucho menos que tu espacio actual.
         if (pdf.get_y() + ALTURA_ESTIMADA_IMAGEN) > (pdf.h - 20):
             pdf.add_page()
             pdf.ln(5)
         
         try:
-            POSICION_X = (ANCHO_PAGINA_TOTAL - ANCHO_MAXIMO_MM) / 2 
+            # 2. Insertar la imagen con el ANCHO MÁXIMO (190 mm) y centrado
+            POSICION_X = (ANCHO_PAGINA_TOTAL - ANCHO_MAXIMO_MM) / 2 # 20 / 2 = 10 mm
+            
+            # w=190 mm (máxima legibilidad) y h=0 (mantiene proporción, evita distorsión)
             pdf.image(RUTA_IMAGEN_REFERENCIA, x=POSICION_X, w=ANCHO_MAXIMO_MM, h=0)
             
         except Exception as e:
             pdf.multi_cell(0, 8, f"ADVERTENCIA: No se pudo cargar o procesar el archivo de referencia '{RUTA_IMAGEN_REFERENCIA}'. Error: {e}")
 
-        # -------------------------------------------------------------
-        # INICIO DE LA SECCIÓN DE ADVERTENCIA CLÍNICA CORREGIDA
-        # -------------------------------------------------------------
-        
+        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
+        pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
+        pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
         leyenda_nota = (
-            "NOTA IMPORTANTE: Los valores de referencia están sacados de diferentes papers científicos como: "
-            "“Motion characteristics of subclinical tremors in Parkinson’s disease and normal subjects” y también de la UPDRS.\n\n"
-            "El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista.\n"
+            "**NOTA IMPORTANTE:** Los valores de referencia están sacados de diferentes papers científicos como: "
+            "“Motion characteristics of subclinical tremors in Parkinson’s disease and normal subjects” y también de la UPDRS.\n\n" # Dos saltos de línea para espacio
+            "El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista.\n" # Un salto de línea
             "Esta herramienta solo provee soporte cuantitativo."
         )
-            
-        pdf.ln(5) # Espacio después de la imagen/tabla
+        
+        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
         pdf.set_font("Arial", 'B', 9) # Fuente en negrita para el título "NOTA IMPORTANTE"
         pdf.set_text_color(150, 0, 0) # Color rojo apagado para la advertencia
         pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
                        leyenda_nota, 
                        align='C')
         pdf.set_text_color(0, 0, 0) 
-        pdf.ln(5) #
+        pdf.ln(5) 
         
-        # -------------------------------------------------------------
-        # FIN DE LA SECCIÓN DE ADVERTENCIA CLÍNICA CORREGIDA
-        # -------------------------------------------------------------
-        
-        
-        # SECCIÓN: GRÁFICO (si existe)
+    
+    # ---------------------------------------------------------------------------------------------------------
+    
         if fig is not None:
-            altura_grafico = 150 
+            # Altura estimada que ocupará el gráfico (ajusta este valor si es necesario).
+            altura_grafico = 150 # Altura de la imagen + título
                 
-            if (pdf.get_y() + altura_grafico) > (pdf.h - 20):
+            # Comprobar si queda suficiente espacio en la página actual
+            # Se verifica si la posición actual + la altura del gráfico excede la altura de la página.
+            if (pdf.get_y() + altura_grafico) > (pdf.h - 20):  # Se resta 20mm para un margen de seguridad
                 pdf.add_page()
                 
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Gráfico Comparativo de Amplitud de Temblor", ln=True, align="C")
-            
-            # Guardar y añadir la imagen temporal
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
                 fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
                 pdf.image(tmpfile.name, x=15, w=180)
                 os.remove(tmpfile.name)
         
-        # GENERACIÓN DEL OUTPUT FINAL (solo una vez)
         pdf_output = BytesIO()
-        # Aseguramos que la leyenda se incluyó antes de output
-        pdf_bytes = pdf.output(dest='S')
+        pdf_bytes = pdf.output(dest='S').encode('latin1')
         pdf_output.write(pdf_bytes)
         pdf_output.seek(0)
         return pdf_output
@@ -613,13 +613,12 @@ if opcion == "1️⃣ Análisis de una medición":
         if not all(uploaded_files.values()):
             st.warning("Por favor, sube todos los archivos para iniciar el análisis.")
         else:
-            # --- APLICAR VALIDACIÓN -----------------------------------------------------------------------------
-            # Asumiendo que validar_consistencia_por_nombre_archivo está definida globalmente
-            is_consistent, error_msg = validar_consistencia_por_nombre_archivo(uploaded_files, "Medición Individual") 
+            # --- APLICAR VALIDACIÓN  -----------------------------------------------------------------------------
+            is_consistent, error_msg = validar_consistencia_por_nombre_archivo(uploaded_files, "Medición Individual")
 
             if not is_consistent:
                 st.error(error_msg)
-                st.stop() 
+                st.stop() # Detiene la ejecución si los archivos son inconsistentes
             # -----------------------------------------------------------------------------------------------------
             resultados_globales = []
             datos_paciente_para_pdf = {}  
@@ -636,8 +635,7 @@ if opcion == "1️⃣ Análisis de una medición":
                     break
             
             if primer_df_cargado is not None:
-                # Asumiendo que extraer_datos_paciente está definida globalmente
-                datos_paciente_para_pdf = extraer_datos_paciente(primer_df_cargado) 
+                datos_paciente_para_pdf = extraer_datos_paciente(primer_df_cargado)
 
                 # CONVERSIÓN A MINÚSCULAS PARA EL PDF
                 if datos_paciente_para_pdf.get("sexo"):
@@ -656,8 +654,7 @@ if opcion == "1️⃣ Análisis de una medición":
                     file_object.seek(0)
                     df = pd.read_csv(file_object, encoding='latin1', header=0)
 
-                    # Asumiendo que analizar_temblor_por_ventanas_resultante está definida globalmente
-                    df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(df, fs=100) 
+                    df_promedio, df_ventanas = analizar_temblor_por_ventanas_resultante(df, fs=100)
 
                     if not df_promedio.empty:
                         fila = df_promedio.iloc[0].to_dict()
@@ -673,14 +670,13 @@ if opcion == "1️⃣ Análisis de una medición":
 
             if ventanas_para_grafico:
                 fig, ax = plt.subplots(figsize=(10, 6))
-                # Asumiendo que ventana_duracion_seg está definida globalmente
-                for df in ventanas_para_grafico: 
+                for df in ventanas_para_grafico:
                     test_name = df["Test"].iloc[0]
                     if min_ventanas_count != float('inf') and len(df) > min_ventanas_count:
                         df_to_plot = df.iloc[:min_ventanas_count].copy()
                     else:
                         df_to_plot = df.copy()
-                        
+                    
                     df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * ventana_duracion_seg
                     ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
 
@@ -692,7 +688,6 @@ if opcion == "1️⃣ Análisis de una medición":
                 st.pyplot(fig)
             else:
                 st.warning("No se generaron datos de ventanas para el gráfico.")
-                fig = None # Aseguramos que fig sea None si no se generó
 
             if resultados_globales:
                 df_resultados_final = pd.DataFrame(resultados_globales)
@@ -706,7 +701,7 @@ if opcion == "1️⃣ Análisis de una medición":
                     fig=fig
                 )
 
-                st.download_button("📄 Descargar informe PDF", pdf_output.getvalue(), file_name="informe_temblor.pdf")
+                st.download_button("📄 Descargar informe PDF", pdf_output, file_name="informe_temblor.pdf")
                 st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
             else:
                 st.warning("No se encontraron datos suficientes para el análisis.")
@@ -803,9 +798,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             if archivo is not None:
                 archivo.seek(0)
                 df = pd.read_csv(archivo, encoding='latin1')
-                # Asumiendo que analizar_temblor_por_ventanas_resultante está definido
-                df_promedio, df_ventana = analizar_temblor_por_ventanas_resultante(df, fs=fs) 
-                
+                df_promedio, df_ventana = analizar_temblor_por_ventanas_resultante(df, fs=fs)
                 if isinstance(df_ventana, pd.DataFrame) and not df_ventana.empty:
                     prom = df_promedio.iloc[0] if not df_promedio.empty else None
                     if prom is not None:
@@ -829,23 +822,22 @@ elif opcion == "2️⃣ Comparación de mediciones":
         if not archivos_cargados:
             st.warning("Por favor, cargue los 3 archivos para ambas mediciones.")
         else:
-            # ----------------------------------------------------------------------------------------------------
-            # Validación de Consistencia por Nombre de Archivo
-            # ----------------------------------------------------------------------------------------------------
-            # Asumiendo que validar_consistencia_por_nombre_archivo está definido
-            is_consistent_1, error_msg_1 = validar_consistencia_por_nombre_archivo(config1_archivos, "Medición 1") 
+            #----------------------------------------------------------------------------------------------------
+           
+            # Medicion 1
+            is_consistent_1, error_msg_1 = validar_consistencia_por_nombre_archivo(config1_archivos, "Medición 1")
 
             if not is_consistent_1:
                 st.error(error_msg_1)
                 st.stop() # Detiene la ejecución si los archivos son inconsistentes
-            
+            # Medicion 2
             is_consistent_2, error_msg_2 = validar_consistencia_por_nombre_archivo(config2_archivos, "Medición 2")
 
             if not is_consistent_2:
                 st.error(error_msg_2)
                 st.stop() # Detiene la ejecución si los archivos son inconsistentes
 
-            # ------------------------------------------------------------------------------------------------------
+            #------------------------------------------------------------------------------------------------------
             df_config1_meta = pd.read_csv(config1_archivos["Reposo"], encoding='latin1')
             df_config2_meta = pd.read_csv(config2_archivos["Reposo"], encoding='latin1')
 
@@ -863,8 +855,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
 
             pdf.set_font("Arial", size=12)
             pdf.ln(5)
-            # Ajuste de zona horaria si es necesario (el -3 es de ejemplo)
-            pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True) 
+            pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
             
             def _imprimir_campo_pdf(pdf_obj, etiqueta, valor, unidad=""):
                 if pd.notna(valor) and valor is not None and str(valor).strip() != "" and str(valor).lower() not in ["no especificado", "nan"]:
@@ -919,20 +910,19 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 pdf_obj.set_font("Arial", 'B', 14)
                 pdf_obj.cell(0, 10, titulo, ln=True)
                 pdf_obj.set_font("Arial", 'B', 12)
-                
-                # Encabezados de la tabla
-                pdf_obj.cell(30, 10, "Test", 1, 0, 'C')
-                pdf_obj.cell(40, 10, "Frecuencia (Hz)", 1, 0, 'C')
-                pdf_obj.cell(30, 10, "RMS (m/s²)", 1, 0, 'C')
-                pdf_obj.cell(50, 10, "Amplitud (cm)", 1, 1, 'C') # 1 al final para salto de línea
-                
+                pdf_obj.cell(30, 10, "Test", 1)
+                pdf_obj.cell(40, 10, "Frecuencia (Hz)", 1)
+                pdf_obj.cell(30, 10, "RMS", 1)
+                pdf_obj.cell(50, 10, "Amplitud (cm)", 1)
+                pdf_obj.ln(10)
                 pdf_obj.set_font("Arial", "", 10)
 
                 for _, row in df_res.iterrows():
                     pdf_obj.cell(30, 10, row['Test'], 1)
-                    pdf_obj.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1, 0, 'C')
-                    pdf_obj.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1, 0, 'C')
-                    pdf_obj.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1, 1, 'C')
+                    pdf_obj.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+                    pdf_obj.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+                    pdf_obj.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+                    pdf_obj.ln(10)
                 pdf_obj.ln(5)
 
             imprimir_resultados(pdf, df_resultados_config1, "Resultados Medición 1")
@@ -945,20 +935,16 @@ elif opcion == "2️⃣ Comparación de mediciones":
             if amp_avg_config1 < amp_avg_config2:
                 conclusion = (
                     f"La Medición 1 muestra una amplitud de temblor promedio ({amp_avg_config1:.2f} cm) "
-                    f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor. "
-                    f"Esto podría indicar que los parámetros de la Medición 1 son más efectivos para el control del temblor."
+                    f"más baja que la Medición 2 ({amp_avg_config2:.2f} cm), lo que sugiere una mayor reducción del temblor."
                 )
             elif amp_avg_config2 < amp_avg_config1:
                 conclusion = (
                     f"La Medición 2 muestra una amplitud de temblor promedio ({amp_avg_config2:.2f} cm) "
-                    f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor. "
-                    f"Esto podría indicar que los parámetros de la Medición 2 son más efectivos para el control del temblor."
+                    f"más baja que la Medición 1 ({amp_avg_config1:.2f} cm), lo que sugiere una mayor reducción del temblor."
                 )
             else:
                 conclusion = (
-                    f"Ambas mediciones muestran amplitudes de temblor promedio muy similares ({amp_avg_config1:.2f} cm), "
-                    f"lo que sugiere que los cambios en la configuración entre la Medición 1 y la Medición 2 no han tenido un impacto significativo "
-                    f"en la reducción total de la amplitud del temblor."
+                    f"Ambas mediciones muestran amplitudes de temblor promedio muy similares ({amp_avg_config1:.2f} cm)."
                 )
 
             st.subheader("Resultados Medición 1")
@@ -986,17 +972,11 @@ elif opcion == "2️⃣ Comparación de mediciones":
                     if not df1_ventanas.empty and not df2_ventanas.empty:
                         fig, ax = plt.subplots(figsize=(10, 5))
 
-                        # Asegurarse de tener el mismo número de puntos para una comparación justa
-                        min_ventanas = min(len(df1_ventanas), len(df2_ventanas))
-                        df1_plot = df1_ventanas.iloc[:min_ventanas].copy()
-                        df2_plot = df2_ventanas.iloc[:min_ventanas].copy()
-                        
-                        # Cálculo del tiempo (asumiendo que ventana_duracion_seg está definida)
-                        df1_plot["Tiempo (segundos)"] = df1_plot["Ventana"] * ventana_duracion_seg
-                        df2_plot["Tiempo (segundos)"] = df2_plot["Ventana"] * ventana_duracion_seg
-                        
-                        ax.plot(df1_plot["Tiempo (segundos)"], df1_plot["Amplitud Temblor (cm)"], label="Medición 1", color="blue")
-                        ax.plot(df2_plot["Tiempo (segundos)"], df2_plot["Amplitud Temblor (cm)"], label="Medición 2", color="orange")
+                        df1_ventanas["Tiempo (segundos)"] = df1_ventanas["Ventana"] * ventana_duracion_seg
+                        df2_ventanas["Tiempo (segundos)"] = df2_ventanas["Ventana"] * ventana_duracion_seg
+
+                        ax.plot(df1_ventanas["Tiempo (segundos)"], df1_ventanas["Amplitud Temblor (cm)"], label="Medición 1", color="blue")
+                        ax.plot(df2_ventanas["Tiempo (segundos)"], df2_ventanas["Amplitud Temblor (cm)"], label="Medición 2", color="orange")
                         ax.set_title(f"Amplitud por Ventana - {test}")
                         ax.set_xlabel("Tiempo (segundos)")
                         ax.set_ylabel("Amplitud (cm)")
@@ -1004,14 +984,10 @@ elif opcion == "2️⃣ Comparación de mediciones":
                         ax.grid(True)
                         st.pyplot(fig)
 
-                        # GENERACIÓN DEL GRÁFICO PARA EL PDF
-                        # Importar tempfile y os si no están globalmente
-                        # import tempfile
-                        # import os
+                        import tempfile
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
                             fig.savefig(tmp_img.name, format='png', bbox_inches='tight')
                             image_path_for_pdf = tmp_img.name
-                        
                         try:
                             # Verificar si hay espacio para el gráfico
                             altura_grafico = 100
@@ -1020,9 +996,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
                                 
                             pdf.set_font("Arial", 'B', 14)
                             pdf.cell(0, 10, f"Gráfico Comparativo: {test}", ln=True, align="C")
-                            # Usa 180mm de ancho para ajustarse al PDF estándar
-                            pdf.image(image_path_for_pdf, x=15, w=180) 
-                            pdf.ln(5)
+                            pdf.image(image_path_for_pdf, x=15, w=180)
                         finally:
                             os.remove(image_path_for_pdf)
                         plt.close(fig)
@@ -1033,42 +1007,36 @@ elif opcion == "2️⃣ Comparación de mediciones":
             
             st.subheader("Conclusión del Análisis Comparativo")
             st.write(conclusion)
-            
-            # Imprimir Conclusión en el PDF
-            # No es necesario pdf.add_page() aquí si ya se verificó el espacio para el último gráfico
+
+            # Eliminar la llamada a pdf.add_page() para evitar el espacio
             pdf.set_font("Arial", 'B', 14)
             pdf.cell(0, 10, "Conclusión", ln=True)
             pdf.set_font("Arial", size=12)
             pdf.multi_cell(0, 10, conclusion)
-            pdf.ln(5)
 
-        
-            # Definición de la leyenda
-            leyenda_nota = (
-                "NOTA IMPORTANTE: Los valores de referencia están sacados de diferentes papers científicos como: "
-                "“Motion characteristics of subclinical tremors in Parkinson’s disease and normal subjects” y también de la UPDRS.\n\n"
-                "El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista.\n"
-                "Esta herramienta solo provee soporte cuantitativo."
-            )
-
-            # Imprimir Advertencia en PDF
-            pdf.ln(5) 
-            pdf.set_font("Arial", 'B', 9) 
-            pdf.set_text_color(150, 0, 0) 
-            # Asumo que ANCHO_MAXIMO_MM es 180 si no está definida
-            ancho_pdf = 180 # Usar el ancho de tu ANCHO_MAXIMO_MM si está definido
-            pdf.multi_cell(ancho_pdf, 5, 
-                           leyenda_nota, 
-                           align='C')
-            pdf.set_text_color(0, 0, 0)
-            pdf.ln(5)
-            
-    
             pdf_output = BytesIO()
-            # Esta es la llamada que FINALIZA el PDF, debe ser lo último antes de la descarga.
-            pdf_bytes = pdf.output(dest='S').encode('latin1') 
+            pdf_bytes = pdf.output(dest='S').encode('latin1')
             pdf_output.write(pdf_bytes)
             pdf_output.seek(0)
+
+            pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
+            pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
+            pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
+            leyenda_nota = (
+                "**NOTA IMPORTANTE:** Los valores de referencia están sacados de diferentes papers científicos como: "
+                "“Motion characteristics of subclinical tremors in Parkinson’s disease and normal subjects” y también de la UPDRS.\n\n" # Dos saltos de línea para espacio
+                "El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista.\n" # Un salto de línea
+                "Esta herramienta solo provee soporte cuantitativo."
+            )
+        
+        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
+        pdf.set_font("Arial", 'B', 9) # Fuente en negrita para el título "NOTA IMPORTANTE"
+        pdf.set_text_color(150, 0, 0) # Color rojo apagado para la advertencia
+        pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
+                       leyenda_nota, 
+                       align='C')
+        pdf.set_text_color(0, 0, 0) 
+        pdf.ln(5)
 
             st.download_button(
                 label="Descargar Informe PDF",
@@ -1076,15 +1044,12 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 file_name="informe_comparativo_temblor.pdf",
                 mime="application/pdf"
             )
-            st.info("El archivo se descargará en tu carpeta de descargas predeterminada.")
+            st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
             
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO -----------------------------------------------------------------
-
 elif opcion == "3️⃣ Diagnóstico tentativo":
     st.title("🩺 Diagnóstico Tentativo")
     st.markdown("### Cargar archivos CSV para el Diagnóstico")
-
-    # --- Funciones Auxiliares (las mantengo) ---
 
     def extraer_datos_paciente(df_csv):
         datos_paciente = {
@@ -1141,7 +1106,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             if pd.notna(value) and value is not None and str(value).strip() != "" and str(value).lower() not in ["no especificado", "nan"]:
                 pdf_obj.cell(200, 10, f"{param_key}: {value}{unit}", ln=True)
         pdf_obj.ln(5)
-        
+
     def generar_pdf(paciente_data, estimulacion_data, resultados_df, prediccion_texto, probabilidades_texto, graficos_paths):
         pdf = FPDF()
         pdf.add_page()
@@ -1152,7 +1117,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         pdf.set_font("Arial", size=12)
         pdf.cell(0, 10, f"Fecha y hora del análisis: {(datetime.now() - timedelta(hours=3)).strftime('%d/%m/%Y %H:%M')}", ln=True)
         
-        # --- Datos del Paciente ---
         pdf.set_font("Arial", 'B', 14)
         pdf.cell(0, 10, "Datos del Paciente", ln=True)
         pdf.set_font("Arial", size=12)
@@ -1175,29 +1139,29 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
         _imprimir_campo_pdf(pdf, "Medicacion", paciente_data.get("Medicacion"))
         pdf.ln(5)
         
-        # --- Configuración de Medición ---
         imprimir_parametros_y_config(pdf, estimulacion_data, "Configuración de la Medición")
         
-        # --- Resultados del Análisis (Tabla) ---
         pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Resultados del Análisis Cuantitativo", ln=True)
+        pdf.cell(0, 10, "Resultados del Análisis", ln=True)
         pdf.ln(2)
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(30, 10, "Test", 1, 0, 'C')
-        pdf.cell(40, 10, "Frecuencia (Hz)", 1, 0, 'C')
-        pdf.cell(30, 10, "RMS (m/s²)", 1, 0, 'C')
-        pdf.cell(50, 10, "Amplitud (cm)", 1, 1, 'C')
+        pdf.cell(30, 10, "Test", 1)
+        pdf.cell(40, 10, "Frecuencia (Hz)", 1)
+        pdf.cell(30, 10, "RMS", 1)
+        pdf.cell(50, 10, "Amplitud (cm)", 1)
+        pdf.ln(10)
         pdf.set_font("Arial", "", 10)
         for _, row in resultados_df.iterrows():
             pdf.cell(30, 10, row['Test'], 1)
-            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1, 0, 'C')
-            pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1, 0, 'C')
-            pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1, 1, 'C')
+            pdf.cell(40, 10, f"{row['Frecuencia Dominante (Hz)']:.2f}", 1)
+            pdf.cell(30, 10, f"{row['RMS (m/s2)']:.4f}", 1)
+            pdf.cell(50, 10, f"{row['Amplitud Temblor (cm)']:.2f}", 1)
+            pdf.ln(10)
         pdf.ln(5)
 
-        # --- Diagnóstico (Predicción) ---
+        # Imprimir el diagnóstico antes de los gráficos
         pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Diagnóstico Tentativo (Predicción de IA)", ln=True)
+        pdf.cell(0, 10, "Diagnóstico (Predicción)", ln=True)
         pdf.set_font("Arial", size=12)
         pdf.multi_cell(0, 10, prediccion_texto)
         pdf.ln(5)
@@ -1207,8 +1171,8 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             pdf.set_font("Arial", size=10)
             pdf.multi_cell(0, 5, probabilidades_texto)
             pdf.ln(5)
-            
-        # --- Gráficos ---
+        
+        # Generar gráficos
         for i, img_path in enumerate(graficos_paths):
             if os.path.exists(img_path):
                 altura_grafico = 100
@@ -1216,33 +1180,18 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     pdf.add_page()
                     
                 pdf.set_font("Arial", 'B', 14)
-                pdf.cell(0, 10, f"Gráfico de Amplitud Temporal - {resultados_df['Test'].iloc[i]}", ln=True, align="C")
+                pdf.cell(0, 10, f"Gráfico {i+1}", ln=True, align="C")
                 pdf.image(img_path, x=15, w=180)
             else:
                 pdf.cell(0, 10, f"Error: No se pudo cargar el gráfico {i+1}", ln=True)
-            pdf.ln(5) 
+            pdf.ln(5) # Añadir un espacio entre gráficos
 
-        # --- NOTA IMPORTANTE (Advertencia) ---
-        leyenda_nota = (
-            "NOTA IMPORTANTE (Soporte Cuantitativo): El resultado es una **predicción de Inteligencia Artificial**. "
-            "El diagnóstico y tratamiento final deben ser indicados y validados **exclusivamente por el médico especialista** "
-            "en el contexto clínico completo del paciente."
-        )
-        pdf.ln(5) 
-        pdf.set_font("Arial", 'B', 9) 
-        pdf.set_text_color(150, 0, 0) 
-        pdf.multi_cell(180, 5, leyenda_nota, align='C')
-        pdf.set_text_color(0, 0, 0)
-        pdf.ln(5)
-
-        # --- Generación final ---
         pdf_output = BytesIO()
         pdf_bytes = pdf.output(dest='S').encode('latin1')
         pdf_output.write(pdf_bytes)
         pdf_output.seek(0)
         return pdf_output
 
-    # --- Carga de archivos en Streamlit ---
     prediccion_reposo_file = st.file_uploader("Archivo de REPOSO para Diagnóstico", type="csv", key="prediccion_reposo")
     prediccion_postural_file = st.file_uploader("Archivo de POSTURAL para Diagnóstico", type="csv", key="prediccion_postural")
     prediccion_accion_file = st.file_uploader("Archivo de ACCION para Diagnóstico", type="csv", key="prediccion_accion")
@@ -1280,9 +1229,8 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
 
             if not is_consistent:
                 st.error(error_msg)
-                st.stop()
+                st.stop() # Detiene la ejecución si los archivos son inconsistentes
             # -----------------------------------------------------------------------------------------------------------
-            
             avg_tremor_metrics = {}
             datos_paciente = {}
             datos_estimulacion = {}
@@ -1303,7 +1251,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     if not df_promedio.empty:
                         avg_tremor_metrics[test_type] = df_promedio.iloc[0].to_dict()
                     else:
-                        # Si falla, registra NaN para que la predicción no falle por falta de key, aunque falle por NaN
                         st.warning(f"No se pudieron calcular métricas de temblor para {test_type}. Se usarán NaN.")
                         avg_tremor_metrics[test_type] = {
                             'Frecuencia Dominante (Hz)': np.nan,
@@ -1319,11 +1266,9 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 df_metrics_display = df_metrics_display.rename(columns={'index': 'Test'})
                 st.dataframe(df_metrics_display)
 
-                # --- Preparación de datos para el Modelo ---
                 data_for_model = {}
                 edad_val = datos_paciente.get('Edad', np.nan)
                 try:
-                    # Intenta convertir la edad a entero si es un valor válido
                     data_for_model['edad'] = int(float(edad_val)) if pd.notna(edad_val) else np.nan
                 except (ValueError, TypeError):
                     data_for_model['edad'] = np.nan
@@ -1356,7 +1301,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 st.subheader("DataFrame preparado para el Modelo de Predicción:")
                 st.dataframe(df_for_prediction)
 
-                # --- Predicción del Modelo ---
                 model_filename = 'tremor_prediction_model_con_sanos_OPTIMO_POR_F1.joblib'
                 prediccion_final = "No se pudo realizar el diagnóstico."
                 probabilidades_texto = ""
@@ -1373,15 +1317,12 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                         probabilities = modelo_cargado.predict_proba(df_for_prediction)
                         probabilidades_list = []
                         if hasattr(modelo_cargado, 'classes_'):
-                            # Mostrar y guardar las probabilidades
-                            st.markdown("**Probabilidades por Clase:**")
                             for i, class_label in enumerate(modelo_cargado.classes_):
                                 st.write(f"- **{class_label}**: {probabilities[0][i]*100:.2f}%")
                                 probabilidades_list.append(f"- {class_label}: {probabilities[0][i]*100:.2f}%")
                             probabilidades_texto = "\n".join(probabilidades_list)
                         else:
                             st.info("El modelo no tiene el atributo 'classes_'. No se pueden mostrar las etiquetas de clase.")
-                    
                     st.warning(
                         """
                         **IMPORTANTE (Modo Tentativo):** La predicción del sistema es solo un **soporte cuantitativo**
@@ -1394,20 +1335,17 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     st.error("Asegúrate de que esté en la misma carpeta que este script.")
                 except Exception as e:
                     st.error(f"Ocurrió un error al usar el modelo: {e}")
-                    st.error("Verifica que el DataFrame `df_for_prediction` coincida con lo que espera el modelo. Posiblemente faltan features o hay NaNs.")
+                    st.error("Verifica que el DataFrame `df_for_prediction` coincida con lo que espera el modelo.")
 
-                # --- Generación de Gráficos de Amplitud Temporal ---
                 all_ventanas_for_plot = []
                 current_min_ventanas = float('inf')
                 graficos_paths = []
 
-                # Recoger datos de ventanas y encontrar la longitud mínima
                 for test_type, uploaded_file in prediccion_files_correctas.items():
                     if uploaded_file is not None:
                         uploaded_file.seek(0)
                         df_temp = pd.read_csv(uploaded_file, encoding='latin1')
-                        # _ es df_promedio, df_ventanas_temp es la información de ventanas
-                        _, df_ventanas_temp = analizar_temblor_por_ventanas_resultante(df_temp, fs=100) 
+                        _, df_ventanas_temp = analizar_temblor_por_ventanas_resultante(df_temp, fs=100)
 
                         if not df_ventanas_temp.empty:
                             df_ventanas_temp_copy = df_ventanas_temp.copy()
@@ -1416,58 +1354,40 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
 
                             if len(df_ventanas_temp_copy) < current_min_ventanas:
                                 current_min_ventanas = len(df_ventanas_temp_copy)
-                        
-                        # Generación individual de gráficos para el PDF
-                        if not df_ventanas_temp.empty:
-                             # Generar gráfico individual para el PDF
-                            fig_single, ax_single = plt.subplots(figsize=(10, 5))
-                            df_ventanas_temp["Tiempo (segundos)"] = df_ventanas_temp["Ventana"] * ventana_duracion_seg
-                            ax_single.plot(df_ventanas_temp["Tiempo (segundos)"], df_ventanas_temp["Amplitud Temblor (cm)"], label=f"{test_type}", color='blue')
-                            ax_single.set_title(f"Amplitud de Temblor - {test_type}")
-                            ax_single.set_xlabel("Tiempo (segundos)")
-                            ax_single.set_ylabel("Amplitud (cm)")
-                            ax_single.grid(True)
-                            
-                            with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{test_type}_.png") as tmp_img:
-                                fig_single.savefig(tmp_img.name, format='png', bbox_inches='tight')
-                                graficos_paths.append(tmp_img.name)
-                            plt.close(fig_single)
 
-
-                # Gráfico de comparación (opcional, si se desea)
                 if all_ventanas_for_plot:
-                    st.subheader("Comparación Gráfica de Amplitud por Ventana (Todos los Tests)")
-                    fig_comp, ax_comp = plt.subplots(figsize=(10, 6))
+                    fig, ax = plt.subplots(figsize=(10, 6))
                     for df_plot in all_ventanas_for_plot:
                         test_name = df_plot["Test"].iloc[0]
-                        # Limitar al tamaño mínimo para la comparación
                         if current_min_ventanas != float('inf') and len(df_plot) > current_min_ventanas:
                             df_to_plot = df_plot.iloc[:current_min_ventanas].copy()
                         else:
                             df_to_plot = df_plot.copy()
 
                         df_to_plot["Tiempo (segundos)"] = df_to_plot["Ventana"] * ventana_duracion_seg
-                        ax_comp.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
+                        ax.plot(df_to_plot["Tiempo (segundos)"], df_to_plot["Amplitud Temblor (cm)"], label=f"{test_name}")
                     
-                    ax_comp.set_title("Amplitud de Temblor por Ventana (Comparación)")
-                    ax_comp.set_xlabel("Tiempo (segundos)")
-                    ax_comp.set_ylabel("Amplitud (cm)")
-                    ax_comp.legend()
-                    ax_comp.grid(True)
-                    st.pyplot(fig_comp)
-                    plt.close(fig_comp) # Cerrar la figura de Streamlit
+                    ax.set_title("Amplitud de Temblor por Ventana de Tiempo")
+                    ax.set_xlabel("Tiempo (segundos)")
+                    ax.set_ylabel("Amplitud (cm)")
+                    ax.legend()
+                    ax.grid(True)
+                    st.pyplot(fig)
 
-                if not graficos_paths:
-                    st.warning("No se generaron gráficos debido a datos insuficientes en las ventanas.")
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
+                        fig.savefig(tmp_img.name, format='png', bbox_inches='tight')
+                        graficos_paths.append(tmp_img.name)
+                    plt.close(fig)
+                else:
+                    st.warning("No hay suficientes datos de ventanas para graficar los archivos de predicción.")
 
-                # --- Generación del PDF ---
                 pdf_output = generar_pdf(
                     datos_paciente, 
                     datos_estimulacion, 
                     df_metrics_display, 
                     f"El diagnóstico tentativo es: {prediccion_final}",
                     probabilidades_texto,
-                    graficos_paths # Lista de paths de gráficos individuales
+                    graficos_paths
                 )
 
                 st.download_button(
@@ -1477,7 +1397,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     mime="application/pdf"
                 )
                 
-                # --- Limpieza de archivos temporales ---
                 for path in graficos_paths:
                     if os.path.exists(path):
                         os.remove(path)
