@@ -1084,6 +1084,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
     st.title("🩺 Diagnóstico Tentativo")
     st.markdown("### Cargar archivos CSV para el Diagnóstico")
 
+    # --- Funciones Auxiliares (las mantengo) ---
 
     def extraer_datos_paciente(df_csv):
         datos_paciente = {
