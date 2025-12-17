@@ -499,7 +499,7 @@ if opcion == "1️⃣ Análisis de una medición":
         # SECCIÓN: IMAGEN DE REFERENCIA (Ajuste Inteligente)
         # ---------------------------------------------------------------------------------------------------------
         
-        RUTA_IMAGEN_REFERENCIA = "cuadro_valores_referencia.jpeg"
+        RUTA_IMAGEN_REFERENCIA = "cuadro_referencia_sin_texto.jpeg"
         MARGEN_HORIZONTAL = 10  # Margen deseado a cada lado (10 mm)
         ANCHO_PAGINA_TOTAL = 210  # Ancho de página estándar
         
@@ -532,21 +532,11 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
         pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
         pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
-        leyenda_nota = (
-            "**NOTA IMPORTANTE:** Los valores de referencia están sacados de diferentes papers científicos como: "
-            "“Motion characteristics of subclinical tremors in Parkinson’s disease and normal subjects” y también de la UPDRS.\n\n" # Dos saltos de línea para espacio
-            "El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista.\n" # Un salto de línea
-            "Esta herramienta solo provee soporte cuantitativo."
-        )
-        
-        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
-        pdf.set_font("Arial", 'B', 9) # Fuente en negrita para el título "NOTA IMPORTANTE"
-        pdf.set_text_color(150, 0, 0) # Color rojo apagado para la advertencia
         pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
-                       leyenda_nota, 
-                       align='C')
-        pdf.set_text_color(0, 0, 0) 
-        pdf.ln(5) 
+               "**NOTA IMPORTANTE:** El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista. Esta herramienta solo provee soporte cuantitativo.", 
+               align='C')
+        pdf.set_text_color(0, 0, 0) # Volver al color negro estándar
+        pdf.ln(5) # Salto de línea estándar para continuar
         
     
     # ---------------------------------------------------------------------------------------------------------
@@ -1019,32 +1009,13 @@ elif opcion == "2️⃣ Comparación de mediciones":
             pdf_output.write(pdf_bytes)
             pdf_output.seek(0)
 
-            pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
-            pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
-            pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
-            leyenda_nota = (
-                "**NOTA IMPORTANTE:** Los valores de referencia están sacados de diferentes papers científicos como: "
-                "“Motion characteristics of subclinical tremors in Parkinson’s disease and normal subjects” y también de la UPDRS.\n\n" # Dos saltos de línea para espacio
-                "El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista.\n" # Un salto de línea
-                "Esta herramienta solo provee soporte cuantitativo."
-            )
-        
-        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
-        pdf.set_font("Arial", 'B', 9) # Fuente en negrita para el título "NOTA IMPORTANTE"
-        pdf.set_text_color(150, 0, 0) # Color rojo apagado para la advertencia
-        pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
-                       leyenda_nota, 
-                       align='C')
-        pdf.set_text_color(0, 0, 0) 
-        pdf.ln(5)
-
-        st.download_button(
+            st.download_button(
                 label="Descargar Informe PDF",
                 data=pdf_output.getvalue(),
                 file_name="informe_comparativo_temblor.pdf",
                 mime="application/pdf"
             )
-        st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
+            st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
             
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO -----------------------------------------------------------------
 elif opcion == "3️⃣ Diagnóstico tentativo":
@@ -1323,13 +1294,6 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                             probabilidades_texto = "\n".join(probabilidades_list)
                         else:
                             st.info("El modelo no tiene el atributo 'classes_'. No se pueden mostrar las etiquetas de clase.")
-                    st.warning(
-                        """
-                        **IMPORTANTE (Modo Tentativo):** La predicción del sistema es solo un **soporte cuantitativo**
-                        basado en Inteligencia Artificial. El diagnóstico y el tratamiento final deben ser
-                        determinados y validados **exclusivamente por el médico especialista** en el contexto clínico completo del paciente.
-                        """
-                    )
                 except FileNotFoundError:
                     st.error(f"Error: El archivo del modelo '{model_filename}' no se encontró.")
                     st.error("Asegúrate de que esté en la misma carpeta que este script.")
