@@ -558,7 +558,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 os.remove(tmpfile.name)
         
         pdf_output = BytesIO()
-        pdf_bytes = pdf.output(dest='S').encode('latin1')
+        pdf_bytes = pdf.output(dest='S')
         pdf_output.write(pdf_bytes)
         pdf_output.seek(0)
         return pdf_output
