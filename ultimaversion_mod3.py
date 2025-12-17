@@ -532,21 +532,12 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
         pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
         pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
-        leyenda_nota = (
-            "**NOTA IMPORTANTE:** Los valores de referencia están sacados de diferentes papers científicos como: "
-            "“Motion characteristics of subclinical tremors in Parkinson’s disease and normal subjects” y también de la UPDRS.\n\n" # Dos saltos de línea para espacio
-            "El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista.\n" # Un salto de línea
-            "Esta herramienta solo provee soporte cuantitativo."
-        )
-
-        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
-        pdf.set_font("Arial", 'B', 9) # Fuente en negrita para el título "NOTA IMPORTANTE"
-        pdf.set_text_color(150, 0, 0) # Color rojo apagado para la advertencia
         pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
-                       leyenda_nota, 
-                       align='C')
+               "**NOTA IMPORTANTE:** El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista. Esta herramienta solo provee soporte cuantitativo.", 
+               align='C')
         pdf.set_text_color(0, 0, 0) # Volver al color negro estándar
         pdf.ln(5) # Salto de línea estándar para continuar
+        
     
     # ---------------------------------------------------------------------------------------------------------
     
@@ -567,7 +558,7 @@ if opcion == "1️⃣ Análisis de una medición":
                 os.remove(tmpfile.name)
         
         pdf_output = BytesIO()
-        pdf_bytes = pdf.output(dest='S')
+        pdf_bytes = pdf.output(dest='S').encode('latin1')
         pdf_output.write(pdf_bytes)
         pdf_output.seek(0)
         return pdf_output
@@ -1014,7 +1005,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             pdf.multi_cell(0, 10, conclusion)
 
             pdf_output = BytesIO()
-            pdf_bytes = pdf.output(dest='S')
+            pdf_bytes = pdf.output(dest='S').encode('latin1')
             pdf_output.write(pdf_bytes)
             pdf_output.seek(0)
 
@@ -1167,7 +1158,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
             pdf.ln(5) # Añadir un espacio entre gráficos
 
         pdf_output = BytesIO()
-        pdf_bytes = pdf.output(dest='S')
+        pdf_bytes = pdf.output(dest='S').encode('latin1')
         pdf_output.write(pdf_bytes)
         pdf_output.seek(0)
         return pdf_output
