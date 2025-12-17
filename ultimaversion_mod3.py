@@ -1038,13 +1038,13 @@ elif opcion == "2️⃣ Comparación de mediciones":
         pdf.set_text_color(0, 0, 0) 
         pdf.ln(5)
 
-            st.download_button(
+        st.download_button(
                 label="Descargar Informe PDF",
                 data=pdf_output.getvalue(),
                 file_name="informe_comparativo_temblor.pdf",
                 mime="application/pdf"
             )
-            st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
+        st.info("El archivo se descargará en tu carpeta de descargas predeterminada o el navegador te pedirá la ubicación, dependiendo de tu configuración.")
             
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO -----------------------------------------------------------------
 elif opcion == "3️⃣ Diagnóstico tentativo":
