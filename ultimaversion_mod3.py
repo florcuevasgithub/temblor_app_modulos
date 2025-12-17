@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt, welch
 from fpdf import FPDF
-from fpdf2 import FPDF
 from datetime import datetime, timedelta
 import os
 from scipy.fft import fft, fftfreq
@@ -569,7 +568,7 @@ if opcion == "1️⃣ Análisis de una medición":
         # GENERACIÓN DEL OUTPUT FINAL (solo una vez)
         pdf_output = BytesIO()
         # Aseguramos que la leyenda se incluyó antes de output
-        pdf_bytes = pdf.output(dest='S').encode('latin1') 
+        pdf_bytes = pdf.output(dest='S')
         pdf_output.write(pdf_bytes)
         pdf_output.seek(0)
         return pdf_output
