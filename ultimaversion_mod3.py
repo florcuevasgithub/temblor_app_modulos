@@ -1076,7 +1076,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
                 file_name="informe_comparativo_temblor.pdf",
                 mime="application/pdf"
             )
-            st.info("El archivo se descargará en tu carpeta de descargas predeterminad
+            st.info("El archivo se descargará en tu carpeta de descargas predeterminada.")
             
 # ------------------ MÓDULO 3: DIAGNÓSTICO TENTATIVO -----------------------------------------------------------------
 
