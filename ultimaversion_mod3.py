@@ -1281,6 +1281,14 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                     prediction = modelo_cargado.predict(df_for_prediction)
                     prediccion_final = prediction[0]
 
+
+                    prediccion_final_display = prediccion_final # Valor por defecto
+    
+                    if prediccion_final.lower() in ['parkinson', 'pk']:
+                    prediccion_final_display = "Enfermedad de Parkinson (EP)"
+                    elif prediccion_final.lower() in ['temblor esencial', 'te']:
+                    prediccion_final_display = "Temblor Esencial (TE)"
+
                     st.subheader("Resultados del Diagnóstico:")
                     st.success(f"El diagnóstico tentativo es: **{prediccion_final}**")
 
