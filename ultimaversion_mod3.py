@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt, welch
 from fpdf import FPDF
+from fpdf2 import FPDF
 from datetime import datetime, timedelta
 import os
 from scipy.fft import fft, fftfreq
