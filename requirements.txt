@@ -4,6 +4,7 @@ numpy
 matplotlib
 scipy
 fpdf
+fpdf2 
 ahrs
 joblib
 reportlab
