@@ -536,7 +536,7 @@ if opcion == "1️⃣ Análisis de una medición":
                "**NOTA IMPORTANTE:**Los valores de referencia están sacados de diferentes papers científicos como: "
                "“Motion characteristics of subclinical tremors in Parkinson’s disease and normal subjects” y también de la UPDRS.\n\n" # Dos saltos de línea para espacio
                "El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista.\n" # Un salto de línea
-               "Esta herramienta solo provee soporte cuantitativo."", 
+               "Esta herramienta solo provee soporte cuantitativo.", 
                align='C')
         pdf.set_text_color(0, 0, 0) # Volver al color negro estándar
         pdf.ln(5) # Salto de línea estándar para continuar
