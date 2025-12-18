@@ -529,15 +529,6 @@ if opcion == "1️⃣ Análisis de una medición":
         except Exception as e:
             pdf.multi_cell(0, 8, f"ADVERTENCIA: No se pudo cargar o procesar el archivo de referencia '{RUTA_IMAGEN_REFERENCIA}'. Error: {e}")
 
-        #pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
-        #pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
-        #pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
-        #pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
-        #       "**NOTA IMPORTANTE:** El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista. Esta herramienta solo provee soporte cuantitativo.", 
-        #       align='C')
-        #pdf.set_text_color(0, 0, 0) # Volver al color negro estándar
-        #pdf.ln(5) # Salto de línea estándar para continuar
-        
     
     # ---------------------------------------------------------------------------------------------------------
     
@@ -1019,6 +1010,17 @@ elif opcion == "2️⃣ Comparación de mediciones":
             pdf.set_font("Arial", size=12)
             pdf.multi_cell(0, 10, conclusion)
 
+            pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
+            pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
+            pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
+            pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
+                "NOTA IMPORTANTE: El diagnostico y tratamiento final deben ser indicados y validados "
+                "por el medico especialista. Esta herramienta solo provee soporte cuantitativo." 
+                "Referencias extraidas de las siguientes fuentes: ", 
+                align='C')
+            pdf.set_text_color(0, 0, 0) # Volver al color negro estándar
+            pdf.ln(5) # Salto de línea estándar para continuar
+
             pdf_output = BytesIO()
             pdf_bytes = pdf.output(dest='S').encode('latin1')
             pdf_output.write(pdf_bytes)
@@ -1172,6 +1174,30 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
                 pdf.cell(0, 10, f"Error: No se pudo cargar el gráfico {i+1}", ln=True)
             pdf.ln(5) # Añadir un espacio entre gráficos
 
+        # --- LEYENDA DE ADVERTENCIA AL FINAL DE LOS GRÁFICOS ---
+        pdf.ln(10) # Espacio después del último gráfico
+        
+        # Comprobar si hay espacio al final de la página, si no, añadir una nueva
+        if pdf.get_y() > 250: 
+            pdf.add_page()
+
+        pdf.set_font("Arial", 'B', 9)
+        pdf.set_text_color(100, 100, 100) # Gris oscuro para que parezca pie de página
+        pdf.cell(0, 5, "AVISO LEGAL Y MEDICO:", ln=True, align='C')
+        
+        pdf.set_font("Arial", '', 9)
+        # Texto sanitizado para evitar errores de codificación
+        leyenda_ia = (
+            "Este es un diagnostico tentativo realizado mediante inteligencia artificial. "
+            "Su objetivo es brindar un primer acercamiento al especialista, quien debera "
+            "realizar los estudios correspondientes y pruebas clinicas para emitir un "
+            "diagnostico definitivo. No debe tomarse como una verdad absoluta ni base única "
+            "para cambios en la medicacion o tratamiento."
+        )
+        
+        pdf.multi_cell(0, 5, leyenda_ia, align='C')
+        pdf.set_text_color(0, 0, 0) # Resetear color a negro
+        
         pdf_output = BytesIO()
         pdf_bytes = pdf.output(dest='S').encode('latin1')
         pdf_output.write(pdf_bytes)
