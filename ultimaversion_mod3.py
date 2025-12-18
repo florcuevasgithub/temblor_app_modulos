@@ -1183,7 +1183,7 @@ elif opcion == "3️⃣ Diagnóstico tentativo":
 
         pdf.set_font("Arial", 'B', 9)
         pdf.set_text_color(100, 100, 100) # Gris oscuro para que parezca pie de página
-        pdf.cell(0, 5, "AVISO LEGAL Y MEDICO:", ln=True, align='C')
+        pdf.cell(0, 5, "AVISO LEGAL Y MÉDICO:", ln=True, align='C')
         
         pdf.set_font("Arial", '', 9)
         # Texto sanitizado para evitar errores de codificación
