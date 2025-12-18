@@ -561,11 +561,12 @@ if opcion == "1️⃣ Análisis de una medición":
         pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
         pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
         pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
-            "NOTA IMPORTANTE: Referencias extraidas de las siguientes fuentes: "
+            "NOTA IMPORTANTE: El diagnostico y tratamiento final deben ser indicados y validados "
+            "por el medico especialista. Esta herramienta solo provee soporte cuantitativo." 
+            "Referencias extraidas de las siguientes fuentes: "
             "1- P. Y. Chan et al., 'Motion characteristics of subclinical tremors in Parkinson's disease and normal subjects', "
             "Sci. Rep., vol. 12, n.o 1, p. 4021, mar. 2022. "
-            "2- mds-updrs-III. El diagnostico y tratamiento final deben ser indicados y validados "
-            "por el medico especialista. Esta herramienta solo provee soporte cuantitativo.", 
+            "2- mds-updrs-III.", 
             align='C')
         pdf.set_text_color(0, 0, 0) # Volver al color negro estándar
         pdf.ln(5) # Salto de línea estándar para continuar
