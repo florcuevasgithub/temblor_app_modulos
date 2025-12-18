@@ -1013,7 +1013,7 @@ elif opcion == "2️⃣ Comparación de mediciones":
             pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
             pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
             pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
-            pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
+            pdf.multi_cell(0, 5, 
                 "NOTA IMPORTANTE: El diagnostico y tratamiento final deben ser indicados y validados "
                 "por el medico especialista. Esta herramienta solo provee soporte cuantitativo." 
                 "Referencias extraidas de las siguientes fuentes: ", 
