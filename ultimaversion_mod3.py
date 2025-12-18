@@ -529,14 +529,14 @@ if opcion == "1️⃣ Análisis de una medición":
         except Exception as e:
             pdf.multi_cell(0, 8, f"ADVERTENCIA: No se pudo cargar o procesar el archivo de referencia '{RUTA_IMAGEN_REFERENCIA}'. Error: {e}")
 
-        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
-        pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
-        pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
-        pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
-               "**NOTA IMPORTANTE:** El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista. Esta herramienta solo provee soporte cuantitativo.", 
-               align='C')
-        pdf.set_text_color(0, 0, 0) # Volver al color negro estándar
-        pdf.ln(5) # Salto de línea estándar para continuar
+        #pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
+        #pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
+        #pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
+        #pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
+        #       "**NOTA IMPORTANTE:** El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista. Esta herramienta solo provee soporte cuantitativo.", 
+        #       align='C')
+        #pdf.set_text_color(0, 0, 0) # Volver al color negro estándar
+        #pdf.ln(5) # Salto de línea estándar para continuar
         
     
     # ---------------------------------------------------------------------------------------------------------
@@ -556,6 +556,16 @@ if opcion == "1️⃣ Análisis de una medición":
                 fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
                 pdf.image(tmpfile.name, x=15, w=180)
                 os.remove(tmpfile.name)
+
+        pdf.ln(2) # Pequeño salto de línea para separarlo de la imagen
+        pdf.set_font("Arial", '', 9) # Fuente más pequeña para la nota
+        pdf.set_text_color(150, 0, 0) # Opcional: Color rojo o gris oscuro para llamar la atención (R=150, G=0, B=0 es un rojo apagado)
+        pdf.multi_cell(ANCHO_MAXIMO_MM, 5, 
+               "**NOTA IMPORTANTE:** Referencias extraidas de las siguientes fuentes: 1- P. Y. Chan et al., «Motion characteristics of subclinical tremors in Parkinson’s disease and normal subjects», Sci. Rep., vol. 12, n.o 1, p. 4021, mar. 2022, doi: 10.1038/s41598-022-07957-z , 2- mds-updrs-III. El diagnóstico y tratamiento final deben ser indicados y validados por el médico especialista. Esta herramienta solo provee soporte cuantitativo.", - 
+               align='C')
+        pdf.set_text_color(0, 0, 0) # Volver al color negro estándar
+        pdf.ln(5) # Salto de línea estándar para continuar
+        
         
         pdf_output = BytesIO()
         pdf_bytes = pdf.output(dest='S').encode('latin1')
